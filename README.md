@@ -1,6 +1,6 @@
 # Windows Kernel Exploit Research Resource
 
-Thu muc nay duoc sap xep theo lo trinh hoc va theo primitive khai thac.
+
 
 ## Cach doc nhanh
 
