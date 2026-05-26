@@ -7,6 +7,32 @@ Day la diem bat dau cho nhanh BYOVD. Cac writeup chi tiet duoc tach theo primiti
 - `BYOVD_RECENT_WRITEUPS.md`: index cac BYOVD/writeup gan day va y tuong hunting.
 - `BYOVD_PRIMITIVE_MATRIX.md`: bang so sanh primitive, do on dinh, rui ro BSOD, version sensitivity.
 - `BYOVD_BLOCKLIST_AND_REACHABILITY.md`: model danh gia driver theo loadability, reachability, usefulness va mitigation pressure.
+- `BYOVD_NON_TERMINATE_PRIMITIVES_TAXONOMY.md`: taxonomy dai ve cac primitive BYOVD khong tinh process-termination-only: physical R/W, virtual R/W, MSR, port I/O, PCI/MMIO, limited write, callback/security-state tamper.
+- `BYOVD_PRIMITIVE_BRIDGE_REASONING.md`: offensive research note ve cach noi primitive -> bridge -> objective, giai thich vi sao primitive chua du de thanh impact.
+- `BYOVD_PHYSICAL_MEMORY_PRIMITIVES_DEEP_DIVE.md`: physical memory R/W va mapping, VA->PA bridge, scanning, HVCI/WDAC impact.
+- `BYOVD_VIRTUAL_KERNEL_RW_DEEP_DIVE.md`: virtual kernel R/W, memcpy primitive, data-only object modification.
+- `BYOVD_MSR_PORT_MMIO_HARDWARE_PRIMITIVES.md`: MSR, port I/O, PCI config, MMIO, firmware/hardware primitives.
+- `BYOVD_LIMITED_WRITE_AND_PREVIOUSMODE.md`: limited write, arithmetic/bitwise primitive, `PreviousMode` reasoning.
+- `BYOVD_CALLBACK_SECURITY_STATE_TAMPER.md`: callback/security-state tamper, EDR visibility, PatchGuard/HVCI pressure.
+- `BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`: catalog case-study theo driver/vendor, khong tinh process-termination-only.
+- `BYOVD_CASE_RTCORE64.md`: MSI Afterburner `RTCore64.sys`, virtual kernel R/W va data-only object modification.
+- `BYOVD_CASE_DBUTIL_2_3.md`: Dell `dbutil_2_3.sys`, firmware/update helper va kernel copy/write primitive.
+- `BYOVD_CASE_GDRV.md`: GIGABYTE `gdrv.sys`, multi-primitive memory/MSR/port/PCI/MMIO.
+- `BYOVD_CASE_WINRING0_WINIO_MSIO.md`: WinRing0/WinIo/MsIo hardware access family.
+- `BYOVD_CASE_LNVMSRIO.md`: Lenovo `LnvMSRIO.sys`, physical memory + MSR, HVCI/Core Isolation nuance.
+- `BYOVD_CASE_PHYSICAL_MEMORY_FAMILY.md`: ThrottleStop/ENE/PowerStrip/IPCType physical memory family comparison.
+- Detection checklist: `..\..\docs\detection-and-mitigation\byovd-hunting-and-hardening-checklists.md`
+- Offensive exploitability map: `..\..\docs\kernel-research\offensive-driver-exploitability-map.md`
+- Public PoC annotation template: `..\..\docs\kernel-research\public-poc-reading-and-annotation-template.md`
+- Master map: `..\..\docs\research-index\master-driver-research-map.md`
+
+## External BYOVD indexes
+
+- DriverShield BYOVD Research Index: https://drivershield.io/byovd/
+  - Useful as a metadata index for public GitHub repositories tagged around BYOVD or vulnerable-driver research.
+  - Treat it as a discovery aid, then verify claims against upstream source, Microsoft blocklist state, signer metadata, and local lab behavior.
+- LOLDrivers: https://www.loldrivers.io/
+  - Useful for vulnerable, malicious, and suspicious driver inventory context.
 
 ## Folder writeup theo primitive
 
@@ -38,6 +64,13 @@ Drivers/writeups:
 - `ENEIO64_PHYSICAL_RW_DEEP_DIVE.md`
 - `PSTRIP64_POWERSTRIP_DEEP_DIVE.md`
 
+Technique-level note:
+
+- `BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
+- `BYOVD_PHYSICAL_MEMORY_PRIMITIVES_DEEP_DIVE.md`
+- `BYOVD_CASE_PHYSICAL_MEMORY_FAMILY.md`
+- `BYOVD_CASE_LNVMSRIO.md`
+
 ## Virtual kernel R/W
 
 Folder:
@@ -51,6 +84,13 @@ Drivers/writeups:
 - `RTCORE64_MSI_AFTERBURNER_DEEP_DIVE.md`
 - `DBUTIL_2_3_DELL_DEEP_DIVE.md`
 - `DSARK64_QIHOO_DEEP_DIVE.md`
+
+Technique-level note:
+
+- `BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
+- `BYOVD_VIRTUAL_KERNEL_RW_DEEP_DIVE.md`
+- `BYOVD_CASE_RTCORE64.md`
+- `BYOVD_CASE_DBUTIL_2_3.md`
 
 ## Process kill
 
@@ -81,6 +121,10 @@ Drivers/writeups:
 
 - `ASIO3_PREVIOUSMODE_DEEP_DIVE.md`
 
+Technique-level note:
+
+- `BYOVD_LIMITED_WRITE_AND_PREVIOUSMODE.md`
+
 ## MSR / multi-primitive
 
 Folder:
@@ -93,6 +137,28 @@ Drivers/writeups:
 
 - `WINRING0_AWESOME_MINER_MSR_DEEP_DIVE.md`
 - `GDRV_GIGABYTE_DEEP_DIVE.md`
+
+Technique-level notes:
+
+- `BYOVD_MSR_PORT_MMIO_HARDWARE_PRIMITIVES.md`
+- `BYOVD_CALLBACK_SECURITY_STATE_TAMPER.md`
+- `BYOVD_CASE_GDRV.md`
+- `BYOVD_CASE_WINRING0_WINIO_MSIO.md`
+
+## Non-terminate case studies
+
+Start here:
+
+- `BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`
+
+Driver/family notes:
+
+- `BYOVD_CASE_RTCORE64.md`
+- `BYOVD_CASE_DBUTIL_2_3.md`
+- `BYOVD_CASE_GDRV.md`
+- `BYOVD_CASE_WINRING0_WINIO_MSIO.md`
+- `BYOVD_CASE_LNVMSRIO.md`
+- `BYOVD_CASE_PHYSICAL_MEMORY_FAMILY.md`
 
 ## Workflow
 

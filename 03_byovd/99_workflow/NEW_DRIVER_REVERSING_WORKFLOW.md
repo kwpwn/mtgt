@@ -2,6 +2,12 @@
 
 This workflow is for analyzing a new driver and writing a deep-dive like the files in this folder.
 
+Related technique references:
+
+- `IOCTL_BUG_CLASS_PLAYBOOK.md`
+- `..\..\docs\kernel-research\driver-exploit-technique-atlas.md`
+- `..\..\docs\detection-and-mitigation\driver-evasion-pressure-map.md`
+
 ## 1. Identify the Driver
 
 Collect:
@@ -196,4 +202,3 @@ For documentation:
 - avoid exact packet construction for unpatched zero-days unless already public and appropriate for your lab.
 
 The goal is to understand and defend, not to create turnkey abuse.
-
