@@ -29,6 +29,7 @@ Top-level maps:
 | Runtime symbols and layout drift | `docs/kernel-research/runtime-pdb-symbol-resolution.md` | `docs/kernel-research/kernel-object-layout-drift.md` |
 | Kernel base discovery | `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md` | `04_connor-mcgarr-study/01_PAGING_AND_PTE_DEEP_DIVE.md` |
 | Crash dump triage | `docs/debugging/crash-dump-driver-triage.md` | `docs/debugging/windbg-kernel-research-workflow.md` |
+| Win32k USER/GDI research | `docs/kernel-research/win32k-research-notes.md` | `docs/kernel-research/public-poc-reading-and-annotation-template.md` |
 | HKOM / DKOM hide concepts | `docs/kernel-research/hkom-dkom-hide-research-notes.md` | `docs/windows-internals/object-manager-and-handle-tables.md` |
 | HKOM process hide cross-view | `docs/kernel-research/hkom-process-hide-crossview.md` | `docs/windows-internals/eprocess-token-object-model.md` |
 | HKOM driver/module hide cross-view | `docs/kernel-research/hkom-driver-module-hide-crossview.md` | `docs/detection-and-mitigation/driver-load-etw-and-code-integrity.md` |
@@ -78,6 +79,7 @@ External indexes:
 
 | Topic | Start here | Supporting docs |
 |---|---|---|
+| Win32k USER/GDI | `docs/kernel-research/win32k-research-notes.md` | `01_core-handbook/WINDOWS_KERNEL_EXPLOIT_RESEARCH.md` |
 | I/O rings | `docs/kernel-research/io-ring-research-notes.md` | `01_core-handbook/WINDOWS_KERNEL_EXPLOIT_RESEARCH.md` |
 | HKOM / DKOM hide | `docs/kernel-research/hkom-dkom-hide-research-notes.md` | `docs/windows-internals/eprocess-token-object-model.md` |
 | Technique writing format | `docs/research-index/technique-writing-standard.md` | `docs/research-index/driver-research-topic-index.md` |
@@ -109,9 +111,10 @@ Public PoC reading path:
 1. `docs/kernel-research/public-poc-reading-and-annotation-template.md`
 2. `docs/kernel-research/offensive-driver-exploitability-map.md`
 3. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
-4. `docs/kernel-research/kernel-object-layout-drift.md`
-5. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
-6. `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`
+4. `docs/kernel-research/win32k-research-notes.md`
+5. `docs/kernel-research/kernel-object-layout-drift.md`
+6. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
+7. `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`
 
 BYOVD analyst path:
 
@@ -129,5 +132,6 @@ Modern Windows LPE concept path:
 1. `04_connor-mcgarr-study/01_PAGING_AND_PTE_DEEP_DIVE.md`
 2. `02_mitigations-vbs-hvci-vtrp/RW_PRIMITIVES_VS_HVCI_DEEP_DIVE.md`
 3. `docs/kernel-research/io-ring-research-notes.md`
-4. `docs/kernel-research/kernel-object-layout-drift.md`
-5. `docs/windows-internals/eprocess-token-object-model.md`
+4. `docs/kernel-research/win32k-research-notes.md`
+5. `docs/kernel-research/kernel-object-layout-drift.md`
+6. `docs/windows-internals/eprocess-token-object-model.md`

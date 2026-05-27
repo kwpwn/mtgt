@@ -24,6 +24,7 @@ Day la diem bat dau cho nhanh BYOVD. Cac writeup chi tiet duoc tach theo primiti
 - Detection checklist: `..\..\docs\detection-and-mitigation\byovd-hunting-and-hardening-checklists.md`
 - Offensive exploitability map: `..\..\docs\kernel-research\offensive-driver-exploitability-map.md`
 - Public PoC annotation template: `..\..\docs\kernel-research\public-poc-reading-and-annotation-template.md`
+- Win32k USER/GDI bridge notes: `..\..\docs\kernel-research\win32k-research-notes.md`
 - Master map: `..\..\docs\research-index\master-driver-research-map.md`
 
 ## External BYOVD indexes

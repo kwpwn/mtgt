@@ -443,6 +443,10 @@ Important sources referenced:
 - VoidSec Zemana/Terminator: https://voidsec.com/reverse-engineering-terminator-aka-zemana-antimalware-antilogger-driver/
 - Microsoft recommended driver block rules: https://learn.microsoft.com/en-us/windows/security/application-security/application-control/windows-defender-application-control/design/microsoft-recommended-driver-block-rules
 - LOLDrivers database: https://www.loldrivers.io/
+- Microsoft Win32k syscall disable policy: https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-process_mitigation_system_call_disable_policy
+- Tarjei Mandt Win32k callback paper: https://media.blackhat.com/bh-us-11/Mandt/BH_US_11_Mandt_win32k_WP.pdf
+- Bluefrost GDI primitive evolution: https://labs.bluefrostsecurity.de/publications/2017/10/02/abusing-gdi-for-ring0-exploit-primitives-evolution/
+- Unit42 Win32k analysis part 1: https://unit42.paloaltonetworks.com/win32k-analysis-part-1/
 
 ## Local Source Checkout
 
@@ -468,5 +472,5 @@ Checked source included:
 - Add `zamguard64` exact IOCTL/code-path details if stronger primary source is found.
 - Add `OFFSETS_AND_SYMBOLS.md` with automated PDB/Vergilius offset workflow.
 - Add `DETECTION_HUNTING.md` with Sysmon/MDE/WDAC queries.
-- Add `CLFS_RESEARCH.md` and `WIN32K_RESEARCH.md` as separate non-BYOVD tracks.
+- Add `CLFS_RESEARCH.md` as a separate non-BYOVD track.
 - Split remaining Connor study notes into WWW target selection and KUSER_SHARED_DATA mapping-specific files.

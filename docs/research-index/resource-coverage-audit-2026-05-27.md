@@ -26,6 +26,7 @@ It also records what still needs work.
 | MSR/port/MMIO | Medium-deep | hardware primitives deep dive, gdrv/WinRing0 docs | Strong enough |
 | Limited write / `PreviousMode` | Medium-deep | limited write doc, PreviousMode notes | Strong enough |
 | Callback/security-state tamper | Medium | callback tamper doc, evasion map | Needs more callback-family detail |
+| Win32k USER/GDI research | Deep | `docs/kernel-research/win32k-research-notes.md` | Strong |
 | Driver exploit bug classes | Medium-deep | technique atlas, IOCTL playbook | Strong |
 | Offensive exploitability reasoning | Deep | exploitability map, PoC annotation template, primitive bridge reasoning | Strong |
 | Evasion pressure | Medium-deep | driver evasion pressure map, HKOM docs | Strong but defensive-only |
@@ -117,7 +118,18 @@ Added:
 
 - `docs/kernel-research/ida-ghidra-driver-re-patterns.md`
 
-### New Gap 6. Specific Public PoC Annotation Notes
+### Closed Gap 6. Win32k USER/GDI Research Track
+
+Added:
+
+- `docs/kernel-research/win32k-research-notes.md`
+
+This closes the missing standalone Win32k track. The new note separates
+`USER`, `GDI`, `win32u.dll` syscall entry, user-mode callbacks, desktop heap,
+`gSharedInfo`, historical bitmap/palette primitives, Win32k lockdown,
+session/desktop context, BYOVD bridge reasoning, and failure modes.
+
+### New Gap 7. Specific Public PoC Annotation Notes
 
 The repo now has a template for reading public PoCs, but needs more per-blog/per-driver annotation notes.
 
@@ -159,9 +171,8 @@ Before calling any future doc "done", check:
 The repo is now strong for BYOVD primitive research and driver exploit reasoning. The highest-value next upgrades are not more generic BYOVD prose; they are:
 
 ```text
-WDF/KMDF reversing
-device ACL/SDDL reachability
-concrete hunting checklists
+per-public-PoC annotation notes
 crash triage
-IDA/Ghidra pattern recognition
+WDF object-context examples
+source-available driver CodeQL examples
 ```

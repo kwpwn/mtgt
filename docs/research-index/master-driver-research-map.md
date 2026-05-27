@@ -147,6 +147,28 @@ hardware primitive
   -> avoid false universal assumptions
 ```
 
+### Track 5B: Win32k USER/GDI Research
+
+Read in this order:
+
+1. `docs/kernel-research/win32k-research-notes.md`
+2. `docs/kernel-research/public-poc-reading-and-annotation-template.md`
+3. `docs/kernel-research/offensive-driver-exploitability-map.md`
+4. `docs/kernel-research/kernel-object-layout-drift.md`
+5. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
+6. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
+
+Goal:
+
+```text
+Win32k writeup or crash
+  -> USER/GDI object family
+  -> callback/lifetime invariant
+  -> primitive
+  -> bridge
+  -> failure mode
+```
+
 ### Track 6: Evasion and Defensive Pressure
 
 Read in this order:
@@ -183,6 +205,7 @@ evasion pressure
 | Runtime symbols | `docs/kernel-research/runtime-pdb-symbol-resolution.md` |
 | Layout drift | `docs/kernel-research/kernel-object-layout-drift.md` |
 | Kernel base from LSTAR | `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md` |
+| Win32k USER/GDI | `docs/kernel-research/win32k-research-notes.md` |
 | Object Manager | `docs/windows-internals/object-manager-and-handle-tables.md` |
 | EPROCESS/TOKEN | `docs/windows-internals/eprocess-token-object-model.md` |
 | MDLs | `docs/kernel-research/mdl-misuse-and-direct-io.md` |

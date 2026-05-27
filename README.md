@@ -16,7 +16,7 @@ Core themes:
 - HKOM / DKOM hide concepts and cross-view detection
 - Driver exploit bug-class reasoning and defensive evasion-pressure mapping
 - Offensive driver exploitability reasoning and public PoC annotation without runnable trigger material
-- Modern research surfaces such as I/O rings, CLFS, ALPC, callbacks, MDLs, and `PreviousMode`
+- Modern research surfaces such as Win32k, I/O rings, CLFS, ALPC, callbacks, MDLs, and `PreviousMode`
 
 Safety boundary:
 
@@ -35,7 +35,7 @@ Safety boundary:
 | `05_global-research-map/` | External source map and reading plan |
 | `docs/windows-internals/` | Object Manager, handle tables, EPROCESS/TOKEN, paging, and related internals |
 | `docs/userland-to-kernel/` | IOCTLs, transfer methods, `METHOD_NEITHER`, and user/kernel boundary notes |
-| `docs/kernel-research/` | Focused research notes for callbacks, MDLs, races, I/O rings, CLFS/ALPC/RPC/COM, symbols, and layout drift |
+| `docs/kernel-research/` | Focused research notes for Win32k, callbacks, MDLs, races, I/O rings, CLFS/ALPC/RPC/COM, symbols, and layout drift |
 | `docs/detection-and-mitigation/` | BYOVD detection, ETW, driver-load telemetry, Code Integrity, minifilter, and EDR visibility |
 | `docs/mitigations/` | PatchGuard, KPTI/KVA shadow, DSE, and Code Integrity notes |
 | `docs/research-index/` | Repo audit, summaries, and topic indexes |
@@ -102,7 +102,8 @@ For modern mitigation-aware research:
 3. `docs/mitigations/patchguard-kpti-kva-shadow.md`
 4. `docs/kernel-research/io-ring-research-notes.md`
 5. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
-6. `docs/kernel-research/hkom-dkom-hide-research-notes.md`
+6. `docs/kernel-research/win32k-research-notes.md`
+7. `docs/kernel-research/hkom-dkom-hide-research-notes.md`
 
 For single-technique deep dives:
 
@@ -110,8 +111,9 @@ For single-technique deep dives:
 2. `docs/research-index/master-driver-research-map.md`
 3. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
 4. `docs/kernel-research/io-ring-research-notes.md`
-5. `docs/kernel-research/hkom-process-hide-crossview.md`
-6. `docs/kernel-research/hkom-driver-module-hide-crossview.md`
+5. `docs/kernel-research/win32k-research-notes.md`
+6. `docs/kernel-research/hkom-process-hide-crossview.md`
+7. `docs/kernel-research/hkom-driver-module-hide-crossview.md`
 
 For detection:
 
