@@ -21,12 +21,15 @@ It also records what still needs work.
 |---|---|---|---|
 | BYOVD primitive taxonomy | Deep | `BYOVD_NON_TERMINATE_PRIMITIVES_TAXONOMY.md`, primitive deep dives | Strong |
 | BYOVD case studies | Medium-deep | `BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`, `BYOVD_CASE_*.md` | Strong but expandable |
+| LnvMSRIO technique chain | Deep | `BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md` | Strong |
 | Physical memory primitives | Deep | physical BYOVD deep dive, page-table docs | Strong |
 | Virtual kernel R/W | Deep | virtual R/W deep dive, RTCore/DBUtil/gdrv docs | Strong |
 | MSR/port/MMIO | Medium-deep | hardware primitives deep dive, gdrv/WinRing0 docs | Strong enough |
 | Limited write / `PreviousMode` | Medium-deep | limited write doc, PreviousMode notes | Strong enough |
 | Callback/security-state tamper | Medium | callback tamper doc, evasion map | Needs more callback-family detail |
 | Win32k USER/GDI research | Deep | `docs/kernel-research/win32k-research-notes.md` | Strong |
+| Win32k case studies | Deep | `docs/kernel-research/win32k-case-study-atlas.md` | Strong |
+| Pseudo-PoC mental models | Deep | `docs/kernel-research/primitive-pseudocode-sketchbook.md` | Strong |
 | Driver exploit bug classes | Medium-deep | technique atlas, IOCTL playbook | Strong |
 | Offensive exploitability reasoning | Deep | exploitability map, PoC annotation template, primitive bridge reasoning | Strong |
 | Evasion pressure | Medium-deep | driver evasion pressure map, HKOM docs | Strong but defensive-only |
@@ -123,13 +126,38 @@ Added:
 Added:
 
 - `docs/kernel-research/win32k-research-notes.md`
+- `docs/kernel-research/win32k-case-study-atlas.md`
 
 This closes the missing standalone Win32k track. The new note separates
 `USER`, `GDI`, `win32u.dll` syscall entry, user-mode callbacks, desktop heap,
 `gSharedInfo`, historical bitmap/palette primitives, Win32k lockdown,
 session/desktop context, BYOVD bridge reasoning, and failure modes.
 
-### New Gap 7. Specific Public PoC Annotation Notes
+### Closed Gap 7. LnvMSRIO Technique-Chain Atlas
+
+Added:
+
+- `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
+
+This normalizes the external Lenovo LPE draft set into primitive, invariant,
+bridge, failure mode, and study-question format without importing runnable
+IOCTL layouts, offsets, byte patch values, or bypass recipes.
+
+### Closed Gap 8. Pseudo-PoC Mental Models
+
+Added:
+
+- `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+
+This adds code-shaped toy models for kernel base discovery, VA-to-PA bridging,
+token data-only modification, PPL state, `PreviousMode`, Code Integrity state,
+DKOM, I/O ring metadata, callback chains, minifilter lists, Win32k callback
+reentrancy, GDI metadata mismatch, limited writes, object metadata adapters,
+and restore discipline. The examples are intentionally non-runnable and omit
+real IOCTLs, offsets, patch bytes, syscall numbers, and device-specific trigger
+material.
+
+### New Gap 9. Specific Public PoC Annotation Notes
 
 The repo now has a template for reading public PoCs, but needs more per-blog/per-driver annotation notes.
 

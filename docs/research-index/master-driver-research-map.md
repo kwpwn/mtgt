@@ -53,8 +53,10 @@ Read in this order:
 3. `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_PRIMITIVES_TAXONOMY.md`
 4. `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`
 5. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
-6. `03_byovd/00_index-and-matrix/BYOVD_BLOCKLIST_AND_REACHABILITY.md`
-7. `docs/detection-and-mitigation/byovd-hunting-and-hardening-checklists.md`
+6. `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
+7. `03_byovd/00_index-and-matrix/BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md`
+8. `03_byovd/00_index-and-matrix/BYOVD_BLOCKLIST_AND_REACHABILITY.md`
+9. `docs/detection-and-mitigation/byovd-hunting-and-hardening-checklists.md`
 
 Goal:
 
@@ -74,9 +76,11 @@ Read in this order:
 
 1. `docs/kernel-research/public-poc-reading-and-annotation-template.md`
 2. `docs/kernel-research/offensive-driver-exploitability-map.md`
-3. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
-4. `docs/kernel-research/kernel-object-layout-drift.md`
-5. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
+3. `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+4. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
+5. `docs/kernel-research/win32k-case-study-atlas.md`
+6. `docs/kernel-research/kernel-object-layout-drift.md`
+7. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
 
 Goal:
 
@@ -84,6 +88,7 @@ Goal:
 public PoC
   -> preconditions
   -> primitive
+  -> pseudo-PoC mental model
   -> bridge
   -> objective
   -> failure modes
@@ -137,7 +142,8 @@ Read in this order:
 2. `03_byovd/00_index-and-matrix/BYOVD_CASE_GDRV.md`
 3. `03_byovd/00_index-and-matrix/BYOVD_CASE_WINRING0_WINIO_MSIO.md`
 4. `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO.md`
-5. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
+5. `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
+6. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
 
 Goal:
 
@@ -152,11 +158,13 @@ hardware primitive
 Read in this order:
 
 1. `docs/kernel-research/win32k-research-notes.md`
-2. `docs/kernel-research/public-poc-reading-and-annotation-template.md`
-3. `docs/kernel-research/offensive-driver-exploitability-map.md`
-4. `docs/kernel-research/kernel-object-layout-drift.md`
-5. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
-6. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
+2. `docs/kernel-research/win32k-case-study-atlas.md`
+3. `docs/kernel-research/public-poc-reading-and-annotation-template.md`
+4. `docs/kernel-research/offensive-driver-exploitability-map.md`
+5. `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+6. `docs/kernel-research/kernel-object-layout-drift.md`
+7. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
+8. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
 
 Goal:
 
@@ -169,16 +177,42 @@ Win32k writeup or crash
   -> failure mode
 ```
 
+### Track 5C: Windows Audio / audiodg LPE
+
+Read in this order:
+
+1. `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md`
+2. `docs/windows-internals/eprocess-token-object-model.md`
+3. `docs/windows-internals/object-manager-and-handle-tables.md`
+4. `docs/detection-and-mitigation/driver-evasion-pressure-map.md`
+
+Goal:
+
+```text
+Windows Audio writeup
+  -> service account context
+  -> DLL search-order invariant
+  -> restart primitive
+  -> token restriction
+  -> privilege restoration bridge
+```
+
 ### Track 6: Evasion and Defensive Pressure
 
 Read in this order:
 
 1. `docs/detection-and-mitigation/driver-evasion-pressure-map.md`
-2. `03_byovd/00_index-and-matrix/BYOVD_CALLBACK_SECURITY_STATE_TAMPER.md`
-3. `docs/kernel-research/hkom-dkom-hide-research-notes.md`
-4. `docs/kernel-research/hkom-driver-module-hide-crossview.md`
-5. `docs/detection-and-mitigation/minifilter-and-edr-visibility.md`
-6. `docs/detection-and-mitigation/etw-threat-intelligence-notes.md`
+2. `docs/detection-and-mitigation/av-self-protection-research-index.md`
+3. `docs/detection-and-mitigation/av-case-microsoft-defender-self-protection.md`
+4. `docs/detection-and-mitigation/av-case-huorong-self-protection.md`
+5. `docs/detection-and-mitigation/av-case-qihoo-360-self-protection.md`
+6. `docs/detection-and-mitigation/av-edr-user-mode-tamper-spoofing.md`
+7. `03_byovd/00_index-and-matrix/BYOVD_CALLBACK_SECURITY_STATE_TAMPER.md`
+8. `03_byovd/00_index-and-matrix/BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md`
+9. `docs/kernel-research/hkom-dkom-hide-research-notes.md`
+10. `docs/kernel-research/hkom-driver-module-hide-crossview.md`
+11. `docs/detection-and-mitigation/minifilter-and-edr-visibility.md`
+12. `docs/detection-and-mitigation/etw-threat-intelligence-notes.md`
 
 Goal:
 
@@ -189,6 +223,27 @@ evasion pressure
   -> cross-view detection
 ```
 
+### Track 7: Source Mining From DriverShield
+
+Read in this order:
+
+1. `05_global-research-map/DRIVERSHIELD_SOURCE_BUILD_PLAN.md`
+2. `05_global-research-map/DRIVERSHIELD_TRIAGE_QUEUE.md`
+3. `05_global-research-map/GLOBAL_WINDOWS_KERNEL_HVCI_BYOVD_SOURCE_MAP.md`
+4. `docs/research-index/s12deff-medium-source-map.md`
+5. `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`
+6. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
+
+Goal:
+
+```text
+DriverShield metadata
+  -> triage queue
+  -> cross-source verification
+  -> primitive classification
+  -> local case-study
+```
+
 ## Core Concept Anchors
 
 | Concept | Best doc |
@@ -197,7 +252,9 @@ evasion pressure
 | Driver exploit primitives | `docs/kernel-research/driver-exploit-technique-atlas.md` |
 | Offensive exploitability reasoning | `docs/kernel-research/offensive-driver-exploitability-map.md` |
 | Public PoC annotation | `docs/kernel-research/public-poc-reading-and-annotation-template.md` |
+| Primitive pseudo-PoC mental models | `docs/kernel-research/primitive-pseudocode-sketchbook.md` |
 | BYOVD primitive bridges | `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md` |
+| Process-create callback tamper | `03_byovd/00_index-and-matrix/BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md` |
 | WDF/KMDF reversing | `docs/kernel-research/wdf-kmdf-reverse-engineering-notes.md` |
 | Device ACL and SDDL | `docs/userland-to-kernel/device-acl-sddl-ioctl-access.md` |
 | IDA/Ghidra patterns | `docs/kernel-research/ida-ghidra-driver-re-patterns.md` |
@@ -206,6 +263,17 @@ evasion pressure
 | Layout drift | `docs/kernel-research/kernel-object-layout-drift.md` |
 | Kernel base from LSTAR | `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md` |
 | Win32k USER/GDI | `docs/kernel-research/win32k-research-notes.md` |
+| Win32k case studies | `docs/kernel-research/win32k-case-study-atlas.md` |
+| Windows Audio / audiodg LPE | `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md` |
+| LnvMSRIO technique-chain atlas | `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md` |
+| AV/EDR user-mode tamper | `docs/detection-and-mitigation/av-edr-user-mode-tamper-spoofing.md` |
+| AV self-protection product cases | `docs/detection-and-mitigation/av-self-protection-research-index.md` |
+| Defender self-protection | `docs/detection-and-mitigation/av-case-microsoft-defender-self-protection.md` |
+| Huorong self-protection | `docs/detection-and-mitigation/av-case-huorong-self-protection.md` |
+| Qihoo / 360 self-protection | `docs/detection-and-mitigation/av-case-qihoo-360-self-protection.md` |
+| DriverShield source mining | `05_global-research-map/DRIVERSHIELD_SOURCE_BUILD_PLAN.md` |
+| DriverShield triage queue | `05_global-research-map/DRIVERSHIELD_TRIAGE_QUEUE.md` |
+| S12Deff Medium source map | `docs/research-index/s12deff-medium-source-map.md` |
 | Object Manager | `docs/windows-internals/object-manager-and-handle-tables.md` |
 | EPROCESS/TOKEN | `docs/windows-internals/eprocess-token-object-model.md` |
 | MDLs | `docs/kernel-research/mdl-misuse-and-direct-io.md` |

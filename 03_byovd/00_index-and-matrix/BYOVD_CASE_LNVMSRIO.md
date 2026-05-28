@@ -13,6 +13,10 @@ signed OEM driver
   -> Ring-0 capability if mitigation/config allows
 ```
 
+Extended local atlas:
+
+- `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
+
 ## Sources
 
 - Quarkslab write-up:

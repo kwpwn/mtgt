@@ -8,6 +8,7 @@ Top-level maps:
 
 - `docs/research-index/master-driver-research-map.md`
 - `docs/research-index/resource-coverage-audit-2026-05-27.md`
+- `05_global-research-map/DRIVERSHIELD_SOURCE_BUILD_PLAN.md`
 
 ## Driver Internals
 
@@ -23,6 +24,7 @@ Top-level maps:
 | Driver exploit technique atlas | `docs/kernel-research/driver-exploit-technique-atlas.md` | `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_PRIMITIVES_TAXONOMY.md` |
 | Offensive exploitability reasoning | `docs/kernel-research/offensive-driver-exploitability-map.md` | `docs/kernel-research/public-poc-reading-and-annotation-template.md` |
 | Public PoC annotation | `docs/kernel-research/public-poc-reading-and-annotation-template.md` | `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md` |
+| Primitive pseudo-PoC sketches | `docs/kernel-research/primitive-pseudocode-sketchbook.md` | `docs/kernel-research/offensive-driver-exploitability-map.md` |
 | User/kernel boundary | `docs/userland-to-kernel/userland-to-kernel-boundary.md` | `docs/kernel-research/previousmode-research-notes.md` |
 | Direct I/O and MDLs | `docs/kernel-research/mdl-misuse-and-direct-io.md` | `docs/kernel-research/race-and-toctou-in-drivers.md` |
 | Object Manager and handles | `docs/windows-internals/object-manager-and-handle-tables.md` | `docs/windows-internals/eprocess-token-object-model.md` |
@@ -41,12 +43,22 @@ Top-level maps:
 | BYOVD section overview | `03_byovd/00_index-and-matrix/README.md` | `03_byovd/00_index-and-matrix/BYOVD_RECENT_WRITEUPS.md` |
 | Primitive matrix | `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_MATRIX.md` | `02_mitigations-vbs-hvci-vtrp/RW_PRIMITIVES_VS_HVCI_DEEP_DIVE.md` |
 | Primitive bridge reasoning | `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md` | `docs/kernel-research/offensive-driver-exploitability-map.md` |
+| LnvMSRIO technique chain | `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md` | `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO.md` |
+| Process-create callback tamper | `03_byovd/00_index-and-matrix/BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md` | `03_byovd/00_index-and-matrix/BYOVD_CALLBACK_SECURITY_STATE_TAMPER.md` |
 | Loadability and reachability | `03_byovd/00_index-and-matrix/BYOVD_BLOCKLIST_AND_REACHABILITY.md` | `docs/detection-and-mitigation/byovd-detection.md` |
 | Physical memory R/W | `03_byovd/01_physical-memory-rw/` | `04_connor-mcgarr-study/01_PAGING_AND_PTE_DEEP_DIVE.md` |
 | Virtual kernel R/W | `03_byovd/02_virtual-kernel-rw/` | `docs/windows-internals/page-table-walking.md` |
 | Process kill | `03_byovd/03_process-kill/` | `docs/detection-and-mitigation/byovd-detection.md` |
 | Limited primitives | `03_byovd/04_limited-primitives/` | `docs/kernel-research/previousmode-research-notes.md` |
 | MSR and multi-primitive drivers | `03_byovd/05_msr-and-multi-primitive/` | `02_mitigations-vbs-hvci-vtrp/RW_PRIMITIVES_VS_HVCI_DEEP_DIVE.md` |
+
+## Source Mining
+
+| Topic | Start here | Supporting docs |
+|---|---|---|
+| DriverShield source build plan | `05_global-research-map/DRIVERSHIELD_SOURCE_BUILD_PLAN.md` | `05_global-research-map/DRIVERSHIELD_TRIAGE_QUEUE.md` |
+| Global source map | `05_global-research-map/GLOBAL_WINDOWS_KERNEL_HVCI_BYOVD_SOURCE_MAP.md` | `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md` |
+| S12Deff Medium source map | `docs/research-index/s12deff-medium-source-map.md` | `03_byovd/00_index-and-matrix/BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md` |
 
 External indexes:
 
@@ -74,17 +86,24 @@ External indexes:
 | ETW Threat Intelligence | `docs/detection-and-mitigation/etw-threat-intelligence-notes.md` | `docs/detection-and-mitigation/minifilter-and-edr-visibility.md` |
 | Minifilter and EDR visibility | `docs/detection-and-mitigation/minifilter-and-edr-visibility.md` | `docs/kernel-research/clfs-alpc-rpc-com-research-tracks.md` |
 | Driver evasion pressure | `docs/detection-and-mitigation/driver-evasion-pressure-map.md` | `docs/kernel-research/hkom-dkom-hide-research-notes.md` |
+| AV/EDR user-mode tamper and spoofing | `docs/detection-and-mitigation/av-edr-user-mode-tamper-spoofing.md` | `docs/detection-and-mitigation/driver-evasion-pressure-map.md` |
+| AV self-protection product case studies | `docs/detection-and-mitigation/av-self-protection-research-index.md` | `docs/detection-and-mitigation/av-case-microsoft-defender-self-protection.md` |
+| Huorong self-protection | `docs/detection-and-mitigation/av-case-huorong-self-protection.md` | `docs/detection-and-mitigation/av-self-protection-research-index.md` |
+| Qihoo / 360 self-protection | `docs/detection-and-mitigation/av-case-qihoo-360-self-protection.md` | `docs/detection-and-mitigation/av-self-protection-research-index.md` |
 
 ## Modern Research Surfaces
 
 | Topic | Start here | Supporting docs |
 |---|---|---|
 | Win32k USER/GDI | `docs/kernel-research/win32k-research-notes.md` | `01_core-handbook/WINDOWS_KERNEL_EXPLOIT_RESEARCH.md` |
+| Win32k case studies | `docs/kernel-research/win32k-case-study-atlas.md` | `docs/kernel-research/win32k-research-notes.md` |
+| Primitive pseudo-PoC sketches | `docs/kernel-research/primitive-pseudocode-sketchbook.md` | `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md` |
 | I/O rings | `docs/kernel-research/io-ring-research-notes.md` | `01_core-handbook/WINDOWS_KERNEL_EXPLOIT_RESEARCH.md` |
 | HKOM / DKOM hide | `docs/kernel-research/hkom-dkom-hide-research-notes.md` | `docs/windows-internals/eprocess-token-object-model.md` |
 | Technique writing format | `docs/research-index/technique-writing-standard.md` | `docs/research-index/driver-research-topic-index.md` |
 | Callback surfaces | `docs/kernel-research/callback-surfaces.md` | `docs/windows-internals/object-manager-and-handle-tables.md` |
 | CLFS / ALPC / RPC / COM | `docs/kernel-research/clfs-alpc-rpc-com-research-tracks.md` | `docs/detection-and-mitigation/minifilter-and-edr-visibility.md` |
+| Windows Audio / audiodg LPE | `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md` | `docs/windows-internals/eprocess-token-object-model.md` |
 | Kernel pool | `docs/windows-heap/kernel-pool-internals.md` | `04_connor-mcgarr-study/04_POOL_EXPLOITATION_KLFH_SEGMENT_HEAP.md` |
 | User-mode versus kernel-mode heap | `docs/windows-heap/userland-vs-kernelland-heap.md` | `docs/windows-heap/usermode-heap-internals.md` |
 
@@ -111,10 +130,12 @@ Public PoC reading path:
 1. `docs/kernel-research/public-poc-reading-and-annotation-template.md`
 2. `docs/kernel-research/offensive-driver-exploitability-map.md`
 3. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
-4. `docs/kernel-research/win32k-research-notes.md`
-5. `docs/kernel-research/kernel-object-layout-drift.md`
-6. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
-7. `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`
+4. `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+5. `docs/kernel-research/win32k-research-notes.md`
+6. `docs/kernel-research/win32k-case-study-atlas.md`
+7. `docs/kernel-research/kernel-object-layout-drift.md`
+8. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
+9. `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`
 
 BYOVD analyst path:
 
@@ -122,16 +143,19 @@ BYOVD analyst path:
 2. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_MATRIX.md`
 3. `03_byovd/00_index-and-matrix/BYOVD_BLOCKLIST_AND_REACHABILITY.md`
 4. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
-5. `docs/detection-and-mitigation/byovd-detection.md`
-6. `docs/detection-and-mitigation/byovd-hunting-and-hardening-checklists.md`
-7. `docs/detection-and-mitigation/mde-kql-byovd-hunting-patterns.md`
-8. `docs/mitigations/dse-code-integrity-research-notes.md`
+5. `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
+6. `docs/detection-and-mitigation/byovd-detection.md`
+7. `docs/detection-and-mitigation/byovd-hunting-and-hardening-checklists.md`
+8. `docs/detection-and-mitigation/mde-kql-byovd-hunting-patterns.md`
+9. `docs/mitigations/dse-code-integrity-research-notes.md`
 
 Modern Windows LPE concept path:
 
 1. `04_connor-mcgarr-study/01_PAGING_AND_PTE_DEEP_DIVE.md`
 2. `02_mitigations-vbs-hvci-vtrp/RW_PRIMITIVES_VS_HVCI_DEEP_DIVE.md`
 3. `docs/kernel-research/io-ring-research-notes.md`
-4. `docs/kernel-research/win32k-research-notes.md`
-5. `docs/kernel-research/kernel-object-layout-drift.md`
-6. `docs/windows-internals/eprocess-token-object-model.md`
+4. `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+5. `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md`
+6. `docs/kernel-research/win32k-research-notes.md`
+7. `docs/kernel-research/kernel-object-layout-drift.md`
+8. `docs/windows-internals/eprocess-token-object-model.md`

@@ -9,22 +9,28 @@ Day la diem bat dau cho nhanh BYOVD. Cac writeup chi tiet duoc tach theo primiti
 - `BYOVD_BLOCKLIST_AND_REACHABILITY.md`: model danh gia driver theo loadability, reachability, usefulness va mitigation pressure.
 - `BYOVD_NON_TERMINATE_PRIMITIVES_TAXONOMY.md`: taxonomy dai ve cac primitive BYOVD khong tinh process-termination-only: physical R/W, virtual R/W, MSR, port I/O, PCI/MMIO, limited write, callback/security-state tamper.
 - `BYOVD_PRIMITIVE_BRIDGE_REASONING.md`: offensive research note ve cach noi primitive -> bridge -> objective, giai thich vi sao primitive chua du de thanh impact.
+- `BYOVD_DRIVERSHIELD_BLOG_TECHNIQUE_ATLAS.md`: atlas ky thuat tu DriverShield BYOVD index, loc tool-only va gom cac pattern trong blog/writeup thanh primitive/invariant/bridge/failure mode.
 - `BYOVD_PHYSICAL_MEMORY_PRIMITIVES_DEEP_DIVE.md`: physical memory R/W va mapping, VA->PA bridge, scanning, HVCI/WDAC impact.
 - `BYOVD_VIRTUAL_KERNEL_RW_DEEP_DIVE.md`: virtual kernel R/W, memcpy primitive, data-only object modification.
 - `BYOVD_MSR_PORT_MMIO_HARDWARE_PRIMITIVES.md`: MSR, port I/O, PCI config, MMIO, firmware/hardware primitives.
 - `BYOVD_LIMITED_WRITE_AND_PREVIOUSMODE.md`: limited write, arithmetic/bitwise primitive, `PreviousMode` reasoning.
 - `BYOVD_CALLBACK_SECURITY_STATE_TAMPER.md`: callback/security-state tamper, EDR visibility, PatchGuard/HVCI pressure.
+- `BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md`: S12Deff process-creation callback tamper case-study, classified under callback/security-state tamper.
 - `BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md`: catalog case-study theo driver/vendor, khong tinh process-termination-only.
 - `BYOVD_CASE_RTCORE64.md`: MSI Afterburner `RTCore64.sys`, virtual kernel R/W va data-only object modification.
 - `BYOVD_CASE_DBUTIL_2_3.md`: Dell `dbutil_2_3.sys`, firmware/update helper va kernel copy/write primitive.
 - `BYOVD_CASE_GDRV.md`: GIGABYTE `gdrv.sys`, multi-primitive memory/MSR/port/PCI/MMIO.
 - `BYOVD_CASE_WINRING0_WINIO_MSIO.md`: WinRing0/WinIo/MsIo hardware access family.
 - `BYOVD_CASE_LNVMSRIO.md`: Lenovo `LnvMSRIO.sys`, physical memory + MSR, HVCI/Core Isolation nuance.
+- `BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`: normalized review of the external Lenovo LPE draft set, grouped by primitive, invariant, bridge and failure mode.
 - `BYOVD_CASE_PHYSICAL_MEMORY_FAMILY.md`: ThrottleStop/ENE/PowerStrip/IPCType physical memory family comparison.
 - Detection checklist: `..\..\docs\detection-and-mitigation\byovd-hunting-and-hardening-checklists.md`
 - Offensive exploitability map: `..\..\docs\kernel-research\offensive-driver-exploitability-map.md`
 - Public PoC annotation template: `..\..\docs\kernel-research\public-poc-reading-and-annotation-template.md`
+- Primitive pseudo-PoC sketchbook: `..\..\docs\kernel-research\primitive-pseudocode-sketchbook.md`
+- DriverShield BYOVD blog technique atlas: `BYOVD_DRIVERSHIELD_BLOG_TECHNIQUE_ATLAS.md`
 - Win32k USER/GDI bridge notes: `..\..\docs\kernel-research\win32k-research-notes.md`
+- Win32k case-study atlas: `..\..\docs\kernel-research\win32k-case-study-atlas.md`
 - Master map: `..\..\docs\research-index\master-driver-research-map.md`
 
 ## External BYOVD indexes
@@ -71,6 +77,7 @@ Technique-level note:
 - `BYOVD_PHYSICAL_MEMORY_PRIMITIVES_DEEP_DIVE.md`
 - `BYOVD_CASE_PHYSICAL_MEMORY_FAMILY.md`
 - `BYOVD_CASE_LNVMSRIO.md`
+- `BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
 
 ## Virtual kernel R/W
 
@@ -143,8 +150,10 @@ Technique-level notes:
 
 - `BYOVD_MSR_PORT_MMIO_HARDWARE_PRIMITIVES.md`
 - `BYOVD_CALLBACK_SECURITY_STATE_TAMPER.md`
+- `BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md`
 - `BYOVD_CASE_GDRV.md`
 - `BYOVD_CASE_WINRING0_WINIO_MSIO.md`
+- `BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
 
 ## Non-terminate case studies
 
@@ -159,7 +168,9 @@ Driver/family notes:
 - `BYOVD_CASE_GDRV.md`
 - `BYOVD_CASE_WINRING0_WINIO_MSIO.md`
 - `BYOVD_CASE_LNVMSRIO.md`
+- `BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
 - `BYOVD_CASE_PHYSICAL_MEMORY_FAMILY.md`
+- `BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md`
 
 ## Workflow
 

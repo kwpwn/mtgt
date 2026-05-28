@@ -4,7 +4,7 @@ Updated: 2026-05-27
 
 ## Purpose
 
-This document maps driver-based evasion pressure from a defensive research perspective. It explains what kinds of kernel driver primitives can weaken visibility or protection, why those approaches are fragile, and what defenders can correlate.
+This document maps driver-based evasion pressure from a defensive research perspective. It also links adjacent AV/EDR user-mode tamper cases when they create the same kind of visibility or health-state contradiction. It explains what kinds of primitives can weaken visibility or protection, why those approaches are fragile, and what defenders can correlate.
 
 It does not provide bypass payloads, rootkit code, trigger buffers, or operational evasion steps.
 
@@ -15,6 +15,15 @@ driver primitive
   -> security invariant weakened
   -> one telemetry/protection view changes
   -> other views still expose contradiction
+```
+
+Adjacent user-mode product tamper follows the same reasoning shape without a
+kernel primitive:
+
+```text
+product state or update surface
+  -> health/reporting invariant weakened
+  -> local view diverges from service, file, or backend reality
 ```
 
 ## Evasion vs Detection Language
@@ -42,6 +51,7 @@ identify the invariant, the side effects, and the detection joins
 | handle access tamper | object state or callback tamper | access monitoring weakens | handle events vs object callbacks |
 | driver/module hiding | DKOM/HKOM | inventory view changes | module list vs driver/device objects |
 | ETW/telemetry gap | callback/provider/session state pressure | timeline has holes | ETW health vs endpoint behavior |
+| AV/EDR state spoofing | registry/config/update-file pressure | product status diverges from real sensor/update health | local state vs service, file, backend, and event consistency |
 | blocklist gap abuse | loadable signed driver | policy permits known-risk component | driver inventory vs LOLDrivers/WDAC |
 | hardware/firmware path | MSR/MMIO/firmware primitive | below-OS state changes | firmware/device telemetry vs driver load |
 
@@ -281,7 +291,45 @@ Related docs:
 - `docs/detection-and-mitigation/etw-threat-intelligence-notes.md`
 - `docs/detection-and-mitigation/driver-load-etw-and-code-integrity.md`
 
-## 8. Blocklist Gap and Signed-Driver Masquerade
+## 8. AV/EDR User-Mode State Spoofing
+
+### What It Is
+
+Some AV/EDR tamper research does not use a vulnerable driver at all. It pressures
+user-mode product state, registry-backed status, update metadata, service
+lifecycle windows, or product files.
+
+Pressure pattern:
+
+```text
+local product state says healthy
+  + update/signature/sensor reality is impaired
+  -> console or UI may briefly disagree with endpoint reality
+```
+
+### Why It Is Different From BYOVD
+
+There is no kernel primitive. The technique depends on product-specific trust
+decisions:
+
+- which registry/config fields are treated as authoritative,
+- which file locks or update races are honored,
+- whether the backend trusts local state,
+- whether self-protection repairs or blocks the change.
+
+### Example: SNEK Equinox
+
+SNEK Equinox is classified as user-mode Defender state spoofing and signature
+file-lock interference, not as BYOVD. It writes Defender health/version-looking
+registry values and keeps file locks on selected definition/update files so the
+reported state can diverge from actual signature/update behavior.
+
+Related doc:
+
+- `docs/detection-and-mitigation/av-self-protection-research-index.md`
+- `docs/detection-and-mitigation/av-edr-user-mode-tamper-spoofing.md`
+
+## 9. Blocklist Gap and Signed-Driver Masquerade
 
 ### What It Is
 
@@ -309,7 +357,7 @@ Do not rely only on filename. Join:
 - LOLDrivers/Microsoft blocklist status,
 - fleet prevalence.
 
-## 9. Hardware and Firmware Evasion Pressure
+## 10. Hardware and Firmware Evasion Pressure
 
 ### What It Is
 

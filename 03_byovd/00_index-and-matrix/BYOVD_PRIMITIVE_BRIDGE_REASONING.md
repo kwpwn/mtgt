@@ -20,6 +20,10 @@ what bridge turns that primitive into the objective?
 
 No runnable exploit chains or trigger buffers are included.
 
+For code-shaped toy models of the same ideas, read:
+
+- `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+
 ## Primitive Versus Bridge
 
 Primitive:
@@ -435,4 +439,3 @@ Do not force every primitive into the same objective. The best bridge is the one
 - `BYOVD_LIMITED_WRITE_AND_PREVIOUSMODE.md`
 - `docs/kernel-research/offensive-driver-exploitability-map.md`
 - `docs/kernel-research/public-poc-reading-and-annotation-template.md`
-

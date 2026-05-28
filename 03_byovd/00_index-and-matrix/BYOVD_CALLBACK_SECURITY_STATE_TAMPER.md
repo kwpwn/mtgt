@@ -11,6 +11,7 @@ Companion case studies:
 - `BYOVD_CASE_RTCORE64.md`
 - `BYOVD_CASE_GDRV.md`
 - `BYOVD_CASE_DBUTIL_2_3.md`
+- `BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md`
 
 ```text
 vulnerable driver gives kernel write
@@ -67,6 +68,45 @@ Examples:
 - security product private state.
 
 If a vulnerable write corrupts or disables that state, visibility or enforcement can change.
+
+## Process-Creation Callback Tamper Case
+
+S12Deff's "Overwriting Process Creation Kernel Callbacks" article fits here:
+
+```text
+BYOVD kernel read/write
+  -> process-notification callback registration state
+  -> process-birth observer mismatch
+```
+
+The important classification is callback/security-state tamper, not standalone
+LPE. The technique assumes a kernel write primitive already exists. The write is
+used to change whether the process creation dispatch path reaches the observer
+that a security driver expects.
+
+Why this is a distinct case:
+
+- process creation is an early lineage event,
+- many EDR correlation graphs start at process birth,
+- process callbacks are OS-mediated, not product-private hooks,
+- the target state is build-sensitive private kernel state,
+- success produces partial telemetry desynchronization, not universal invisibility.
+
+Local deep dive:
+
+- `BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md`
+
+Compare it with nearby families:
+
+| Family | Surface | What weakens |
+|---|---|---|
+| process-create callback tamper | process notification registration state | process-birth telemetry |
+| thread callback tamper | thread notification registration state | remote-thread and thread lifecycle telemetry |
+| image callback tamper | image-load notification state | module/image load telemetry |
+| object callback tamper | Object Manager callback lists | handle access filtering and observation |
+| minifilter unlinking | Filter Manager callback/list state | file I/O telemetry |
+| WFP callout tamper | WFP callout/classify state | network telemetry |
+| ETW TI state tamper | kernel ETW provider state | kernel-native behavior events |
 
 ## What It Can Do
 

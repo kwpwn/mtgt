@@ -1431,6 +1431,8 @@ Primary and high-value references:
 Local repository links:
 
 - `01_core-handbook/WINDOWS_KERNEL_EXPLOIT_RESEARCH.md`
+- `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+- `docs/kernel-research/win32k-case-study-atlas.md`
 - `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
 - `docs/kernel-research/io-ring-research-notes.md`
 - `docs/kernel-research/hkom-dkom-hide-research-notes.md`

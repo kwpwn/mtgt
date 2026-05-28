@@ -11,6 +11,8 @@ Core themes:
 - BYOVD primitive taxonomy and vulnerable-driver reachability
 - HVCI, VBS, KDP, PatchGuard, KPTI, WDAC, and driver blocklist pressure
 - ETW, Sysmon, Code Integrity, minifilter, and EDR visibility
+- AV/EDR user-mode tamper, state spoofing, and product-health consistency analysis
+- Windows Audio / `audiodg.exe` user-mode LPE composition and service-token research
 - Build-specific offset drift, PDB symbols, and WinDbg workflows
 - Kernel base discovery from syscall-entry anchors and PE header scanning
 - HKOM / DKOM hide concepts and cross-view detection
@@ -72,11 +74,12 @@ For offensive research reading and public PoC annotation:
 
 1. `docs/kernel-research/offensive-driver-exploitability-map.md`
 2. `docs/kernel-research/public-poc-reading-and-annotation-template.md`
-3. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
-4. `docs/kernel-research/driver-exploit-technique-atlas.md`
-5. `03_byovd/99_workflow/IOCTL_BUG_CLASS_PLAYBOOK.md`
-6. `docs/kernel-research/kernel-object-layout-drift.md`
-7. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
+3. `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+4. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
+5. `docs/kernel-research/driver-exploit-technique-atlas.md`
+6. `03_byovd/99_workflow/IOCTL_BUG_CLASS_PLAYBOOK.md`
+7. `docs/kernel-research/kernel-object-layout-drift.md`
+8. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
 
 For BYOVD:
 
@@ -90,10 +93,20 @@ For BYOVD:
 8. `03_byovd/00_index-and-matrix/BYOVD_MSR_PORT_MMIO_HARDWARE_PRIMITIVES.md`
 9. `03_byovd/00_index-and-matrix/BYOVD_LIMITED_WRITE_AND_PREVIOUSMODE.md`
 10. `03_byovd/00_index-and-matrix/BYOVD_CALLBACK_SECURITY_STATE_TAMPER.md`
-11. `docs/detection-and-mitigation/byovd-detection.md`
-12. `docs/detection-and-mitigation/byovd-hunting-and-hardening-checklists.md`
-13. `docs/detection-and-mitigation/driver-load-etw-and-code-integrity.md`
-14. External reference: [DriverShield BYOVD Research Index](https://drivershield.io/byovd/)
+11. `03_byovd/00_index-and-matrix/BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md`
+12. `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
+13. `docs/detection-and-mitigation/byovd-detection.md`
+14. `docs/detection-and-mitigation/byovd-hunting-and-hardening-checklists.md`
+15. `docs/detection-and-mitigation/driver-load-etw-and-code-integrity.md`
+16. External reference: [DriverShield BYOVD Research Index](https://drivershield.io/byovd/)
+
+For source mining and research queue building:
+
+1. `05_global-research-map/DRIVERSHIELD_SOURCE_BUILD_PLAN.md`
+2. `05_global-research-map/DRIVERSHIELD_TRIAGE_QUEUE.md`
+3. `05_global-research-map/GLOBAL_WINDOWS_KERNEL_HVCI_BYOVD_SOURCE_MAP.md`
+4. `docs/research-index/s12deff-medium-source-map.md`
+5. External source hub: [DriverShield](https://drivershield.io/)
 
 For modern mitigation-aware research:
 
@@ -103,7 +116,8 @@ For modern mitigation-aware research:
 4. `docs/kernel-research/io-ring-research-notes.md`
 5. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
 6. `docs/kernel-research/win32k-research-notes.md`
-7. `docs/kernel-research/hkom-dkom-hide-research-notes.md`
+7. `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md`
+8. `docs/kernel-research/hkom-dkom-hide-research-notes.md`
 
 For single-technique deep dives:
 
@@ -111,9 +125,12 @@ For single-technique deep dives:
 2. `docs/research-index/master-driver-research-map.md`
 3. `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md`
 4. `docs/kernel-research/io-ring-research-notes.md`
-5. `docs/kernel-research/win32k-research-notes.md`
-6. `docs/kernel-research/hkom-process-hide-crossview.md`
-7. `docs/kernel-research/hkom-driver-module-hide-crossview.md`
+5. `docs/kernel-research/primitive-pseudocode-sketchbook.md`
+6. `docs/kernel-research/win32k-research-notes.md`
+7. `docs/kernel-research/win32k-case-study-atlas.md`
+8. `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
+9. `docs/kernel-research/hkom-process-hide-crossview.md`
+10. `docs/kernel-research/hkom-driver-module-hide-crossview.md`
 
 For detection:
 
@@ -122,7 +139,12 @@ For detection:
 3. `docs/detection-and-mitigation/etw-threat-intelligence-notes.md`
 4. `docs/detection-and-mitigation/minifilter-and-edr-visibility.md`
 5. `docs/detection-and-mitigation/driver-evasion-pressure-map.md`
-6. `docs/detection-and-mitigation/byovd-hunting-and-hardening-checklists.md`
+6. `docs/detection-and-mitigation/av-self-protection-research-index.md`
+7. `docs/detection-and-mitigation/av-case-microsoft-defender-self-protection.md`
+8. `docs/detection-and-mitigation/av-case-huorong-self-protection.md`
+9. `docs/detection-and-mitigation/av-case-qihoo-360-self-protection.md`
+10. `docs/detection-and-mitigation/av-edr-user-mode-tamper-spoofing.md`
+11. `docs/detection-and-mitigation/byovd-hunting-and-hardening-checklists.md`
 
 ## Research Method
 
@@ -151,6 +173,7 @@ Important questions:
 ## External Indexes
 
 - [DriverShield BYOVD Research Index](https://drivershield.io/byovd/) - curated metadata index of public BYOVD and vulnerable-driver GitHub research repositories.
+- [DriverShield Driver Database](https://drivershield.io/database/) - driver intelligence database for source triage, risk/verdict metadata, and hash pivots.
 - [LOLDrivers](https://www.loldrivers.io/) - vulnerable, malicious, and suspicious driver catalog.
 - [Microsoft recommended driver block rules](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules) - Microsoft vulnerable driver blocklist guidance.
 
