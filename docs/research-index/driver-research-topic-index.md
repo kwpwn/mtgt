@@ -32,6 +32,7 @@ Top-level maps:
 | Object Manager and handles | `docs/windows-internals/object-manager-and-handle-tables.md` | `docs/windows-internals/eprocess-token-object-model.md` |
 | Runtime symbols and layout drift | `docs/kernel-research/runtime-pdb-symbol-resolution.md` | `docs/kernel-research/kernel-object-layout-drift.md` |
 | Kernel base discovery | `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md` | `04_connor-mcgarr-study/01_PAGING_AND_PTE_DEEP_DIVE.md` |
+| Prefetch KASLR side channel | `docs/kernel-research/prefetch-kaslr-side-channel-notes.md` | `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md` |
 | Crash dump triage | `docs/debugging/crash-dump-driver-triage.md` | `docs/debugging/windbg-kernel-research-workflow.md` |
 | Win32k USER/GDI research | `docs/kernel-research/win32k-research-notes.md` | `docs/kernel-research/public-poc-reading-and-annotation-template.md` |
 | Windows IPC boundary atlas | `docs/kernel-research/windows-ipc-boundary-atlas.md` | `docs/kernel-research/com-and-rpc-research-notes.md` |
@@ -64,6 +65,7 @@ Top-level maps:
 | DriverShield source build plan | `05_global-research-map/DRIVERSHIELD_SOURCE_BUILD_PLAN.md` | `05_global-research-map/DRIVERSHIELD_TRIAGE_QUEUE.md` |
 | Global source map | `05_global-research-map/GLOBAL_WINDOWS_KERNEL_HVCI_BYOVD_SOURCE_MAP.md` | `03_byovd/00_index-and-matrix/BYOVD_NON_TERMINATE_DRIVER_CASE_STUDIES.md` |
 | S12Deff Medium source map | `docs/research-index/s12deff-medium-source-map.md` | `03_byovd/00_index-and-matrix/BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md` |
+| Pwn2Nimron source map | `docs/research-index/pwn2nimron-source-map.md` | `docs/kernel-research/prefetch-kaslr-side-channel-notes.md` |
 
 External indexes:
 
@@ -111,6 +113,7 @@ External indexes:
 | IPC boundary atlas | `docs/kernel-research/windows-ipc-boundary-atlas.md` | `docs/kernel-research/alpc-research-notes.md` |
 | ALPC broker reasoning | `docs/kernel-research/alpc-research-notes.md` | `docs/kernel-research/com-and-rpc-research-notes.md` |
 | COM / RPC boundary reasoning | `docs/kernel-research/com-and-rpc-research-notes.md` | `docs/kernel-research/clfs-alpc-rpc-com-research-tracks.md` |
+| Prefetch / KASLR side channel | `docs/kernel-research/prefetch-kaslr-side-channel-notes.md` | `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md` |
 | Windows Audio / audiodg LPE | `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md` | `docs/windows-internals/eprocess-token-object-model.md` |
 | Kernel pool | `docs/windows-heap/kernel-pool-internals.md` | `04_connor-mcgarr-study/04_POOL_EXPLOITATION_KLFH_SEGMENT_HEAP.md` |
 | User-mode versus kernel-mode heap | `docs/windows-heap/userland-vs-kernelland-heap.md` | `docs/windows-heap/usermode-heap-internals.md` |
@@ -135,6 +138,7 @@ Driver researcher path:
 14. `docs/kernel-research/windows-ipc-boundary-atlas.md`
 15. `docs/kernel-research/alpc-research-notes.md`
 16. `docs/kernel-research/com-and-rpc-research-notes.md`
+17. `docs/kernel-research/prefetch-kaslr-side-channel-notes.md`
 
 Public PoC reading path:
 
@@ -150,6 +154,7 @@ Public PoC reading path:
 10. `docs/kernel-research/windows-ipc-boundary-atlas.md`
 11. `docs/kernel-research/alpc-research-notes.md`
 12. `docs/kernel-research/com-and-rpc-research-notes.md`
+13. `docs/kernel-research/prefetch-kaslr-side-channel-notes.md`
 
 BYOVD analyst path:
 
@@ -176,3 +181,4 @@ Modern Windows LPE concept path:
 9. `docs/kernel-research/windows-ipc-boundary-atlas.md`
 10. `docs/kernel-research/alpc-research-notes.md`
 11. `docs/kernel-research/com-and-rpc-research-notes.md`
+12. `docs/kernel-research/prefetch-kaslr-side-channel-notes.md`

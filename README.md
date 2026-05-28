@@ -81,6 +81,7 @@ For offensive research reading and public PoC annotation:
 6. `03_byovd/99_workflow/IOCTL_BUG_CLASS_PLAYBOOK.md`
 7. `docs/kernel-research/kernel-object-layout-drift.md`
 8. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
+9. `docs/kernel-research/prefetch-kaslr-side-channel-notes.md`
 
 For BYOVD:
 
@@ -142,6 +143,7 @@ For single-technique deep dives:
 8. `03_byovd/00_index-and-matrix/BYOVD_CASE_LNVMSRIO_TECHNIQUE_CHAIN_ATLAS.md`
 9. `docs/kernel-research/hkom-process-hide-crossview.md`
 10. `docs/kernel-research/hkom-driver-module-hide-crossview.md`
+11. `docs/kernel-research/prefetch-kaslr-side-channel-notes.md`
 
 For detection:
 

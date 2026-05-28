@@ -289,6 +289,7 @@ DriverShield metadata
 | Runtime symbols | `docs/kernel-research/runtime-pdb-symbol-resolution.md` |
 | Layout drift | `docs/kernel-research/kernel-object-layout-drift.md` |
 | Kernel base from LSTAR | `docs/kernel-research/kernel-base-from-lstar-pattern-scan.md` |
+| Prefetch / KASLR side channel | `docs/kernel-research/prefetch-kaslr-side-channel-notes.md` |
 | Win32k USER/GDI | `docs/kernel-research/win32k-research-notes.md` |
 | Win32k case studies | `docs/kernel-research/win32k-case-study-atlas.md` |
 | Windows Audio / audiodg LPE | `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md` |
@@ -301,6 +302,7 @@ DriverShield metadata
 | DriverShield source mining | `05_global-research-map/DRIVERSHIELD_SOURCE_BUILD_PLAN.md` |
 | DriverShield triage queue | `05_global-research-map/DRIVERSHIELD_TRIAGE_QUEUE.md` |
 | S12Deff Medium source map | `docs/research-index/s12deff-medium-source-map.md` |
+| Pwn2Nimron source map | `docs/research-index/pwn2nimron-source-map.md` |
 | Object Manager | `docs/windows-internals/object-manager-and-handle-tables.md` |
 | EPROCESS/TOKEN | `docs/windows-internals/eprocess-token-object-model.md` |
 | MDLs | `docs/kernel-research/mdl-misuse-and-direct-io.md` |
