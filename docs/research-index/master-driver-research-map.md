@@ -27,12 +27,13 @@ Read in this order:
 3. `docs/userland-to-kernel/ioctl-reverse-engineering.md`
 4. `docs/userland-to-kernel/method-neither-research-notes.md`
 5. `docs/userland-to-kernel/device-acl-sddl-ioctl-access.md`
-6. `docs/kernel-research/wdf-kmdf-reverse-engineering-notes.md`
-7. `docs/kernel-research/ida-ghidra-driver-re-patterns.md`
-8. `docs/kernel-research/driver-exploit-technique-atlas.md`
-9. `docs/kernel-research/offensive-driver-exploitability-map.md`
-10. `docs/kernel-research/race-and-toctou-in-drivers.md`
-11. `docs/debugging/crash-dump-driver-triage.md`
+6. `docs/kernel-research/windows-kernel-driver-fundamentals-er-notes.md`
+7. `docs/kernel-research/wdf-kmdf-reverse-engineering-notes.md`
+8. `docs/kernel-research/ida-ghidra-driver-re-patterns.md`
+9. `docs/kernel-research/driver-exploit-technique-atlas.md`
+10. `docs/kernel-research/offensive-driver-exploitability-map.md`
+11. `docs/kernel-research/race-and-toctou-in-drivers.md`
+12. `docs/debugging/crash-dump-driver-triage.md`
 
 Goal:
 
@@ -77,10 +78,11 @@ Read in this order:
 1. `docs/kernel-research/public-poc-reading-and-annotation-template.md`
 2. `docs/kernel-research/offensive-driver-exploitability-map.md`
 3. `docs/kernel-research/primitive-pseudocode-sketchbook.md`
-4. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
-5. `docs/kernel-research/win32k-case-study-atlas.md`
-6. `docs/kernel-research/kernel-object-layout-drift.md`
-7. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
+4. `docs/kernel-research/patch-diff-and-binary-comparison-workflow-er-notes.md`
+5. `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md`
+6. `docs/kernel-research/win32k-case-study-atlas.md`
+7. `docs/kernel-research/kernel-object-layout-drift.md`
+8. `docs/kernel-research/runtime-pdb-symbol-resolution.md`
 
 Goal:
 
@@ -197,6 +199,29 @@ Windows Audio writeup
   -> privilege restoration bridge
 ```
 
+### Track 5D: IPC / ALPC / COM / RPC Boundary Research
+
+Read in this order:
+
+1. `docs/kernel-research/windows-ipc-boundary-atlas.md`
+2. `docs/kernel-research/alpc-research-notes.md`
+3. `docs/kernel-research/com-and-rpc-research-notes.md`
+4. `docs/kernel-research/clfs-alpc-rpc-com-research-tracks.md`
+5. `docs/windows-internals/object-manager-and-handle-tables.md`
+6. `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md`
+7. `docs/kernel-research/win32k-research-notes.md`
+
+Goal:
+
+```text
+Windows IPC surface
+  -> endpoint family
+  -> identity flow
+  -> object ownership
+  -> broker or service semantic action
+  -> likely invariant break
+```
+
 ### Track 6: Evasion and Defensive Pressure
 
 Read in this order:
@@ -256,8 +281,10 @@ DriverShield metadata
 | BYOVD primitive bridges | `03_byovd/00_index-and-matrix/BYOVD_PRIMITIVE_BRIDGE_REASONING.md` |
 | Process-create callback tamper | `03_byovd/00_index-and-matrix/BYOVD_PROCESS_CREATE_CALLBACK_TAMPER_S12DEFF.md` |
 | WDF/KMDF reversing | `docs/kernel-research/wdf-kmdf-reverse-engineering-notes.md` |
+| Driver fundamentals primer | `docs/kernel-research/windows-kernel-driver-fundamentals-er-notes.md` |
 | Device ACL and SDDL | `docs/userland-to-kernel/device-acl-sddl-ioctl-access.md` |
 | IDA/Ghidra patterns | `docs/kernel-research/ida-ghidra-driver-re-patterns.md` |
+| Patch diff workflow | `docs/kernel-research/patch-diff-and-binary-comparison-workflow-er-notes.md` |
 | Verifier / SDV / CodeQL workflow | `docs/kernel-research/driver-verifier-sdv-codeql-research-workflow.md` |
 | Runtime symbols | `docs/kernel-research/runtime-pdb-symbol-resolution.md` |
 | Layout drift | `docs/kernel-research/kernel-object-layout-drift.md` |

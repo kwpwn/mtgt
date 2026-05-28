@@ -19,6 +19,7 @@ Core themes:
 - Driver exploit bug-class reasoning and defensive evasion-pressure mapping
 - Offensive driver exploitability reasoning and public PoC annotation without runnable trigger material
 - Modern research surfaces such as Win32k, I/O rings, CLFS, ALPC, callbacks, MDLs, and `PreviousMode`
+- Windows IPC boundary reasoning across ALPC, RPC, COM, named pipes, and broker/service trust transitions
 
 Safety boundary:
 
@@ -118,6 +119,16 @@ For modern mitigation-aware research:
 6. `docs/kernel-research/win32k-research-notes.md`
 7. `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md`
 8. `docs/kernel-research/hkom-dkom-hide-research-notes.md`
+
+For IPC / broker-boundary research:
+
+1. `docs/kernel-research/windows-ipc-boundary-atlas.md`
+2. `docs/kernel-research/alpc-research-notes.md`
+3. `docs/kernel-research/com-and-rpc-research-notes.md`
+4. `docs/kernel-research/clfs-alpc-rpc-com-research-tracks.md`
+5. `docs/windows-internals/object-manager-and-handle-tables.md`
+6. `docs/windows-internals/windows-audio-audiodg-lpe-research-notes.md`
+7. `docs/kernel-research/win32k-research-notes.md`
 
 For single-technique deep dives:
 
