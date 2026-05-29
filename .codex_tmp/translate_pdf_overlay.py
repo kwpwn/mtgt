@@ -26,6 +26,14 @@ TECH_REPLACEMENTS = {
     "không gian địa chỉ nhân": "kernel address space",
     "mã định danh quá trình": "process ID",
     "mã định danh tiến trình": "process ID",
+    "Khai thác dòng Reversing (ER)": "Loạt Exploiting Reversing (ER)",
+    "Điều 01 | kernel driver Windows": "Bài 01 | Windows kernel drivers",
+    "Điều 02 | kernel driver Windows": "Bài 02 | Windows kernel drivers",
+    "vòng quay": "rev",
+    "Bộ lọc nhỏ": "mini-filter",
+    "bộ lọc nhỏ": "mini-filter",
+    "Biến động 3": "Volatility 3",
+    "Biến động": "Volatility",
 }
 
 
@@ -112,6 +120,8 @@ def postprocess_vi(text: str) -> str:
     for src, dst in TECH_REPLACEMENTS.items():
         text = text.replace(src, dst)
         text = text.replace(src.capitalize(), dst)
+    text = text.replace("THÁNG 4/11/2023", "11/04/2023")
+    text = text.replace("THÁNG Tư/11/2023", "11/04/2023")
     text = text.replace("Windows Kernel", "Windows kernel")
     text = text.replace("Kernel Driver", "kernel driver")
     text = text.replace("User Mode", "user mode")
@@ -126,7 +136,7 @@ def translate_text(session, cache, text: str, sleep_s: float = 0.05) -> str:
 
     key = hashlib.sha256(text.encode("utf-8")).hexdigest()
     if key in cache:
-        return cache[key]
+        return postprocess_vi(cache[key])
 
     protected, mapping = protect_tokens(text)
     params = {
@@ -170,19 +180,26 @@ def block_text(block) -> str:
 
 def block_style(block):
     sizes = []
-    bold_hits = 0
-    italic_hits = 0
+    bold_chars = 0
+    italic_chars = 0
+    total_chars = 0
     for line in block.get("lines", []):
         for span in line.get("spans", []):
-            if span.get("text", "").strip():
+            span_text = span.get("text", "")
+            if span_text.strip():
                 sizes.append(float(span.get("size", 11)))
+                total_chars += len(span_text)
                 font = span.get("font", "").lower()
                 if "bold" in font:
-                    bold_hits += 1
+                    bold_chars += len(span_text)
                 if "italic" in font:
-                    italic_hits += 1
+                    italic_chars += len(span_text)
     avg_size = sum(sizes) / len(sizes) if sizes else 11.0
-    return avg_size, bold_hits > 0 and bold_hits >= italic_hits, italic_hits > 0
+    bold_ratio = bold_chars / max(total_chars, 1)
+    italic_ratio = italic_chars / max(total_chars, 1)
+    bold = bold_ratio > 0.55 or (avg_size >= 13.0 and bold_ratio > 0.20)
+    italic = italic_ratio > 0.55
+    return avg_size, bold, italic
 
 
 def rect_for_block(block, page_rect):
