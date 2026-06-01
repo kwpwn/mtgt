@@ -1,0 +1,716 @@
+{
+  "metadata": {
+    "input_file": "E:\\temp\\360_reverse_CTF\\360Camera64.sys",
+    "root_filename": "360Camera64.sys",
+    "imagebase": 65536,
+    "start_ea": 106596,
+    "procname": "metapc",
+    "is_64bit": true
+  },
+  "sections": [
+    {
+      "name": ".text",
+      "start": 69632,
+      "end": 94208,
+      "size": 24576,
+      "perm": 5
+    },
+    {
+      "name": ".idata",
+      "start": 94208,
+      "end": 94696,
+      "size": 488,
+      "perm": 4
+    },
+    {
+      "name": ".rdata",
+      "start": 94696,
+      "end": 98304,
+      "size": 3608,
+      "perm": 4
+    },
+    {
+      "name": ".data",
+      "start": 98304,
+      "end": 102400,
+      "size": 4096,
+      "perm": 6
+    },
+    {
+      "name": ".pdata",
+      "start": 102400,
+      "end": 106496,
+      "size": 4096,
+      "perm": 4
+    },
+    {
+      "name": "INIT",
+      "start": 106496,
+      "end": 110592,
+      "size": 4096,
+      "perm": 7
+    }
+  ],
+  "imports": [
+    {
+      "ea": 94208,
+      "name": "ExAllocatePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94216,
+      "name": "ProbeForRead",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94224,
+      "name": "IoBuildDeviceIoControlRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94232,
+      "name": "ExFreePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94240,
+      "name": "ExInitializeNPagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94248,
+      "name": "RtlInitUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94256,
+      "name": "IoDeleteDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94264,
+      "name": "KeSetEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94272,
+      "name": "ProbeForWrite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94280,
+      "name": "IoFreeWorkItem",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94288,
+      "name": "ExpInterlockedPushEntrySList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94296,
+      "name": "MmGetSystemRoutineAddress",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94304,
+      "name": "KeInitializeEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94312,
+      "name": "IoIs32bitProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94320,
+      "name": "KeReleaseSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94328,
+      "name": "ExpInterlockedPopEntrySList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94336,
+      "name": "IoDetachDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94344,
+      "name": "IoFreeMdl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94352,
+      "name": "MmMapLockedPagesSpecifyCache",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94360,
+      "name": "IoAllocateWorkItem",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94368,
+      "name": "PoStartNextPowerIrp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94376,
+      "name": "IofCompleteRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94384,
+      "name": "ExQueryDepthSList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94392,
+      "name": "KeWaitForSingleObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94400,
+      "name": "MmProbeAndLockPages",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94408,
+      "name": "IoSetCompletionRoutineEx",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94416,
+      "name": "IoGetAttachedDeviceReference",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94424,
+      "name": "IoAttachDeviceToDeviceStack",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94432,
+      "name": "PoCallDriver",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94440,
+      "name": "IoIsWdmVersionAvailable",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94448,
+      "name": "MmUnlockPages",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94456,
+      "name": "ObfReferenceObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94464,
+      "name": "IoCreateSymbolicLink",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94472,
+      "name": "PsGetCurrentProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94480,
+      "name": "MmIsAddressValid",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94488,
+      "name": "ObfDereferenceObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94496,
+      "name": "IoCreateDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94504,
+      "name": "IoQueueWorkItem",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94512,
+      "name": "ExDeleteNPagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94520,
+      "name": "IoAllocateMdl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94528,
+      "name": "IofCallDriver",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94536,
+      "name": "KeAcquireSpinLockRaiseToDpc",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94544,
+      "name": "KeClearEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94552,
+      "name": "IoReleaseCancelSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94560,
+      "name": "IoGetDeviceObjectPointer",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94568,
+      "name": "RtlVolumeDeviceToDosName",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94576,
+      "name": "wcsncpy",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94584,
+      "name": "IoQueryFileInformation",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94592,
+      "name": "KeUnstackDetachProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94600,
+      "name": "ObQueryNameString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94608,
+      "name": "IoFileObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94616,
+      "name": "IoGetCurrentProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94624,
+      "name": "RtlPrefixUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94632,
+      "name": "ZwClose",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94640,
+      "name": "ObReferenceObjectByHandle",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94648,
+      "name": "ZwQueryInformationProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94656,
+      "name": "ZwOpenFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94664,
+      "name": "KeStackAttachProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94672,
+      "name": "KeBugCheckEx",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 94680,
+      "name": "__C_specific_handler",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    }
+  ],
+  "exports": [
+    {
+      "ea": 106596,
+      "ordinal": 106596,
+      "name": "start"
+    }
+  ],
+  "api_surface": [
+    "IoCreateDevice",
+    "IoCreateSymbolicLink",
+    "IoDeleteDevice",
+    "ExAllocatePoolWithTag"
+  ],
+  "functions": [
+    {
+      "ea": 69640,
+      "name": "sub_11008",
+      "size": 97
+    },
+    {
+      "ea": 69744,
+      "name": "CompletionRoutine",
+      "size": 110
+    },
+    {
+      "ea": 69860,
+      "name": "sub_110E4",
+      "size": 201
+    },
+    {
+      "ea": 70068,
+      "name": "sub_111B4",
+      "size": 117
+    },
+    {
+      "ea": 70192,
+      "name": "sub_11230",
+      "size": 688
+    },
+    {
+      "ea": 70888,
+      "name": "USBD_SyncCompletionRoutine",
+      "size": 28
+    },
+    {
+      "ea": 70924,
+      "name": "sub_1150C",
+      "size": 641
+    },
+    {
+      "ea": 71572,
+      "name": "sub_11794",
+      "size": 670
+    },
+    {
+      "ea": 72248,
+      "name": "sub_11A38",
+      "size": 145
+    },
+    {
+      "ea": 72400,
+      "name": "sub_11AD0",
+      "size": 108
+    },
+    {
+      "ea": 72516,
+      "name": "WorkerRoutine",
+      "size": 1415
+    },
+    {
+      "ea": 73940,
+      "name": "sub_120D4",
+      "size": 590
+    },
+    {
+      "ea": 74536,
+      "name": "sub_12328",
+      "size": 410
+    },
+    {
+      "ea": 74952,
+      "name": "sub_124C8",
+      "size": 999
+    },
+    {
+      "ea": 75960,
+      "name": "sub_128B8",
+      "size": 905
+    },
+    {
+      "ea": 76872,
+      "name": "sub_12C48",
+      "size": 1279
+    },
+    {
+      "ea": 78160,
+      "name": "sub_13150",
+      "size": 4032
+    },
+    {
+      "ea": 82200,
+      "name": "sub_14118",
+      "size": 140
+    },
+    {
+      "ea": 82348,
+      "name": "sub_141AC",
+      "size": 705
+    },
+    {
+      "ea": 83060,
+      "name": "DriverEntry",
+      "size": 544
+    },
+    {
+      "ea": 83612,
+      "name": "sub_1469C",
+      "size": 200
+    },
+    {
+      "ea": 83820,
+      "name": "sub_1476C",
+      "size": 194
+    },
+    {
+      "ea": 84020,
+      "name": "sub_14834",
+      "size": 203
+    },
+    {
+      "ea": 84232,
+      "name": "sub_14908",
+      "size": 346
+    },
+    {
+      "ea": 84584,
+      "name": "sub_14A68",
+      "size": 42
+    },
+    {
+      "ea": 84632,
+      "name": "sub_14A98",
+      "size": 162
+    },
+    {
+      "ea": 84800,
+      "name": "sub_14B40",
+      "size": 187
+    },
+    {
+      "ea": 84996,
+      "name": "sub_14C04",
+      "size": 200
+    },
+    {
+      "ea": 85204,
+      "name": "sub_14CD4",
+      "size": 377
+    },
+    {
+      "ea": 85588,
+      "name": "sub_14E54",
+      "size": 336
+    },
+    {
+      "ea": 85932,
+      "name": "sub_14FAC",
+      "size": 353
+    },
+    {
+      "ea": 86292,
+      "name": "sub_15114",
+      "size": 706
+    },
+    {
+      "ea": 87004,
+      "name": "sub_153DC",
+      "size": 447
+    },
+    {
+      "ea": 87460,
+      "name": "sub_155A4",
+      "size": 510
+    },
+    {
+      "ea": 87976,
+      "name": "sub_157A8",
+      "size": 88
+    },
+    {
+      "ea": 88072,
+      "name": "sub_15808",
+      "size": 884
+    },
+    {
+      "ea": 88964,
+      "name": "sub_15B84",
+      "size": 231
+    },
+    {
+      "ea": 89204,
+      "name": "sub_15C74",
+      "size": 408
+    },
+    {
+      "ea": 89620,
+      "name": "sub_15E14",
+      "size": 907
+    },
+    {
+      "ea": 90544,
+      "name": "__security_check_cookie",
+      "size": 32
+    },
+    {
+      "ea": 90584,
+      "name": "__report_gsfailure",
+      "size": 39
+    },
+    {
+      "ea": 90630,
+      "name": "ZwQueryInformationProcess",
+      "size": 6
+    },
+    {
+      "ea": 90642,
+      "name": "__C_specific_handler",
+      "size": 6
+    },
+    {
+      "ea": 90672,
+      "name": "memmove",
+      "size": 820
+    },
+    {
+      "ea": 91520,
+      "name": "memset",
+      "size": 234
+    },
+    {
+      "ea": 106504,
+      "name": "__security_init_cookie",
+      "size": 85
+    },
+    {
+      "ea": 106596,
+      "name": "start",
+      "size": 30
+    }
+  ],
+  "interesting_functions": [
+    {
+      "ea": 83060,
+      "name": "DriverEntry",
+      "size": 544
+    },
+    {
+      "ea": 90630,
+      "name": "ZwQueryInformationProcess",
+      "size": 6
+    }
+  ],
+  "interesting_strings": [
+    {
+      "ea": 94880,
+      "type": 16777216,
+      "value": "c:\\vmagent_new\\bin\\joblist\\409217\\src\\3\\360camera\\objfre_win7_amd64\\amd64\\360Camera64.pdb"
+    },
+    {
+      "ea": 107458,
+      "type": 0,
+      "value": "IoIs32bitProcess"
+    },
+    {
+      "ea": 107916,
+      "type": 0,
+      "value": "PsGetCurrentProcessId"
+    },
+    {
+      "ea": 108246,
+      "type": 0,
+      "value": "KeUnstackDetachProcess"
+    },
+    {
+      "ea": 108312,
+      "type": 0,
+      "value": "IoGetCurrentProcess"
+    },
+    {
+      "ea": 108398,
+      "type": 0,
+      "value": "ZwQueryInformationProcess"
+    },
+    {
+      "ea": 108440,
+      "type": 0,
+      "value": "KeStackAttachProcess"
+    }
+  ],
+  "string_count_sampled": 62
+}

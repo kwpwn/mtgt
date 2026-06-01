@@ -1,0 +1,299 @@
+{
+  "metadata": {
+    "input_file": "E:\\temp\\360_reverse_CTF\\360Sensor64.sys",
+    "root_filename": "360Sensor64.sys",
+    "imagebase": 65536,
+    "start_ea": 98624,
+    "procname": "metapc",
+    "is_64bit": true
+  },
+  "sections": [
+    {
+      "name": ".text",
+      "start": 69632,
+      "end": 73728,
+      "size": 4096,
+      "perm": 5
+    },
+    {
+      "name": ".idata",
+      "start": 73728,
+      "end": 73872,
+      "size": 144,
+      "perm": 4
+    },
+    {
+      "name": ".rdata",
+      "start": 73872,
+      "end": 77824,
+      "size": 3952,
+      "perm": 4
+    },
+    {
+      "name": ".data",
+      "start": 77824,
+      "end": 90112,
+      "size": 12288,
+      "perm": 6
+    },
+    {
+      "name": ".pdata",
+      "start": 90112,
+      "end": 94208,
+      "size": 4096,
+      "perm": 4
+    },
+    {
+      "name": "PAGE",
+      "start": 94208,
+      "end": 98304,
+      "size": 4096,
+      "perm": 5
+    },
+    {
+      "name": "INIT",
+      "start": 98304,
+      "end": 102400,
+      "size": 4096,
+      "perm": 7
+    }
+  ],
+  "imports": [
+    {
+      "ea": 73752,
+      "name": "MmIsDriverVerifying",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73760,
+      "name": "IofCompleteRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73768,
+      "name": "IoCreateSymbolicLink",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73776,
+      "name": "IoCreateDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73784,
+      "name": "IoBuildDeviceIoControlRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73792,
+      "name": "KeInitializeEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73800,
+      "name": "IoGetDeviceObjectPointer",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73808,
+      "name": "ObfDereferenceObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73816,
+      "name": "IofCallDriver",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73824,
+      "name": "IoDeleteDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73832,
+      "name": "KeBugCheckEx",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73840,
+      "name": "IoDeleteSymbolicLink",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73848,
+      "name": "RtlInitUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73856,
+      "name": "__C_specific_handler",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 73728,
+      "name": "HalSetBusDataByOffset",
+      "ordinal": 0,
+      "module": "HAL"
+    },
+    {
+      "ea": 73736,
+      "name": "HalGetBusDataByOffset",
+      "ordinal": 0,
+      "module": "HAL"
+    }
+  ],
+  "exports": [
+    {
+      "ea": 98624,
+      "ordinal": 98624,
+      "name": "start"
+    }
+  ],
+  "api_surface": [
+    "IoCreateDevice",
+    "IoCreateSymbolicLink",
+    "IoDeleteDevice",
+    "IoDeleteSymbolicLink"
+  ],
+  "functions": [
+    {
+      "ea": 69640,
+      "name": "sub_11008",
+      "size": 337
+    },
+    {
+      "ea": 69984,
+      "name": "sub_11160",
+      "size": 173
+    },
+    {
+      "ea": 70164,
+      "name": "sub_11214",
+      "size": 173
+    },
+    {
+      "ea": 70344,
+      "name": "sub_112C8",
+      "size": 144
+    },
+    {
+      "ea": 70496,
+      "name": "sub_11360",
+      "size": 128
+    },
+    {
+      "ea": 70632,
+      "name": "sub_113E8",
+      "size": 251
+    },
+    {
+      "ea": 70892,
+      "name": "sub_114EC",
+      "size": 299
+    },
+    {
+      "ea": 71200,
+      "name": "sub_11620",
+      "size": 188
+    },
+    {
+      "ea": 71396,
+      "name": "sub_116E4",
+      "size": 103
+    },
+    {
+      "ea": 71508,
+      "name": "sub_11754",
+      "size": 72
+    },
+    {
+      "ea": 71588,
+      "name": "sub_117A4",
+      "size": 300
+    },
+    {
+      "ea": 71904,
+      "name": "__security_check_cookie",
+      "size": 32
+    },
+    {
+      "ea": 71944,
+      "name": "__report_gsfailure",
+      "size": 39
+    },
+    {
+      "ea": 72000,
+      "name": "sub_11940",
+      "size": 72
+    },
+    {
+      "ea": 72096,
+      "name": "memmove",
+      "size": 820
+    },
+    {
+      "ea": 72944,
+      "name": "memset",
+      "size": 234
+    },
+    {
+      "ea": 73184,
+      "name": "__C_specific_handler",
+      "size": 6
+    },
+    {
+      "ea": 94216,
+      "name": "sub_17008",
+      "size": 59
+    },
+    {
+      "ea": 98312,
+      "name": "DriverEntry",
+      "size": 214
+    },
+    {
+      "ea": 98532,
+      "name": "__security_init_cookie",
+      "size": 85
+    },
+    {
+      "ea": 98624,
+      "name": "start",
+      "size": 30
+    }
+  ],
+  "interesting_functions": [
+    {
+      "ea": 98312,
+      "name": "DriverEntry",
+      "size": 214
+    }
+  ],
+  "interesting_strings": [
+    {
+      "ea": 76780,
+      "type": 16777216,
+      "value": "c:\\vmagent_new\\bin\\joblist\\629415\\src\\3\\360sensorx64.sys\\objfre_win7_amd64\\amd64\\360Sensor64.pdb"
+    },
+    {
+      "ea": 83759,
+      "type": 0,
+      "value": "V1s._BN\\"
+    }
+  ],
+  "string_count_sampled": 46
+}

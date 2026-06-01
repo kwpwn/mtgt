@@ -1,0 +1,2659 @@
+{
+  "metadata": {
+    "input_file": "E:\\temp\\360_reverse_CTF\\360netmon.sys",
+    "root_filename": "360netmon.sys",
+    "imagebase": 65536,
+    "start_ea": 450660,
+    "procname": "metapc",
+    "is_64bit": true
+  },
+  "sections": [
+    {
+      "name": ".text",
+      "start": 69632,
+      "end": 143360,
+      "size": 73728,
+      "perm": 5
+    },
+    {
+      "name": ".idata",
+      "start": 143360,
+      "end": 144656,
+      "size": 1296,
+      "perm": 4
+    },
+    {
+      "name": ".rdata",
+      "start": 144656,
+      "end": 151552,
+      "size": 6896,
+      "perm": 4
+    },
+    {
+      "name": ".data",
+      "start": 151552,
+      "end": 446464,
+      "size": 294912,
+      "perm": 6
+    },
+    {
+      "name": ".pdata",
+      "start": 446464,
+      "end": 450560,
+      "size": 4096,
+      "perm": 4
+    },
+    {
+      "name": "INIT",
+      "start": 450560,
+      "end": 458752,
+      "size": 8192,
+      "perm": 7
+    }
+  ],
+  "imports": [
+    {
+      "ea": 143864,
+      "name": "IoFileObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143872,
+      "name": "ZwCreateFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143880,
+      "name": "ZwQueryDirectoryFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143888,
+      "name": "IoGetCurrentProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143896,
+      "name": "ZwEnumerateValueKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143904,
+      "name": "IoAttachDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143912,
+      "name": "ZwQueryInformationProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143920,
+      "name": "ZwOpenFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143928,
+      "name": "IoQueryFileDosDeviceName",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143936,
+      "name": "ObOpenObjectByPointer",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143944,
+      "name": "KeStackAttachProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143952,
+      "name": "ZwQueryKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143960,
+      "name": "IoFreeMdl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143968,
+      "name": "KeWaitForSingleObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143976,
+      "name": "MmProbeAndLockPages",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143984,
+      "name": "MmUnlockPages",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143992,
+      "name": "IoAllocateMdl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144000,
+      "name": "KeUnstackDetachProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144008,
+      "name": "KeLeaveCriticalRegion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144016,
+      "name": "KeEnterCriticalRegion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144024,
+      "name": "ExReleaseResourceLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144032,
+      "name": "_wcsicmp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144040,
+      "name": "IoBuildPartialMdl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144048,
+      "name": "IoMakeAssociatedIrp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144056,
+      "name": "ZwQuerySystemInformation",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144064,
+      "name": "wcsstr",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144072,
+      "name": "ExInterlockedInsertHeadList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144080,
+      "name": "IoFreeIrp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144088,
+      "name": "ExInterlockedRemoveHeadList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144096,
+      "name": "_wcsupr",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144104,
+      "name": "_wcsnicmp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144112,
+      "name": "_stricmp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144120,
+      "name": "DbgPrint",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144128,
+      "name": "KeBugCheckEx",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144136,
+      "name": "ZwSetValueKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144144,
+      "name": "ZwDeleteValueKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144152,
+      "name": "RtlIntegerToUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144160,
+      "name": "PsLookupProcessByProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144168,
+      "name": "ZwCreateKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144176,
+      "name": "IoBuildDeviceIoControlRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144184,
+      "name": "PsGetProcessPeb",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144192,
+      "name": "KeAcquireSpinLockRaiseToDpc",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144200,
+      "name": "ZwOpenKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144208,
+      "name": "IofCallDriver",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144216,
+      "name": "RtlUpcaseUnicodeChar",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144224,
+      "name": "ExCreateCallback",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144232,
+      "name": "ExInitializeResourceLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144240,
+      "name": "IoCreateDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144248,
+      "name": "ObfDereferenceObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144256,
+      "name": "MmIsAddressValid",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144264,
+      "name": "PsGetCurrentProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144272,
+      "name": "PsGetCurrentThreadId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144280,
+      "name": "IoCreateSymbolicLink",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144288,
+      "name": "RtlCompareMemory",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144296,
+      "name": "CmRegisterCallback",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144304,
+      "name": "ExRegisterCallback",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144312,
+      "name": "RtlTimeToTimeFields",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144320,
+      "name": "ObReferenceObjectByHandle",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144328,
+      "name": "ExQueryDepthSList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144336,
+      "name": "IofCompleteRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144344,
+      "name": "ZwClose",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144352,
+      "name": "InitSafeBootMode",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144360,
+      "name": "PsTerminateSystemThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144368,
+      "name": "ExInterlockedInsertTailList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144376,
+      "name": "ExAllocatePool",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144384,
+      "name": "ZwQueryValueKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144392,
+      "name": "IoGetDeviceObjectPointer",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144400,
+      "name": "PsCreateSystemThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144408,
+      "name": "wcsrchr",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144416,
+      "name": "ObQueryNameString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144424,
+      "name": "KeDelayExecutionThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144432,
+      "name": "MmUserProbeAddress",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144440,
+      "name": "IoCreateSynchronizationEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144448,
+      "name": "RtlTimeFieldsToTime",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144456,
+      "name": "RtlEqualUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144464,
+      "name": "PsSetCreateProcessNotifyRoutine",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144472,
+      "name": "ExpInterlockedPopEntrySList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144480,
+      "name": "KeAcquireInStackQueuedSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144488,
+      "name": "KeReleaseSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144496,
+      "name": "RtlGetVersion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144504,
+      "name": "IoIsOperationSynchronous",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144512,
+      "name": "KeInitializeEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144520,
+      "name": "ExpInterlockedPushEntrySList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144528,
+      "name": "MmGetSystemRoutineAddress",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144536,
+      "name": "KeSetEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144544,
+      "name": "ProbeForWrite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144552,
+      "name": "IoDeleteDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144560,
+      "name": "RtlInitUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144568,
+      "name": "IoRegisterDriverReinitialization",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144576,
+      "name": "KeReleaseInStackQueuedSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144584,
+      "name": "ExInitializeNPagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144592,
+      "name": "ExFreePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144600,
+      "name": "IoDeleteSymbolicLink",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144608,
+      "name": "ProbeForRead",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144616,
+      "name": "ExAllocatePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144624,
+      "name": "ExAcquireResourceExclusiveLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144632,
+      "name": "ExUnregisterCallback",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 144640,
+      "name": "__C_specific_handler",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 143472,
+      "name": "FwpmCalloutEnum0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143480,
+      "name": "FwpsFlowAssociateContext0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143488,
+      "name": "FwpsAcquireWritableLayerDataPointer0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143496,
+      "name": "FwpsCalloutUnregisterById0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143504,
+      "name": "FwpmProviderDestroyEnumHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143512,
+      "name": "FwpmSubLayerAdd0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143520,
+      "name": "FwpsApplyModifiedLayerData0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143528,
+      "name": "FwpsFreeCloneNetBufferList0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143536,
+      "name": "FwpsFlowRemoveContext0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143544,
+      "name": "FwpmCalloutDeleteByKey0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143552,
+      "name": "FwpsQueryPacketInjectionState0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143560,
+      "name": "FwpmCalloutDeleteById0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143568,
+      "name": "FwpmProviderEnum0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143576,
+      "name": "FwpmSubLayerDeleteByKey0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143584,
+      "name": "FwpmProviderCreateEnumHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143592,
+      "name": "FwpsCloneStreamData0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143600,
+      "name": "FwpsConstructIpHeaderForTransportPacket0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143608,
+      "name": "FwpmSubLayerEnum0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143616,
+      "name": "FwpsAllocateNetBufferAndNetBufferList0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143624,
+      "name": "FwpsInjectionHandleCreate0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143632,
+      "name": "FwpmTransactionCommit0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143640,
+      "name": "FwpmSubLayerCreateEnumHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143648,
+      "name": "FwpmSubLayerDestroyEnumHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143656,
+      "name": "FwpmCalloutAdd0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143664,
+      "name": "FwpmCalloutDestroyEnumHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143672,
+      "name": "FwpmFilterDeleteByKey0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143680,
+      "name": "FwpsAllocateCloneNetBufferList0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143688,
+      "name": "FwpmBfeStateSubscribeChanges0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143696,
+      "name": "FwpmFilterEnum0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143704,
+      "name": "FwpmProviderAdd0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143712,
+      "name": "FwpsCalloutRegister0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143720,
+      "name": "FwpmTransactionAbort0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143728,
+      "name": "FwpmEngineOpen0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143736,
+      "name": "FwpsAcquireClassifyHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143744,
+      "name": "FwpmFilterDestroyEnumHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143752,
+      "name": "FwpmProviderDeleteByKey0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143760,
+      "name": "FwpmCalloutCreateEnumHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143768,
+      "name": "FwpmFilterAdd0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143776,
+      "name": "FwpsCalloutRegister1",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143784,
+      "name": "FwpsInjectTransportSendAsync0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143792,
+      "name": "FwpmTransactionBegin0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143800,
+      "name": "FwpsReleaseClassifyHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143808,
+      "name": "FwpmEngineClose0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143816,
+      "name": "FwpsDiscardClonedStreamData0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143824,
+      "name": "FwpmFreeMemory0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143832,
+      "name": "FwpmFilterDeleteById0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143840,
+      "name": "FwpsFreeNetBufferList0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143848,
+      "name": "FwpmFilterCreateEnumHandle0",
+      "ordinal": 0,
+      "module": "fwpkclnt"
+    },
+    {
+      "ea": 143456,
+      "name": "TdiMapUserRequest",
+      "ordinal": 0,
+      "module": "TDI"
+    },
+    {
+      "ea": 143360,
+      "name": "NdisAdvanceNetBufferListDataStart",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143368,
+      "name": "NdisGetDataBuffer",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143376,
+      "name": "NdisAllocateNetBufferListPool",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143384,
+      "name": "NdisRetreatNetBufferListDataStart",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143392,
+      "name": "NdisCopyFromNetBufferToNetBuffer",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143400,
+      "name": "NdisAllocateMdl",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143408,
+      "name": "NdisFreeGenericObject",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143416,
+      "name": "NdisSetTimer",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143424,
+      "name": "NdisInitializeTimer",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143432,
+      "name": "NdisCancelTimer",
+      "ordinal": 0,
+      "module": "NDIS"
+    },
+    {
+      "ea": 143440,
+      "name": "NdisAllocateGenericObject",
+      "ordinal": 0,
+      "module": "NDIS"
+    }
+  ],
+  "exports": [
+    {
+      "ea": 450660,
+      "ordinal": 450660,
+      "name": "start"
+    }
+  ],
+  "api_surface": [
+    "IoCreateDevice",
+    "IoCreateSymbolicLink",
+    "IoDeleteDevice",
+    "IoDeleteSymbolicLink",
+    "PsSetCreateProcessNotifyRoutine",
+    "CmRegisterCallback",
+    "ExAllocatePool",
+    "ExAllocatePoolWithTag",
+    "ZwQuerySystemInformation"
+  ],
+  "functions": [
+    {
+      "ea": 69640,
+      "name": "sub_11008",
+      "size": 53
+    },
+    {
+      "ea": 69700,
+      "name": "sub_11044",
+      "size": 115
+    },
+    {
+      "ea": 69824,
+      "name": "CallbackFunction",
+      "size": 234
+    },
+    {
+      "ea": 70064,
+      "name": "sub_111B0",
+      "size": 241
+    },
+    {
+      "ea": 70312,
+      "name": "sub_112A8",
+      "size": 282
+    },
+    {
+      "ea": 70600,
+      "name": "sub_113C8",
+      "size": 235
+    },
+    {
+      "ea": 70844,
+      "name": "sub_114BC",
+      "size": 189
+    },
+    {
+      "ea": 71040,
+      "name": "sub_11580",
+      "size": 578
+    },
+    {
+      "ea": 71624,
+      "name": "sub_117C8",
+      "size": 40
+    },
+    {
+      "ea": 71672,
+      "name": "DriverEntry",
+      "size": 1579
+    },
+    {
+      "ea": 73260,
+      "name": "sub_11E2C",
+      "size": 1337
+    },
+    {
+      "ea": 74604,
+      "name": "sub_1236C",
+      "size": 8522
+    },
+    {
+      "ea": 83132,
+      "name": "sub_144BC",
+      "size": 2736
+    },
+    {
+      "ea": 85876,
+      "name": "sub_14F74",
+      "size": 548
+    },
+    {
+      "ea": 86432,
+      "name": "sub_151A0",
+      "size": 348
+    },
+    {
+      "ea": 86788,
+      "name": "sub_15304",
+      "size": 1388
+    },
+    {
+      "ea": 88184,
+      "name": "sub_15878",
+      "size": 477
+    },
+    {
+      "ea": 88668,
+      "name": "TimerFunction",
+      "size": 797
+    },
+    {
+      "ea": 89472,
+      "name": "NotifyRoutine",
+      "size": 489
+    },
+    {
+      "ea": 89968,
+      "name": "sub_15F70",
+      "size": 390
+    },
+    {
+      "ea": 90364,
+      "name": "sub_160FC",
+      "size": 178
+    },
+    {
+      "ea": 90548,
+      "name": "DriverReinitializationRoutine",
+      "size": 326
+    },
+    {
+      "ea": 90880,
+      "name": "sub_16300",
+      "size": 199
+    },
+    {
+      "ea": 91088,
+      "name": "sub_163D0",
+      "size": 267
+    },
+    {
+      "ea": 91364,
+      "name": "sub_164E4",
+      "size": 163
+    },
+    {
+      "ea": 91536,
+      "name": "Function",
+      "size": 338
+    },
+    {
+      "ea": 91880,
+      "name": "sub_166E8",
+      "size": 203
+    },
+    {
+      "ea": 92092,
+      "name": "sub_167BC",
+      "size": 282
+    },
+    {
+      "ea": 92380,
+      "name": "sub_168DC",
+      "size": 141
+    },
+    {
+      "ea": 92528,
+      "name": "sub_16970",
+      "size": 206
+    },
+    {
+      "ea": 92740,
+      "name": "sub_16A44",
+      "size": 46
+    },
+    {
+      "ea": 92792,
+      "name": "sub_16A78",
+      "size": 1752
+    },
+    {
+      "ea": 94552,
+      "name": "sub_17158",
+      "size": 300
+    },
+    {
+      "ea": 94860,
+      "name": "sub_1728C",
+      "size": 1238
+    },
+    {
+      "ea": 96104,
+      "name": "sub_17768",
+      "size": 144
+    },
+    {
+      "ea": 96256,
+      "name": "sub_17800",
+      "size": 49
+    },
+    {
+      "ea": 96312,
+      "name": "sub_17838",
+      "size": 229
+    },
+    {
+      "ea": 96548,
+      "name": "sub_17924",
+      "size": 527
+    },
+    {
+      "ea": 97084,
+      "name": "sub_17B3C",
+      "size": 308
+    },
+    {
+      "ea": 97400,
+      "name": "sub_17C78",
+      "size": 181
+    },
+    {
+      "ea": 97588,
+      "name": "sub_17D34",
+      "size": 471
+    },
+    {
+      "ea": 98068,
+      "name": "sub_17F14",
+      "size": 264
+    },
+    {
+      "ea": 98340,
+      "name": "sub_18024",
+      "size": 266
+    },
+    {
+      "ea": 98612,
+      "name": "sub_18134",
+      "size": 315
+    },
+    {
+      "ea": 98936,
+      "name": "sub_18278",
+      "size": 207
+    },
+    {
+      "ea": 99152,
+      "name": "sub_18350",
+      "size": 165
+    },
+    {
+      "ea": 99324,
+      "name": "sub_183FC",
+      "size": 576
+    },
+    {
+      "ea": 99908,
+      "name": "sub_18644",
+      "size": 334
+    },
+    {
+      "ea": 100248,
+      "name": "sub_18798",
+      "size": 290
+    },
+    {
+      "ea": 100544,
+      "name": "sub_188C0",
+      "size": 170
+    },
+    {
+      "ea": 100720,
+      "name": "sub_18970",
+      "size": 174
+    },
+    {
+      "ea": 100900,
+      "name": "sub_18A24",
+      "size": 376
+    },
+    {
+      "ea": 101284,
+      "name": "sub_18BA4",
+      "size": 342
+    },
+    {
+      "ea": 101632,
+      "name": "sub_18D00",
+      "size": 236
+    },
+    {
+      "ea": 101876,
+      "name": "sub_18DF4",
+      "size": 263
+    },
+    {
+      "ea": 102148,
+      "name": "sub_18F04",
+      "size": 87
+    },
+    {
+      "ea": 102244,
+      "name": "sub_18F64",
+      "size": 647
+    },
+    {
+      "ea": 102900,
+      "name": "sub_191F4",
+      "size": 257
+    },
+    {
+      "ea": 103164,
+      "name": "sub_192FC",
+      "size": 199
+    },
+    {
+      "ea": 103372,
+      "name": "sub_193CC",
+      "size": 118
+    },
+    {
+      "ea": 103496,
+      "name": "sub_19448",
+      "size": 90
+    },
+    {
+      "ea": 103592,
+      "name": "sub_194A8",
+      "size": 294
+    },
+    {
+      "ea": 103892,
+      "name": "sub_195D4",
+      "size": 102
+    },
+    {
+      "ea": 104000,
+      "name": "sub_19640",
+      "size": 197
+    },
+    {
+      "ea": 104204,
+      "name": "sub_1970C",
+      "size": 132
+    },
+    {
+      "ea": 104344,
+      "name": "sub_19798",
+      "size": 1870
+    },
+    {
+      "ea": 106220,
+      "name": "StartRoutine",
+      "size": 1092
+    },
+    {
+      "ea": 107320,
+      "name": "sub_1A338",
+      "size": 846
+    },
+    {
+      "ea": 108172,
+      "name": "sub_1A68C",
+      "size": 473
+    },
+    {
+      "ea": 108652,
+      "name": "sub_1A86C",
+      "size": 115
+    },
+    {
+      "ea": 108776,
+      "name": "sub_1A8E8",
+      "size": 971
+    },
+    {
+      "ea": 109756,
+      "name": "sub_1ACBC",
+      "size": 395
+    },
+    {
+      "ea": 110160,
+      "name": "sub_1AE50",
+      "size": 407
+    },
+    {
+      "ea": 110576,
+      "name": "sub_1AFF0",
+      "size": 329
+    },
+    {
+      "ea": 110912,
+      "name": "sub_1B140",
+      "size": 1130
+    },
+    {
+      "ea": 112048,
+      "name": "sub_1B5B0",
+      "size": 120
+    },
+    {
+      "ea": 112176,
+      "name": "sub_1B630",
+      "size": 466
+    },
+    {
+      "ea": 112648,
+      "name": "sub_1B808",
+      "size": 113
+    },
+    {
+      "ea": 112768,
+      "name": "sub_1B880",
+      "size": 200
+    },
+    {
+      "ea": 112976,
+      "name": "sub_1B950",
+      "size": 134
+    },
+    {
+      "ea": 113116,
+      "name": "sub_1B9DC",
+      "size": 146
+    },
+    {
+      "ea": 113268,
+      "name": "sub_1BA74",
+      "size": 489
+    },
+    {
+      "ea": 113764,
+      "name": "sub_1BC64",
+      "size": 133
+    },
+    {
+      "ea": 113904,
+      "name": "sub_1BCF0",
+      "size": 44
+    },
+    {
+      "ea": 113956,
+      "name": "sub_1BD24",
+      "size": 741
+    },
+    {
+      "ea": 114704,
+      "name": "sub_1C010",
+      "size": 163
+    },
+    {
+      "ea": 114876,
+      "name": "sub_1C0BC",
+      "size": 178
+    },
+    {
+      "ea": 115060,
+      "name": "sub_1C174",
+      "size": 263
+    },
+    {
+      "ea": 115332,
+      "name": "sub_1C284",
+      "size": 957
+    },
+    {
+      "ea": 116296,
+      "name": "callback",
+      "size": 41
+    },
+    {
+      "ea": 116344,
+      "name": "sub_1C678",
+      "size": 212
+    },
+    {
+      "ea": 116564,
+      "name": "sub_1C754",
+      "size": 156
+    },
+    {
+      "ea": 116728,
+      "name": "sub_1C7F8",
+      "size": 677
+    },
+    {
+      "ea": 117412,
+      "name": "sub_1CAA4",
+      "size": 1130
+    },
+    {
+      "ea": 118548,
+      "name": "sub_1CF14",
+      "size": 184
+    },
+    {
+      "ea": 118740,
+      "name": "sub_1CFD4",
+      "size": 504
+    },
+    {
+      "ea": 119252,
+      "name": "sub_1D1D4",
+      "size": 139
+    },
+    {
+      "ea": 119400,
+      "name": "sub_1D268",
+      "size": 473
+    },
+    {
+      "ea": 119880,
+      "name": "sub_1D448",
+      "size": 1807
+    },
+    {
+      "ea": 121696,
+      "name": "sub_1DB60",
+      "size": 339
+    },
+    {
+      "ea": 122044,
+      "name": "sub_1DCBC",
+      "size": 98
+    },
+    {
+      "ea": 122148,
+      "name": "sub_1DD24",
+      "size": 98
+    },
+    {
+      "ea": 122252,
+      "name": "sub_1DD8C",
+      "size": 78
+    },
+    {
+      "ea": 122336,
+      "name": "sub_1DDE0",
+      "size": 78
+    },
+    {
+      "ea": 122420,
+      "name": "sub_1DE34",
+      "size": 922
+    },
+    {
+      "ea": 123348,
+      "name": "sub_1E1D4",
+      "size": 153
+    },
+    {
+      "ea": 123508,
+      "name": "sub_1E274",
+      "size": 171
+    },
+    {
+      "ea": 123688,
+      "name": "sub_1E328",
+      "size": 1697
+    },
+    {
+      "ea": 125392,
+      "name": "sub_1E9D0",
+      "size": 3
+    },
+    {
+      "ea": 125404,
+      "name": "sub_1E9DC",
+      "size": 824
+    },
+    {
+      "ea": 126236,
+      "name": "sub_1ED1C",
+      "size": 10
+    },
+    {
+      "ea": 126252,
+      "name": "sub_1ED2C",
+      "size": 26
+    },
+    {
+      "ea": 126284,
+      "name": "sub_1ED4C",
+      "size": 1627
+    },
+    {
+      "ea": 127920,
+      "name": "sub_1F3B0",
+      "size": 651
+    },
+    {
+      "ea": 128580,
+      "name": "sub_1F644",
+      "size": 10
+    },
+    {
+      "ea": 128596,
+      "name": "completionFn",
+      "size": 100
+    },
+    {
+      "ea": 128704,
+      "name": "sub_1F6C0",
+      "size": 2949
+    },
+    {
+      "ea": 131660,
+      "name": "sub_2024C",
+      "size": 550
+    },
+    {
+      "ea": 132216,
+      "name": "sub_20478",
+      "size": 459
+    },
+    {
+      "ea": 132684,
+      "name": "nullsub_1",
+      "size": 3
+    },
+    {
+      "ea": 132696,
+      "name": "sub_20658",
+      "size": 229
+    },
+    {
+      "ea": 132932,
+      "name": "sub_20744",
+      "size": 254
+    },
+    {
+      "ea": 133192,
+      "name": "sub_20848",
+      "size": 715
+    },
+    {
+      "ea": 133916,
+      "name": "sub_20B1C",
+      "size": 246
+    },
+    {
+      "ea": 134168,
+      "name": "sub_20C18",
+      "size": 102
+    },
+    {
+      "ea": 134276,
+      "name": "sub_20C84",
+      "size": 132
+    },
+    {
+      "ea": 134416,
+      "name": "sub_20D10",
+      "size": 102
+    },
+    {
+      "ea": 134524,
+      "name": "sub_20D7C",
+      "size": 71
+    },
+    {
+      "ea": 134604,
+      "name": "sub_20DCC",
+      "size": 91
+    },
+    {
+      "ea": 134704,
+      "name": "sub_20E30",
+      "size": 284
+    },
+    {
+      "ea": 134996,
+      "name": "sub_20F54",
+      "size": 111
+    },
+    {
+      "ea": 135116,
+      "name": "sub_20FCC",
+      "size": 121
+    },
+    {
+      "ea": 135244,
+      "name": "sub_2104C",
+      "size": 281
+    },
+    {
+      "ea": 135532,
+      "name": "sub_2116C",
+      "size": 244
+    },
+    {
+      "ea": 135792,
+      "name": "__security_check_cookie",
+      "size": 32
+    },
+    {
+      "ea": 135832,
+      "name": "__report_gsfailure",
+      "size": 39
+    },
+    {
+      "ea": 135878,
+      "name": "PsGetProcessPeb",
+      "size": 6
+    },
+    {
+      "ea": 135890,
+      "name": "DbgPrint",
+      "size": 6
+    },
+    {
+      "ea": 135902,
+      "name": "FwpsFreeNetBufferList0",
+      "size": 6
+    },
+    {
+      "ea": 135914,
+      "name": "FwpmFilterDeleteById0",
+      "size": 6
+    },
+    {
+      "ea": 135926,
+      "name": "FwpmFreeMemory0",
+      "size": 6
+    },
+    {
+      "ea": 135938,
+      "name": "FwpsDiscardClonedStreamData0",
+      "size": 6
+    },
+    {
+      "ea": 135950,
+      "name": "FwpmEngineClose0",
+      "size": 6
+    },
+    {
+      "ea": 135962,
+      "name": "FwpsReleaseClassifyHandle0",
+      "size": 6
+    },
+    {
+      "ea": 135974,
+      "name": "FwpmTransactionBegin0",
+      "size": 6
+    },
+    {
+      "ea": 135986,
+      "name": "FwpsInjectTransportSendAsync0",
+      "size": 6
+    },
+    {
+      "ea": 135998,
+      "name": "FwpsCalloutRegister1",
+      "size": 6
+    },
+    {
+      "ea": 136010,
+      "name": "FwpmFilterAdd0",
+      "size": 6
+    },
+    {
+      "ea": 136022,
+      "name": "FwpmCalloutCreateEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136034,
+      "name": "FwpmProviderDeleteByKey0",
+      "size": 6
+    },
+    {
+      "ea": 136046,
+      "name": "FwpmFilterDestroyEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136058,
+      "name": "FwpsAcquireClassifyHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136070,
+      "name": "FwpmEngineOpen0",
+      "size": 6
+    },
+    {
+      "ea": 136082,
+      "name": "FwpmTransactionAbort0",
+      "size": 6
+    },
+    {
+      "ea": 136094,
+      "name": "FwpsCalloutRegister0",
+      "size": 6
+    },
+    {
+      "ea": 136106,
+      "name": "FwpmProviderAdd0",
+      "size": 6
+    },
+    {
+      "ea": 136118,
+      "name": "FwpmFilterEnum0",
+      "size": 6
+    },
+    {
+      "ea": 136130,
+      "name": "FwpmBfeStateSubscribeChanges0",
+      "size": 6
+    },
+    {
+      "ea": 136142,
+      "name": "FwpsAllocateCloneNetBufferList0",
+      "size": 6
+    },
+    {
+      "ea": 136154,
+      "name": "FwpmFilterDeleteByKey0",
+      "size": 6
+    },
+    {
+      "ea": 136166,
+      "name": "FwpmCalloutDestroyEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136178,
+      "name": "FwpmCalloutAdd0",
+      "size": 6
+    },
+    {
+      "ea": 136190,
+      "name": "FwpmSubLayerDestroyEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136202,
+      "name": "FwpmSubLayerCreateEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136214,
+      "name": "FwpmTransactionCommit0",
+      "size": 6
+    },
+    {
+      "ea": 136226,
+      "name": "FwpsInjectionHandleCreate0",
+      "size": 6
+    },
+    {
+      "ea": 136238,
+      "name": "FwpsAllocateNetBufferAndNetBufferList0",
+      "size": 6
+    },
+    {
+      "ea": 136250,
+      "name": "FwpmSubLayerEnum0",
+      "size": 6
+    },
+    {
+      "ea": 136262,
+      "name": "FwpsConstructIpHeaderForTransportPacket0",
+      "size": 6
+    },
+    {
+      "ea": 136274,
+      "name": "FwpsCloneStreamData0",
+      "size": 6
+    },
+    {
+      "ea": 136286,
+      "name": "FwpmProviderCreateEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136298,
+      "name": "FwpmSubLayerDeleteByKey0",
+      "size": 6
+    },
+    {
+      "ea": 136310,
+      "name": "FwpmProviderEnum0",
+      "size": 6
+    },
+    {
+      "ea": 136322,
+      "name": "FwpmCalloutDeleteById0",
+      "size": 6
+    },
+    {
+      "ea": 136334,
+      "name": "FwpsQueryPacketInjectionState0",
+      "size": 6
+    },
+    {
+      "ea": 136346,
+      "name": "FwpmCalloutDeleteByKey0",
+      "size": 6
+    },
+    {
+      "ea": 136358,
+      "name": "FwpsFlowRemoveContext0",
+      "size": 6
+    },
+    {
+      "ea": 136370,
+      "name": "FwpsFreeCloneNetBufferList0",
+      "size": 6
+    },
+    {
+      "ea": 136382,
+      "name": "FwpsApplyModifiedLayerData0",
+      "size": 6
+    },
+    {
+      "ea": 136394,
+      "name": "FwpmSubLayerAdd0",
+      "size": 6
+    },
+    {
+      "ea": 136406,
+      "name": "FwpmProviderDestroyEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136418,
+      "name": "FwpsCalloutUnregisterById0",
+      "size": 6
+    },
+    {
+      "ea": 136430,
+      "name": "FwpsAcquireWritableLayerDataPointer0",
+      "size": 6
+    },
+    {
+      "ea": 136442,
+      "name": "FwpsFlowAssociateContext0",
+      "size": 6
+    },
+    {
+      "ea": 136454,
+      "name": "FwpmCalloutEnum0",
+      "size": 6
+    },
+    {
+      "ea": 136466,
+      "name": "FwpmFilterCreateEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136478,
+      "name": "TdiMapUserRequest",
+      "size": 6
+    },
+    {
+      "ea": 136490,
+      "name": "NdisCancelTimer",
+      "size": 6
+    },
+    {
+      "ea": 136512,
+      "name": "memmove",
+      "size": 820
+    },
+    {
+      "ea": 137360,
+      "name": "memset",
+      "size": 234
+    },
+    {
+      "ea": 137600,
+      "name": "__GSHandlerCheckCommon",
+      "size": 99
+    },
+    {
+      "ea": 137708,
+      "name": "__GSHandlerCheck",
+      "size": 29
+    },
+    {
+      "ea": 137744,
+      "name": "__C_specific_handler",
+      "size": 6
+    },
+    {
+      "ea": 137756,
+      "name": "__GSHandlerCheck_SEH",
+      "size": 148
+    },
+    {
+      "ea": 450568,
+      "name": "__security_init_cookie",
+      "size": 85
+    },
+    {
+      "ea": 450660,
+      "name": "start",
+      "size": 30
+    }
+  ],
+  "interesting_functions": [
+    {
+      "ea": 69824,
+      "name": "CallbackFunction",
+      "size": 234
+    },
+    {
+      "ea": 71672,
+      "name": "DriverEntry",
+      "size": 1579
+    },
+    {
+      "ea": 89472,
+      "name": "NotifyRoutine",
+      "size": 489
+    },
+    {
+      "ea": 90548,
+      "name": "DriverReinitializationRoutine",
+      "size": 326
+    },
+    {
+      "ea": 116296,
+      "name": "callback",
+      "size": 41
+    },
+    {
+      "ea": 135878,
+      "name": "PsGetProcessPeb",
+      "size": 6
+    },
+    {
+      "ea": 135902,
+      "name": "FwpsFreeNetBufferList0",
+      "size": 6
+    },
+    {
+      "ea": 135914,
+      "name": "FwpmFilterDeleteById0",
+      "size": 6
+    },
+    {
+      "ea": 135926,
+      "name": "FwpmFreeMemory0",
+      "size": 6
+    },
+    {
+      "ea": 135938,
+      "name": "FwpsDiscardClonedStreamData0",
+      "size": 6
+    },
+    {
+      "ea": 135950,
+      "name": "FwpmEngineClose0",
+      "size": 6
+    },
+    {
+      "ea": 135962,
+      "name": "FwpsReleaseClassifyHandle0",
+      "size": 6
+    },
+    {
+      "ea": 135974,
+      "name": "FwpmTransactionBegin0",
+      "size": 6
+    },
+    {
+      "ea": 135986,
+      "name": "FwpsInjectTransportSendAsync0",
+      "size": 6
+    },
+    {
+      "ea": 135998,
+      "name": "FwpsCalloutRegister1",
+      "size": 6
+    },
+    {
+      "ea": 136010,
+      "name": "FwpmFilterAdd0",
+      "size": 6
+    },
+    {
+      "ea": 136022,
+      "name": "FwpmCalloutCreateEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136034,
+      "name": "FwpmProviderDeleteByKey0",
+      "size": 6
+    },
+    {
+      "ea": 136046,
+      "name": "FwpmFilterDestroyEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136058,
+      "name": "FwpsAcquireClassifyHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136070,
+      "name": "FwpmEngineOpen0",
+      "size": 6
+    },
+    {
+      "ea": 136082,
+      "name": "FwpmTransactionAbort0",
+      "size": 6
+    },
+    {
+      "ea": 136094,
+      "name": "FwpsCalloutRegister0",
+      "size": 6
+    },
+    {
+      "ea": 136106,
+      "name": "FwpmProviderAdd0",
+      "size": 6
+    },
+    {
+      "ea": 136118,
+      "name": "FwpmFilterEnum0",
+      "size": 6
+    },
+    {
+      "ea": 136130,
+      "name": "FwpmBfeStateSubscribeChanges0",
+      "size": 6
+    },
+    {
+      "ea": 136142,
+      "name": "FwpsAllocateCloneNetBufferList0",
+      "size": 6
+    },
+    {
+      "ea": 136154,
+      "name": "FwpmFilterDeleteByKey0",
+      "size": 6
+    },
+    {
+      "ea": 136166,
+      "name": "FwpmCalloutDestroyEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136178,
+      "name": "FwpmCalloutAdd0",
+      "size": 6
+    },
+    {
+      "ea": 136190,
+      "name": "FwpmSubLayerDestroyEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136202,
+      "name": "FwpmSubLayerCreateEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136214,
+      "name": "FwpmTransactionCommit0",
+      "size": 6
+    },
+    {
+      "ea": 136226,
+      "name": "FwpsInjectionHandleCreate0",
+      "size": 6
+    },
+    {
+      "ea": 136238,
+      "name": "FwpsAllocateNetBufferAndNetBufferList0",
+      "size": 6
+    },
+    {
+      "ea": 136250,
+      "name": "FwpmSubLayerEnum0",
+      "size": 6
+    },
+    {
+      "ea": 136262,
+      "name": "FwpsConstructIpHeaderForTransportPacket0",
+      "size": 6
+    },
+    {
+      "ea": 136274,
+      "name": "FwpsCloneStreamData0",
+      "size": 6
+    },
+    {
+      "ea": 136286,
+      "name": "FwpmProviderCreateEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136298,
+      "name": "FwpmSubLayerDeleteByKey0",
+      "size": 6
+    },
+    {
+      "ea": 136310,
+      "name": "FwpmProviderEnum0",
+      "size": 6
+    },
+    {
+      "ea": 136322,
+      "name": "FwpmCalloutDeleteById0",
+      "size": 6
+    },
+    {
+      "ea": 136334,
+      "name": "FwpsQueryPacketInjectionState0",
+      "size": 6
+    },
+    {
+      "ea": 136346,
+      "name": "FwpmCalloutDeleteByKey0",
+      "size": 6
+    },
+    {
+      "ea": 136358,
+      "name": "FwpsFlowRemoveContext0",
+      "size": 6
+    },
+    {
+      "ea": 136370,
+      "name": "FwpsFreeCloneNetBufferList0",
+      "size": 6
+    },
+    {
+      "ea": 136382,
+      "name": "FwpsApplyModifiedLayerData0",
+      "size": 6
+    },
+    {
+      "ea": 136394,
+      "name": "FwpmSubLayerAdd0",
+      "size": 6
+    },
+    {
+      "ea": 136406,
+      "name": "FwpmProviderDestroyEnumHandle0",
+      "size": 6
+    },
+    {
+      "ea": 136418,
+      "name": "FwpsCalloutUnregisterById0",
+      "size": 6
+    },
+    {
+      "ea": 136430,
+      "name": "FwpsAcquireWritableLayerDataPointer0",
+      "size": 6
+    },
+    {
+      "ea": 136442,
+      "name": "FwpsFlowAssociateContext0",
+      "size": 6
+    },
+    {
+      "ea": 136454,
+      "name": "FwpmCalloutEnum0",
+      "size": 6
+    },
+    {
+      "ea": 136466,
+      "name": "FwpmFilterCreateEnumHandle0",
+      "size": 6
+    }
+  ],
+  "interesting_strings": [
+    {
+      "ea": 139376,
+      "type": 0,
+      "value": "NetLimitWfpAddFilters"
+    },
+    {
+      "ea": 139408,
+      "type": 0,
+      "value": "360netmon!%s %u : FilterAdd Established V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 139472,
+      "type": 0,
+      "value": "360netmon!%s %u : FilterAdd Stream V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 139536,
+      "type": 0,
+      "value": "360netmon!%s %u : FilterAdd Datagram V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 139616,
+      "type": 0,
+      "value": "NetLimitWfpAddCallouts"
+    },
+    {
+      "ea": 139648,
+      "type": 0,
+      "value": "360netmon!%s %u : CalloutAdd Established V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 139712,
+      "type": 0,
+      "value": "360netmon!%s %u : CalloutAdd Stream V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 139776,
+      "type": 0,
+      "value": "360netmon!%s %u : CalloutAdd Datagram V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 139840,
+      "type": 0,
+      "value": "NetLimitWfpRegisterCallouts"
+    },
+    {
+      "ea": 139872,
+      "type": 0,
+      "value": "360netmon!%s %u : CalloutRegister Established V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 139952,
+      "type": 0,
+      "value": "360netmon!%s %u : CalloutRegister Stream V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 140016,
+      "type": 0,
+      "value": "360netmon!%s %u : CalloutRegister Datagram V6 error! [0x%08X]\r\n"
+    },
+    {
+      "ea": 140144,
+      "type": 0,
+      "value": "FwpsRedirectHandleCreate0"
+    },
+    {
+      "ea": 140192,
+      "type": 0,
+      "value": "FwpsRedirectHandleDestroy0"
+    },
+    {
+      "ea": 145384,
+      "type": 16777216,
+      "value": "c:\\vmagent_new\\bin\\joblist\\960729\\src\\f_capital\\fixsp_360netmon_x64_wfp.sys\\output\\amd64\\360netmon_x64_wfp.pdb"
+    },
+    {
+      "ea": 452582,
+      "type": 0,
+      "value": "PsSetCreateProcessNotifyRoutine"
+    },
+    {
+      "ea": 452716,
+      "type": 0,
+      "value": "KeDelayExecutionThread"
+    },
+    {
+      "ea": 452772,
+      "type": 0,
+      "value": "PsCreateSystemThread"
+    },
+    {
+      "ea": 452890,
+      "type": 0,
+      "value": "PsTerminateSystemThread"
+    },
+    {
+      "ea": 453060,
+      "type": 0,
+      "value": "CmRegisterCallback"
+    },
+    {
+      "ea": 453126,
+      "type": 0,
+      "value": "PsGetCurrentThreadId"
+    },
+    {
+      "ea": 453150,
+      "type": 0,
+      "value": "PsGetCurrentProcessId"
+    },
+    {
+      "ea": 453366,
+      "type": 0,
+      "value": "PsGetProcessPeb"
+    },
+    {
+      "ea": 453430,
+      "type": 0,
+      "value": "PsLookupProcessByProcessId"
+    },
+    {
+      "ea": 453524,
+      "type": 0,
+      "value": "KeUnstackDetachProcess"
+    },
+    {
+      "ea": 453610,
+      "type": 0,
+      "value": "IoGetCurrentProcess"
+    },
+    {
+      "ea": 453672,
+      "type": 0,
+      "value": "ZwQueryInformationProcess"
+    },
+    {
+      "ea": 453766,
+      "type": 0,
+      "value": "KeStackAttachProcess"
+    },
+    {
+      "ea": 454240,
+      "type": 0,
+      "value": "FwpsFreeNetBufferList0"
+    },
+    {
+      "ea": 454266,
+      "type": 0,
+      "value": "FwpmFilterDeleteById0"
+    },
+    {
+      "ea": 454290,
+      "type": 0,
+      "value": "FwpmFreeMemory0"
+    },
+    {
+      "ea": 454308,
+      "type": 0,
+      "value": "FwpsDiscardClonedStreamData0"
+    },
+    {
+      "ea": 454340,
+      "type": 0,
+      "value": "FwpmEngineClose0"
+    },
+    {
+      "ea": 454360,
+      "type": 0,
+      "value": "FwpsReleaseClassifyHandle0"
+    },
+    {
+      "ea": 454390,
+      "type": 0,
+      "value": "FwpmTransactionBegin0"
+    },
+    {
+      "ea": 454414,
+      "type": 0,
+      "value": "FwpsInjectTransportSendAsync0"
+    },
+    {
+      "ea": 454446,
+      "type": 0,
+      "value": "FwpsCalloutRegister1"
+    },
+    {
+      "ea": 454470,
+      "type": 0,
+      "value": "FwpmFilterAdd0"
+    },
+    {
+      "ea": 454488,
+      "type": 0,
+      "value": "FwpmCalloutCreateEnumHandle0"
+    },
+    {
+      "ea": 454520,
+      "type": 0,
+      "value": "FwpmProviderDeleteByKey0"
+    },
+    {
+      "ea": 454548,
+      "type": 0,
+      "value": "FwpmFilterDestroyEnumHandle0"
+    },
+    {
+      "ea": 454580,
+      "type": 0,
+      "value": "FwpsAcquireClassifyHandle0"
+    },
+    {
+      "ea": 454610,
+      "type": 0,
+      "value": "FwpmEngineOpen0"
+    },
+    {
+      "ea": 454628,
+      "type": 0,
+      "value": "FwpmTransactionAbort0"
+    },
+    {
+      "ea": 454652,
+      "type": 0,
+      "value": "FwpsCalloutRegister0"
+    },
+    {
+      "ea": 454676,
+      "type": 0,
+      "value": "FwpmProviderAdd0"
+    },
+    {
+      "ea": 454696,
+      "type": 0,
+      "value": "FwpmFilterEnum0"
+    },
+    {
+      "ea": 454714,
+      "type": 0,
+      "value": "FwpmBfeStateSubscribeChanges0"
+    },
+    {
+      "ea": 454746,
+      "type": 0,
+      "value": "FwpsAllocateCloneNetBufferList0"
+    },
+    {
+      "ea": 454780,
+      "type": 0,
+      "value": "FwpmFilterDeleteByKey0"
+    },
+    {
+      "ea": 454806,
+      "type": 0,
+      "value": "FwpmCalloutDestroyEnumHandle0"
+    },
+    {
+      "ea": 454838,
+      "type": 0,
+      "value": "FwpmCalloutAdd0"
+    },
+    {
+      "ea": 454856,
+      "type": 0,
+      "value": "FwpmSubLayerDestroyEnumHandle0"
+    },
+    {
+      "ea": 454890,
+      "type": 0,
+      "value": "FwpmSubLayerCreateEnumHandle0"
+    },
+    {
+      "ea": 454922,
+      "type": 0,
+      "value": "FwpmTransactionCommit0"
+    },
+    {
+      "ea": 454948,
+      "type": 0,
+      "value": "FwpsInjectionHandleCreate0"
+    },
+    {
+      "ea": 454978,
+      "type": 0,
+      "value": "FwpsAllocateNetBufferAndNetBufferList0"
+    },
+    {
+      "ea": 455020,
+      "type": 0,
+      "value": "FwpmSubLayerEnum0"
+    },
+    {
+      "ea": 455040,
+      "type": 0,
+      "value": "FwpsConstructIpHeaderForTransportPacket0"
+    },
+    {
+      "ea": 455084,
+      "type": 0,
+      "value": "FwpsCloneStreamData0"
+    },
+    {
+      "ea": 455108,
+      "type": 0,
+      "value": "FwpmProviderCreateEnumHandle0"
+    },
+    {
+      "ea": 455140,
+      "type": 0,
+      "value": "FwpmSubLayerDeleteByKey0"
+    },
+    {
+      "ea": 455168,
+      "type": 0,
+      "value": "FwpmProviderEnum0"
+    },
+    {
+      "ea": 455188,
+      "type": 0,
+      "value": "FwpmCalloutDeleteById0"
+    },
+    {
+      "ea": 455214,
+      "type": 0,
+      "value": "FwpsQueryPacketInjectionState0"
+    },
+    {
+      "ea": 455248,
+      "type": 0,
+      "value": "FwpmCalloutDeleteByKey0"
+    },
+    {
+      "ea": 455274,
+      "type": 0,
+      "value": "FwpsFlowRemoveContext0"
+    },
+    {
+      "ea": 455300,
+      "type": 0,
+      "value": "FwpsFreeCloneNetBufferList0"
+    },
+    {
+      "ea": 455330,
+      "type": 0,
+      "value": "FwpsApplyModifiedLayerData0"
+    },
+    {
+      "ea": 455360,
+      "type": 0,
+      "value": "FwpmSubLayerAdd0"
+    },
+    {
+      "ea": 455380,
+      "type": 0,
+      "value": "FwpmProviderDestroyEnumHandle0"
+    },
+    {
+      "ea": 455414,
+      "type": 0,
+      "value": "FwpsCalloutUnregisterById0"
+    },
+    {
+      "ea": 455444,
+      "type": 0,
+      "value": "FwpsAcquireWritableLayerDataPointer0"
+    },
+    {
+      "ea": 455484,
+      "type": 0,
+      "value": "FwpsFlowAssociateContext0"
+    },
+    {
+      "ea": 455512,
+      "type": 0,
+      "value": "FwpmCalloutEnum0"
+    },
+    {
+      "ea": 455532,
+      "type": 0,
+      "value": "FwpmFilterCreateEnumHandle0"
+    }
+  ],
+  "string_count_sampled": 180
+}

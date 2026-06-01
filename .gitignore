@@ -1,0 +1,37 @@
+90_sources/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build artifacts - never track compiled output
+*.exe
+*.obj
+*.dll
+
+# IDA Pro database files
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+*.idb
+
+# Backup/temp files
+*.bak
+*.tmp
+*.log
+
+# Python artifacts
+*.pyc
+*.pyd
+*.pyo
+__pycache__/
+
+# Temp working directories committed by mistake
+.codex_tmp/
+.format_deps/
+
+# Research scratch directory (working copy, sources kept elsewhere)
+amd_ryzen_master/

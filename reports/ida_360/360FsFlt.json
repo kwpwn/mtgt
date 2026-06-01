@@ -1,0 +1,8900 @@
+{
+  "metadata": {
+    "input_file": "E:\\temp\\360_reverse_CTF\\360FsFlt.sys",
+    "root_filename": "360FsFlt.sys",
+    "imagebase": 65536,
+    "start_ea": 1009520,
+    "procname": "metapc",
+    "is_64bit": true
+  },
+  "sections": [
+    {
+      "name": ".text",
+      "start": 69632,
+      "end": 540672,
+      "size": 471040,
+      "perm": 5
+    },
+    {
+      "name": ".idata",
+      "start": 540672,
+      "end": 543016,
+      "size": 2344,
+      "perm": 4
+    },
+    {
+      "name": ".rdata",
+      "start": 543016,
+      "end": 593920,
+      "size": 50904,
+      "perm": 4
+    },
+    {
+      "name": ".data",
+      "start": 593920,
+      "end": 991232,
+      "size": 397312,
+      "perm": 6
+    },
+    {
+      "name": ".pdata",
+      "start": 991232,
+      "end": 1007616,
+      "size": 16384,
+      "perm": 4
+    },
+    {
+      "name": "INIT",
+      "start": 1007616,
+      "end": 1024000,
+      "size": 16384,
+      "perm": 7
+    }
+  ],
+  "imports": [
+    {
+      "ea": 540984,
+      "name": "RtlCopySid",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 540992,
+      "name": "RtlEqualUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541000,
+      "name": "FsRtlIsNameInExpression",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541008,
+      "name": "PsGetProcessSessionId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541016,
+      "name": "ZwOpenProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541024,
+      "name": "ZwQueryInformationProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541032,
+      "name": "RtlLengthSid",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541040,
+      "name": "FsRtlLegalAnsiCharacterArray",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541048,
+      "name": "RtlCompareUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541056,
+      "name": "IoThreadToProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541064,
+      "name": "IoAttachDeviceToDeviceStackSafe",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541072,
+      "name": "IoGetDeviceObjectPointer",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541080,
+      "name": "IofCompleteRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541088,
+      "name": "IoCreateDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541096,
+      "name": "PsGetProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541104,
+      "name": "IofCallDriver",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541112,
+      "name": "ExGetPreviousMode",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541120,
+      "name": "RtlPrefixUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541128,
+      "name": "_wcsicmp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541136,
+      "name": "ZwUnloadKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541144,
+      "name": "ZwCreateKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541152,
+      "name": "RtlCreateAcl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541160,
+      "name": "KeAreApcsDisabled",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541168,
+      "name": "RtlSetDaclSecurityDescriptor",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541176,
+      "name": "MmGetSystemRoutineAddress",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541184,
+      "name": "IoCreateFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541192,
+      "name": "ZwDeleteValueKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541200,
+      "name": "ZwSaveKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541208,
+      "name": "RtlAddAccessAllowedAce",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541216,
+      "name": "ZwSetInformationFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541224,
+      "name": "KeDelayExecutionThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541232,
+      "name": "_vsnwprintf",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541240,
+      "name": "ZwDeleteFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541248,
+      "name": "SeExports",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541256,
+      "name": "ZwLoadKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541264,
+      "name": "ZwDeleteKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541272,
+      "name": "ZwEnumerateKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541280,
+      "name": "RtlCreateSecurityDescriptor",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541288,
+      "name": "ExQueueWorkItem",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541296,
+      "name": "_stricmp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541304,
+      "name": "ExAcquireResourceExclusiveLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541312,
+      "name": "ExReleaseFastMutex",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541320,
+      "name": "KeLeaveCriticalRegion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541328,
+      "name": "ExAcquireFastMutex",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541336,
+      "name": "PsGetProcessImageFileName",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541344,
+      "name": "PsIsSystemThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541352,
+      "name": "PsIsThreadImpersonating",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541360,
+      "name": "KeInitializeEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541368,
+      "name": "RtlGetVersion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541376,
+      "name": "PsGetThreadId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541384,
+      "name": "KeEnterCriticalRegion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541392,
+      "name": "IoFileObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541400,
+      "name": "MmMapLockedPagesSpecifyCache",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541408,
+      "name": "ExAcquireResourceSharedLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541416,
+      "name": "ExReleaseResourceLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541424,
+      "name": "PsGetProcessInheritedFromUniqueProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541432,
+      "name": "ObCloseHandle",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541440,
+      "name": "PsGetVersion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541448,
+      "name": "RtlEqualString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541456,
+      "name": "ExDeleteResourceLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541464,
+      "name": "IoGetTopLevelIrp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541472,
+      "name": "PsGetCurrentThreadId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541480,
+      "name": "ExInitializeResourceLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541488,
+      "name": "PsGetProcessWow64Process",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541496,
+      "name": "MmSecureVirtualMemory",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541504,
+      "name": "RtlVolumeDeviceToDosName",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541512,
+      "name": "ZwCreateEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541520,
+      "name": "RtlAnsiStringToUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541528,
+      "name": "ObOpenObjectByName",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541536,
+      "name": "ZwFsControlFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541544,
+      "name": "_wcsnicmp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541552,
+      "name": "ZwReadFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541560,
+      "name": "IoIsFileOriginRemote",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541568,
+      "name": "PsReferenceImpersonationToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541576,
+      "name": "ZwMapViewOfSection",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541584,
+      "name": "wcsncpy",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541592,
+      "name": "RtlEqualSid",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541600,
+      "name": "RtlInitAnsiString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541608,
+      "name": "ZwQueryObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541616,
+      "name": "MmHighestUserAddress",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541624,
+      "name": "IoQueryFileInformation",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541632,
+      "name": "SeTokenObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541640,
+      "name": "SeTokenIsRestricted",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541648,
+      "name": "SeLocateProcessImageName",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541656,
+      "name": "LdrAccessResource",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541664,
+      "name": "IoGetTransactionParameterBlock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541672,
+      "name": "ObQueryNameString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541680,
+      "name": "ZwWaitForSingleObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541688,
+      "name": "ZwCreateFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541696,
+      "name": "ZwUnmapViewOfSection",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541704,
+      "name": "ZwQueryDirectoryFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541712,
+      "name": "ZwFreeVirtualMemory",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541720,
+      "name": "RtlRandomEx",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541728,
+      "name": "RtlAppendUnicodeStringToString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541736,
+      "name": "SeQueryInformationToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541744,
+      "name": "PsInitialSystemProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541752,
+      "name": "PsDereferenceImpersonationToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541760,
+      "name": "ObfReferenceObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541768,
+      "name": "RtlUnicodeStringToInteger",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541776,
+      "name": "ZwCreateSection",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541784,
+      "name": "ZwOpenFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541792,
+      "name": "ZwTerminateProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541800,
+      "name": "ZwQueryInformationToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541808,
+      "name": "ZwQueryInformationFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541816,
+      "name": "MmUnsecureVirtualMemory",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541824,
+      "name": "RtlUpcaseUnicodeChar",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541832,
+      "name": "ZwWriteFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541840,
+      "name": "RtlUpcaseUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541848,
+      "name": "PsGetCurrentThreadTeb",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541856,
+      "name": "ZwQueryKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541864,
+      "name": "ZwAllocateVirtualMemory",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541872,
+      "name": "LdrFindResource_U",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541880,
+      "name": "RtlCompareMemory",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541888,
+      "name": "PsGetProcessSectionBaseAddress",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541896,
+      "name": "ObRegisterCallbacks",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541904,
+      "name": "PsSetCreateThreadNotifyRoutine",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541912,
+      "name": "PsSetCreateProcessNotifyRoutine",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541920,
+      "name": "PoStartNextPowerIrp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541928,
+      "name": "ZwQueryVolumeInformationFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541936,
+      "name": "_strnicmp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541944,
+      "name": "RtlConvertSidToUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541952,
+      "name": "MmUserProbeAddress",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541960,
+      "name": "RtlFreeUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541968,
+      "name": "KeQueryTimeIncrement",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541976,
+      "name": "IoBuildDeviceIoControlRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541984,
+      "name": "IoIs32bitProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 541992,
+      "name": "IoDriverObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542000,
+      "name": "IoGetDeviceAttachmentBaseRef",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542008,
+      "name": "IoGetAttachedDeviceReference",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542016,
+      "name": "ObReferenceObjectByName",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542024,
+      "name": "IoEnumerateDeviceObjectList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542032,
+      "name": "MmUnmapLockedPages",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542040,
+      "name": "ExRaiseStatus",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542048,
+      "name": "IoFreeMdl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542056,
+      "name": "MmProbeAndLockPages",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542064,
+      "name": "MmUnlockPages",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542072,
+      "name": "IoAllocateMdl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542080,
+      "name": "RtlImageNtHeader",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542088,
+      "name": "KeBugCheckEx",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542096,
+      "name": "ZwOpenKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542104,
+      "name": "ExQueryDepthSList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542112,
+      "name": "ZwQueryValueKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542120,
+      "name": "ExpInterlockedPopEntrySList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542128,
+      "name": "ZwSetValueKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542136,
+      "name": "ExpInterlockedPushEntrySList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542144,
+      "name": "PsDereferencePrimaryToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542152,
+      "name": "PsLookupThreadByThreadId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542160,
+      "name": "KeStackAttachProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542168,
+      "name": "DbgPrint",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542176,
+      "name": "ObOpenObjectByPointer",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542184,
+      "name": "ObfDereferenceObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542192,
+      "name": "MmIsAddressValid",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542200,
+      "name": "ExInitializePagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542208,
+      "name": "RtlCopyUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542216,
+      "name": "PsGetCurrentProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542224,
+      "name": "PsThreadType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542232,
+      "name": "KeWaitForSingleObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542240,
+      "name": "ObReferenceObjectByHandle",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542248,
+      "name": "ZwClose",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542256,
+      "name": "ExEventObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542264,
+      "name": "IoGetCurrentProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542272,
+      "name": "ExAllocatePool",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542280,
+      "name": "ExDeletePagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542288,
+      "name": "KeUnstackDetachProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542296,
+      "name": "KeAcquireInStackQueuedSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542304,
+      "name": "ZwQuerySystemInformation",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542312,
+      "name": "PsReferencePrimaryToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542320,
+      "name": "ProbeForWrite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542328,
+      "name": "KeSetEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542336,
+      "name": "RtlInitUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542344,
+      "name": "PsLookupProcessByProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542352,
+      "name": "KeReleaseInStackQueuedSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542360,
+      "name": "ExFreePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542368,
+      "name": "PsProcessType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542376,
+      "name": "ProbeForRead",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542384,
+      "name": "NtFreeVirtualMemory",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542392,
+      "name": "RtlStringFromGUID",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542400,
+      "name": "SeSinglePrivilegeCheck",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542408,
+      "name": "CmKeyObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542416,
+      "name": "TmTransactionObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542424,
+      "name": "IoRegisterDriverReinitialization",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542432,
+      "name": "PsJobType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542440,
+      "name": "ExSemaphoreObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542448,
+      "name": "MmIsDriverVerifying",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542456,
+      "name": "TmTransactionManagerObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542464,
+      "name": "TmResourceManagerObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542472,
+      "name": "MmSectionObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542480,
+      "name": "TmEnlistmentObjectType",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542488,
+      "name": "ExRaiseAccessViolation",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542496,
+      "name": "RtlImageDirectoryEntryToData",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542504,
+      "name": "wcsstr",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542512,
+      "name": "ZwQuerySymbolicLinkObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542520,
+      "name": "ZwOpenSymbolicLinkObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542528,
+      "name": "IoDeleteSymbolicLink",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542536,
+      "name": "IoDeleteDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542544,
+      "name": "CmRegisterCallback",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542552,
+      "name": "IoCreateSymbolicLink",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542560,
+      "name": "KeReleaseSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542568,
+      "name": "IoReleaseCancelSpinLock",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542576,
+      "name": "KeAcquireSpinLockRaiseToDpc",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542584,
+      "name": "ExInitializeNPagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542592,
+      "name": "ExDeleteNPagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542600,
+      "name": "IoGetRequestorProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542608,
+      "name": "RtlUnicodeStringToAnsiString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542616,
+      "name": "RtlFreeAnsiString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542624,
+      "name": "KeInitializeApc",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542632,
+      "name": "RtlIntegerToUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542640,
+      "name": "KeInsertQueueApc",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542648,
+      "name": "ZwDuplicateObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542656,
+      "name": "RtlFormatCurrentUserKeyPath",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542664,
+      "name": "PsGetThreadTeb",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542672,
+      "name": "ZwQuerySection",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542680,
+      "name": "ZwOpenSection",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542688,
+      "name": "NtQueryInformationThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542696,
+      "name": "NtQueryInformationProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542704,
+      "name": "IoCreateFileSpecifyDeviceObjectHint",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542712,
+      "name": "ObMakeTemporaryObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542720,
+      "name": "RtlAppendUnicodeToString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542728,
+      "name": "strncpy",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542736,
+      "name": "ExSystemTimeToLocalTime",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542744,
+      "name": "RtlTimeToTimeFields",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542752,
+      "name": "PsGetThreadProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542760,
+      "name": "IoIsSystemThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542768,
+      "name": "ExInterlockedInsertTailList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542776,
+      "name": "IoGetRequestorSessionId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542784,
+      "name": "PsGetCurrentProcessSessionId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542792,
+      "name": "wcsrchr",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542800,
+      "name": "RtlSubAuthoritySid",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542808,
+      "name": "SeTokenIsAdmin",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542816,
+      "name": "SeFilterToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542824,
+      "name": "ZwSetInformationProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542832,
+      "name": "RtlSubAuthorityCountSid",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542840,
+      "name": "KeClearEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542848,
+      "name": "PsSetLoadImageNotifyRoutine",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542856,
+      "name": "PsCreateSystemThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542864,
+      "name": "PsTerminateSystemThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542872,
+      "name": "PsRemoveLoadImageNotifyRoutine",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542880,
+      "name": "RtlTimeFieldsToTime",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542888,
+      "name": "_itow",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542896,
+      "name": "_vsnprintf",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542904,
+      "name": "PsGetContextThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542912,
+      "name": "IoGetStackLimits",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542920,
+      "name": "RtlxAnsiStringToUnicodeSize",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542928,
+      "name": "NlsMbOemCodePageTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542936,
+      "name": "ExLocalTimeToSystemTime",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542944,
+      "name": "ZwDeviceIoControlFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542952,
+      "name": "ExAcquireRundownProtection",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542960,
+      "name": "ExReleaseRundownProtection",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542968,
+      "name": "IoGetDeviceProperty",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542976,
+      "name": "ExAllocatePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542984,
+      "name": "IoQueryFileDosDeviceName",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 542992,
+      "name": "MmSystemRangeStart",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 543000,
+      "name": "__C_specific_handler",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 540672,
+      "name": "FltParseFileName",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540680,
+      "name": "FltCreateCommunicationPort",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540688,
+      "name": "FltGetVolumeFromFileObject",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540696,
+      "name": "FltGetTopInstance",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540704,
+      "name": "FltSetInformationFile",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540712,
+      "name": "FltGetFileNameInformationUnsafe",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540720,
+      "name": "FltWriteFile",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540728,
+      "name": "FltObjectDereference",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540736,
+      "name": "FltParseFileNameInformation",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540744,
+      "name": "FltReleaseFileNameInformation",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540752,
+      "name": "FltGetRoutineAddress",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540760,
+      "name": "FltGetFileNameInformation",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540768,
+      "name": "FltAllocateContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540776,
+      "name": "FltClose",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540784,
+      "name": "FltReleaseContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540792,
+      "name": "FltQueryInformationFile",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540800,
+      "name": "FltCreateFile",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540808,
+      "name": "FltReadFile",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540816,
+      "name": "FltSetCallbackDataDirty",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540824,
+      "name": "FltDeleteContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540832,
+      "name": "FltGetDestinationFileNameInformation",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540840,
+      "name": "FltCancelFileOpen",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540848,
+      "name": "FltGetTunneledName",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540856,
+      "name": "FltGetRequestorProcessId",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540864,
+      "name": "FltSetStreamHandleContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540872,
+      "name": "FltSendMessage",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540880,
+      "name": "FltGetStreamHandleContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540888,
+      "name": "FltGetDeviceObject",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540896,
+      "name": "FltReferenceFileNameInformation",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540904,
+      "name": "FltStartFiltering",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540912,
+      "name": "FltRegisterFilter",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540920,
+      "name": "FltBuildDefaultSecurityDescriptor",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540928,
+      "name": "FltCloseCommunicationPort",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540936,
+      "name": "FltUnregisterFilter",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540944,
+      "name": "FltFreeSecurityDescriptor",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540952,
+      "name": "FltCloseClientPort",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 540968,
+      "name": "KeQueryPerformanceCounter",
+      "ordinal": 0,
+      "module": "HAL"
+    }
+  ],
+  "exports": [
+    {
+      "ea": 1009520,
+      "ordinal": 1009520,
+      "name": "start"
+    }
+  ],
+  "api_surface": [
+    "IoCreateDevice",
+    "IoCreateSymbolicLink",
+    "IoDeleteDevice",
+    "IoDeleteSymbolicLink",
+    "FltRegisterFilter",
+    "FltStartFiltering",
+    "FltCreateCommunicationPort",
+    "FltUnregisterFilter",
+    "ObRegisterCallbacks",
+    "PsSetCreateProcessNotifyRoutine",
+    "PsSetCreateThreadNotifyRoutine",
+    "PsSetLoadImageNotifyRoutine",
+    "CmRegisterCallback",
+    "ExAllocatePool",
+    "ExAllocatePoolWithTag",
+    "ZwOpenProcess",
+    "ZwTerminateProcess",
+    "ZwQuerySystemInformation"
+  ],
+  "functions": [
+    {
+      "ea": 69640,
+      "name": "ConnectNotifyCallback",
+      "size": 124
+    },
+    {
+      "ea": 69772,
+      "name": "sub_1108C",
+      "size": 155
+    },
+    {
+      "ea": 69936,
+      "name": "DisconnectNotifyCallback",
+      "size": 229
+    },
+    {
+      "ea": 70172,
+      "name": "sub_1121C",
+      "size": 257
+    },
+    {
+      "ea": 70436,
+      "name": "sub_11324",
+      "size": 31
+    },
+    {
+      "ea": 70476,
+      "name": "MessageNotifyCallback",
+      "size": 21256
+    },
+    {
+      "ea": 91740,
+      "name": "sub_1665C",
+      "size": 1081
+    },
+    {
+      "ea": 92828,
+      "name": "sub_16A9C",
+      "size": 445
+    },
+    {
+      "ea": 93280,
+      "name": "sub_16C60",
+      "size": 6
+    },
+    {
+      "ea": 93292,
+      "name": "sub_16C6C",
+      "size": 119
+    },
+    {
+      "ea": 93420,
+      "name": "sub_16CEC",
+      "size": 91
+    },
+    {
+      "ea": 93520,
+      "name": "sub_16D50",
+      "size": 202
+    },
+    {
+      "ea": 93728,
+      "name": "sub_16E20",
+      "size": 20
+    },
+    {
+      "ea": 93756,
+      "name": "sub_16E3C",
+      "size": 15
+    },
+    {
+      "ea": 93780,
+      "name": "sub_16E54",
+      "size": 22
+    },
+    {
+      "ea": 93808,
+      "name": "sub_16E70",
+      "size": 20
+    },
+    {
+      "ea": 93836,
+      "name": "sub_16E8C",
+      "size": 15
+    },
+    {
+      "ea": 93860,
+      "name": "sub_16EA4",
+      "size": 262
+    },
+    {
+      "ea": 94128,
+      "name": "sub_16FB0",
+      "size": 163
+    },
+    {
+      "ea": 94300,
+      "name": "sub_1705C",
+      "size": 271
+    },
+    {
+      "ea": 94580,
+      "name": "sub_17174",
+      "size": 142
+    },
+    {
+      "ea": 94728,
+      "name": "sub_17208",
+      "size": 705
+    },
+    {
+      "ea": 95440,
+      "name": "sub_174D0",
+      "size": 202
+    },
+    {
+      "ea": 95648,
+      "name": "sub_175A0",
+      "size": 93
+    },
+    {
+      "ea": 95748,
+      "name": "sub_17604",
+      "size": 216
+    },
+    {
+      "ea": 95972,
+      "name": "sub_176E4",
+      "size": 116
+    },
+    {
+      "ea": 96096,
+      "name": "sub_17760",
+      "size": 16
+    },
+    {
+      "ea": 96120,
+      "name": "sub_17778",
+      "size": 13
+    },
+    {
+      "ea": 96140,
+      "name": "sub_1778C",
+      "size": 295
+    },
+    {
+      "ea": 96444,
+      "name": "sub_178BC",
+      "size": 199
+    },
+    {
+      "ea": 96652,
+      "name": "sub_1798C",
+      "size": 155
+    },
+    {
+      "ea": 96816,
+      "name": "sub_17A30",
+      "size": 15
+    },
+    {
+      "ea": 96840,
+      "name": "sub_17A48",
+      "size": 9
+    },
+    {
+      "ea": 96856,
+      "name": "sub_17A58",
+      "size": 17
+    },
+    {
+      "ea": 96880,
+      "name": "sub_17A70",
+      "size": 88
+    },
+    {
+      "ea": 96976,
+      "name": "sub_17AD0",
+      "size": 9
+    },
+    {
+      "ea": 96992,
+      "name": "sub_17AE0",
+      "size": 6
+    },
+    {
+      "ea": 97004,
+      "name": "sub_17AEC",
+      "size": 40
+    },
+    {
+      "ea": 97052,
+      "name": "sub_17B1C",
+      "size": 25
+    },
+    {
+      "ea": 97084,
+      "name": "sub_17B3C",
+      "size": 81
+    },
+    {
+      "ea": 97172,
+      "name": "sub_17B94",
+      "size": 195
+    },
+    {
+      "ea": 97376,
+      "name": "sub_17C60",
+      "size": 94
+    },
+    {
+      "ea": 97476,
+      "name": "sub_17CC4",
+      "size": 33
+    },
+    {
+      "ea": 97516,
+      "name": "sub_17CEC",
+      "size": 427
+    },
+    {
+      "ea": 97952,
+      "name": "sub_17EA0",
+      "size": 209
+    },
+    {
+      "ea": 98168,
+      "name": "sub_17F78",
+      "size": 228
+    },
+    {
+      "ea": 98404,
+      "name": "sub_18064",
+      "size": 170
+    },
+    {
+      "ea": 98580,
+      "name": "sub_18114",
+      "size": 480
+    },
+    {
+      "ea": 99068,
+      "name": "sub_182FC",
+      "size": 132
+    },
+    {
+      "ea": 99208,
+      "name": "sub_18388",
+      "size": 133
+    },
+    {
+      "ea": 99348,
+      "name": "sub_18414",
+      "size": 202
+    },
+    {
+      "ea": 99556,
+      "name": "sub_184E4",
+      "size": 670
+    },
+    {
+      "ea": 100232,
+      "name": "sub_18788",
+      "size": 124
+    },
+    {
+      "ea": 100364,
+      "name": "sub_1880C",
+      "size": 255
+    },
+    {
+      "ea": 100628,
+      "name": "sub_18914",
+      "size": 208
+    },
+    {
+      "ea": 100844,
+      "name": "sub_189EC",
+      "size": 113
+    },
+    {
+      "ea": 100964,
+      "name": "sub_18A64",
+      "size": 112
+    },
+    {
+      "ea": 101084,
+      "name": "sub_18ADC",
+      "size": 208
+    },
+    {
+      "ea": 101300,
+      "name": "sub_18BB4",
+      "size": 26
+    },
+    {
+      "ea": 101332,
+      "name": "sub_18BD4",
+      "size": 7
+    },
+    {
+      "ea": 101348,
+      "name": "sub_18BE4",
+      "size": 141
+    },
+    {
+      "ea": 101496,
+      "name": "sub_18C78",
+      "size": 163
+    },
+    {
+      "ea": 101668,
+      "name": "sub_18D24",
+      "size": 56
+    },
+    {
+      "ea": 101732,
+      "name": "sub_18D64",
+      "size": 428
+    },
+    {
+      "ea": 102168,
+      "name": "sub_18F18",
+      "size": 22
+    },
+    {
+      "ea": 102196,
+      "name": "sub_18F34",
+      "size": 22
+    },
+    {
+      "ea": 102224,
+      "name": "sub_18F50",
+      "size": 7
+    },
+    {
+      "ea": 102240,
+      "name": "sub_18F60",
+      "size": 7
+    },
+    {
+      "ea": 102256,
+      "name": "sub_18F70",
+      "size": 75
+    },
+    {
+      "ea": 102340,
+      "name": "sub_18FC4",
+      "size": 22
+    },
+    {
+      "ea": 102368,
+      "name": "sub_18FE0",
+      "size": 7
+    },
+    {
+      "ea": 102384,
+      "name": "sub_18FF0",
+      "size": 58
+    },
+    {
+      "ea": 102448,
+      "name": "sub_19030",
+      "size": 20
+    },
+    {
+      "ea": 102476,
+      "name": "sub_1904C",
+      "size": 15
+    },
+    {
+      "ea": 102500,
+      "name": "sub_19064",
+      "size": 88
+    },
+    {
+      "ea": 102596,
+      "name": "sub_190C4",
+      "size": 180
+    },
+    {
+      "ea": 102784,
+      "name": "sub_19180",
+      "size": 53
+    },
+    {
+      "ea": 102844,
+      "name": "sub_191BC",
+      "size": 69
+    },
+    {
+      "ea": 102920,
+      "name": "sub_19208",
+      "size": 16
+    },
+    {
+      "ea": 102944,
+      "name": "sub_19220",
+      "size": 7
+    },
+    {
+      "ea": 102960,
+      "name": "sub_19230",
+      "size": 62
+    },
+    {
+      "ea": 103028,
+      "name": "sub_19274",
+      "size": 196
+    },
+    {
+      "ea": 103232,
+      "name": "sub_19340",
+      "size": 70
+    },
+    {
+      "ea": 103308,
+      "name": "sub_1938C",
+      "size": 196
+    },
+    {
+      "ea": 103512,
+      "name": "sub_19458",
+      "size": 70
+    },
+    {
+      "ea": 103588,
+      "name": "sub_194A4",
+      "size": 4
+    },
+    {
+      "ea": 103600,
+      "name": "sub_194B0",
+      "size": 57
+    },
+    {
+      "ea": 103664,
+      "name": "sub_194F0",
+      "size": 6
+    },
+    {
+      "ea": 103676,
+      "name": "sub_194FC",
+      "size": 49
+    },
+    {
+      "ea": 103732,
+      "name": "sub_19534",
+      "size": 8
+    },
+    {
+      "ea": 103748,
+      "name": "sub_19544",
+      "size": 13
+    },
+    {
+      "ea": 103768,
+      "name": "sub_19558",
+      "size": 16
+    },
+    {
+      "ea": 103792,
+      "name": "sub_19570",
+      "size": 17
+    },
+    {
+      "ea": 103816,
+      "name": "sub_19588",
+      "size": 69
+    },
+    {
+      "ea": 103892,
+      "name": "sub_195D4",
+      "size": 72
+    },
+    {
+      "ea": 103972,
+      "name": "sub_19624",
+      "size": 32
+    },
+    {
+      "ea": 104012,
+      "name": "sub_1964C",
+      "size": 114
+    },
+    {
+      "ea": 104132,
+      "name": "sub_196C4",
+      "size": 83
+    },
+    {
+      "ea": 104224,
+      "name": "sub_19720",
+      "size": 56
+    },
+    {
+      "ea": 104288,
+      "name": "sub_19760",
+      "size": 14
+    },
+    {
+      "ea": 104308,
+      "name": "sub_19774",
+      "size": 27
+    },
+    {
+      "ea": 104344,
+      "name": "sub_19798",
+      "size": 157
+    },
+    {
+      "ea": 104508,
+      "name": "sub_1983C",
+      "size": 69
+    },
+    {
+      "ea": 104584,
+      "name": "sub_19888",
+      "size": 125
+    },
+    {
+      "ea": 104716,
+      "name": "sub_1990C",
+      "size": 11
+    },
+    {
+      "ea": 104736,
+      "name": "sub_19920",
+      "size": 57
+    },
+    {
+      "ea": 104800,
+      "name": "sub_19960",
+      "size": 46
+    },
+    {
+      "ea": 104852,
+      "name": "sub_19994",
+      "size": 88
+    },
+    {
+      "ea": 104948,
+      "name": "sub_199F4",
+      "size": 13
+    },
+    {
+      "ea": 104968,
+      "name": "sub_19A08",
+      "size": 88
+    },
+    {
+      "ea": 105064,
+      "name": "sub_19A68",
+      "size": 122
+    },
+    {
+      "ea": 105192,
+      "name": "sub_19AE8",
+      "size": 104
+    },
+    {
+      "ea": 105304,
+      "name": "sub_19B58",
+      "size": 298
+    },
+    {
+      "ea": 105608,
+      "name": "sub_19C88",
+      "size": 59
+    },
+    {
+      "ea": 105676,
+      "name": "sub_19CCC",
+      "size": 200
+    },
+    {
+      "ea": 105884,
+      "name": "sub_19D9C",
+      "size": 450
+    },
+    {
+      "ea": 106340,
+      "name": "sub_19F64",
+      "size": 251
+    },
+    {
+      "ea": 106600,
+      "name": "sub_1A068",
+      "size": 199
+    },
+    {
+      "ea": 106808,
+      "name": "sub_1A138",
+      "size": 20
+    },
+    {
+      "ea": 106836,
+      "name": "sub_1A154",
+      "size": 12
+    },
+    {
+      "ea": 106856,
+      "name": "sub_1A168",
+      "size": 169
+    },
+    {
+      "ea": 107032,
+      "name": "sub_1A218",
+      "size": 11
+    },
+    {
+      "ea": 107052,
+      "name": "sub_1A22C",
+      "size": 9
+    },
+    {
+      "ea": 107068,
+      "name": "sub_1A23C",
+      "size": 55
+    },
+    {
+      "ea": 107132,
+      "name": "sub_1A27C",
+      "size": 61
+    },
+    {
+      "ea": 107200,
+      "name": "sub_1A2C0",
+      "size": 12
+    },
+    {
+      "ea": 107220,
+      "name": "sub_1A2D4",
+      "size": 16
+    },
+    {
+      "ea": 107244,
+      "name": "sub_1A2EC",
+      "size": 9
+    },
+    {
+      "ea": 107260,
+      "name": "sub_1A2FC",
+      "size": 13
+    },
+    {
+      "ea": 107280,
+      "name": "sub_1A310",
+      "size": 22
+    },
+    {
+      "ea": 107308,
+      "name": "sub_1A32C",
+      "size": 7
+    },
+    {
+      "ea": 107324,
+      "name": "sub_1A33C",
+      "size": 58
+    },
+    {
+      "ea": 107388,
+      "name": "sub_1A37C",
+      "size": 90
+    },
+    {
+      "ea": 107484,
+      "name": "sub_1A3DC",
+      "size": 11
+    },
+    {
+      "ea": 107504,
+      "name": "sub_1A3F0",
+      "size": 9
+    },
+    {
+      "ea": 107520,
+      "name": "sub_1A400",
+      "size": 395
+    },
+    {
+      "ea": 107924,
+      "name": "sub_1A594",
+      "size": 328
+    },
+    {
+      "ea": 108260,
+      "name": "sub_1A6E4",
+      "size": 22
+    },
+    {
+      "ea": 108288,
+      "name": "sub_1A700",
+      "size": 3
+    },
+    {
+      "ea": 108300,
+      "name": "sub_1A70C",
+      "size": 62
+    },
+    {
+      "ea": 108368,
+      "name": "sub_1A750",
+      "size": 357
+    },
+    {
+      "ea": 108732,
+      "name": "sub_1A8BC",
+      "size": 112
+    },
+    {
+      "ea": 108852,
+      "name": "sub_1A934",
+      "size": 49
+    },
+    {
+      "ea": 108908,
+      "name": "sub_1A96C",
+      "size": 51
+    },
+    {
+      "ea": 108968,
+      "name": "sub_1A9A8",
+      "size": 132
+    },
+    {
+      "ea": 109108,
+      "name": "sub_1AA34",
+      "size": 65
+    },
+    {
+      "ea": 109180,
+      "name": "sub_1AA7C",
+      "size": 117
+    },
+    {
+      "ea": 109304,
+      "name": "sub_1AAF8",
+      "size": 466
+    },
+    {
+      "ea": 109776,
+      "name": "sub_1ACD0",
+      "size": 78
+    },
+    {
+      "ea": 109860,
+      "name": "sub_1AD24",
+      "size": 880
+    },
+    {
+      "ea": 110748,
+      "name": "sub_1B09C",
+      "size": 1091
+    },
+    {
+      "ea": 111848,
+      "name": "sub_1B4E8",
+      "size": 816
+    },
+    {
+      "ea": 112672,
+      "name": "sub_1B820",
+      "size": 370
+    },
+    {
+      "ea": 113048,
+      "name": "sub_1B998",
+      "size": 445
+    },
+    {
+      "ea": 113500,
+      "name": "sub_1BB5C",
+      "size": 520
+    },
+    {
+      "ea": 114028,
+      "name": "sub_1BD6C",
+      "size": 111
+    },
+    {
+      "ea": 114148,
+      "name": "sub_1BDE4",
+      "size": 165
+    },
+    {
+      "ea": 114320,
+      "name": "sub_1BE90",
+      "size": 20
+    },
+    {
+      "ea": 114348,
+      "name": "sub_1BEAC",
+      "size": 15
+    },
+    {
+      "ea": 114372,
+      "name": "sub_1BEC4",
+      "size": 33
+    },
+    {
+      "ea": 114412,
+      "name": "sub_1BEEC",
+      "size": 127
+    },
+    {
+      "ea": 114548,
+      "name": "sub_1BF74",
+      "size": 9
+    },
+    {
+      "ea": 114564,
+      "name": "sub_1BF84",
+      "size": 171
+    },
+    {
+      "ea": 114744,
+      "name": "sub_1C038",
+      "size": 104
+    },
+    {
+      "ea": 114856,
+      "name": "sub_1C0A8",
+      "size": 422
+    },
+    {
+      "ea": 115284,
+      "name": "sub_1C254",
+      "size": 178
+    },
+    {
+      "ea": 115468,
+      "name": "sub_1C30C",
+      "size": 413
+    },
+    {
+      "ea": 115888,
+      "name": "sub_1C4B0",
+      "size": 285
+    },
+    {
+      "ea": 116180,
+      "name": "sub_1C5D4",
+      "size": 20
+    },
+    {
+      "ea": 116208,
+      "name": "sub_1C5F0",
+      "size": 15
+    },
+    {
+      "ea": 116232,
+      "name": "sub_1C608",
+      "size": 35
+    },
+    {
+      "ea": 116276,
+      "name": "sub_1C634",
+      "size": 80
+    },
+    {
+      "ea": 116364,
+      "name": "sub_1C68C",
+      "size": 390
+    },
+    {
+      "ea": 116760,
+      "name": "sub_1C818",
+      "size": 123
+    },
+    {
+      "ea": 116892,
+      "name": "sub_1C89C",
+      "size": 159
+    },
+    {
+      "ea": 117060,
+      "name": "sub_1C944",
+      "size": 83
+    },
+    {
+      "ea": 117152,
+      "name": "sub_1C9A0",
+      "size": 14
+    },
+    {
+      "ea": 117172,
+      "name": "sub_1C9B4",
+      "size": 196
+    },
+    {
+      "ea": 117376,
+      "name": "sub_1CA80",
+      "size": 198
+    },
+    {
+      "ea": 117580,
+      "name": "sub_1CB4C",
+      "size": 171
+    },
+    {
+      "ea": 117760,
+      "name": "sub_1CC00",
+      "size": 295
+    },
+    {
+      "ea": 118064,
+      "name": "sub_1CD30",
+      "size": 157
+    },
+    {
+      "ea": 118228,
+      "name": "sub_1CDD4",
+      "size": 578
+    },
+    {
+      "ea": 118812,
+      "name": "sub_1D01C",
+      "size": 398
+    },
+    {
+      "ea": 119216,
+      "name": "sub_1D1B0",
+      "size": 124
+    },
+    {
+      "ea": 119348,
+      "name": "sub_1D234",
+      "size": 227
+    },
+    {
+      "ea": 119584,
+      "name": "sub_1D320",
+      "size": 225
+    },
+    {
+      "ea": 119816,
+      "name": "sub_1D408",
+      "size": 89
+    },
+    {
+      "ea": 119912,
+      "name": "sub_1D468",
+      "size": 350
+    },
+    {
+      "ea": 120268,
+      "name": "sub_1D5CC",
+      "size": 292
+    },
+    {
+      "ea": 120568,
+      "name": "?RtlUnicodeStringPrintf@@YAJPEAU_UNICODE_STRING@@PEBGZZ",
+      "size": 158
+    },
+    {
+      "ea": 120732,
+      "name": "sub_1D79C",
+      "size": 383
+    },
+    {
+      "ea": 121124,
+      "name": "sub_1D924",
+      "size": 275
+    },
+    {
+      "ea": 121408,
+      "name": "sub_1DA40",
+      "size": 725
+    },
+    {
+      "ea": 122140,
+      "name": "sub_1DD1C",
+      "size": 329
+    },
+    {
+      "ea": 122476,
+      "name": "sub_1DE6C",
+      "size": 400
+    },
+    {
+      "ea": 122884,
+      "name": "sub_1E004",
+      "size": 731
+    },
+    {
+      "ea": 123624,
+      "name": "sub_1E2E8",
+      "size": 600
+    },
+    {
+      "ea": 124232,
+      "name": "sub_1E548",
+      "size": 233
+    },
+    {
+      "ea": 124472,
+      "name": "sub_1E638",
+      "size": 612
+    },
+    {
+      "ea": 125092,
+      "name": "sub_1E8A4",
+      "size": 432
+    },
+    {
+      "ea": 125532,
+      "name": "sub_1EA5C",
+      "size": 279
+    },
+    {
+      "ea": 125820,
+      "name": "sub_1EB7C",
+      "size": 376
+    },
+    {
+      "ea": 126204,
+      "name": "sub_1ECFC",
+      "size": 357
+    },
+    {
+      "ea": 126568,
+      "name": "sub_1EE68",
+      "size": 336
+    },
+    {
+      "ea": 126912,
+      "name": "sub_1EFC0",
+      "size": 268
+    },
+    {
+      "ea": 127188,
+      "name": "sub_1F0D4",
+      "size": 981
+    },
+    {
+      "ea": 128176,
+      "name": "sub_1F4B0",
+      "size": 703
+    },
+    {
+      "ea": 128888,
+      "name": "sub_1F778",
+      "size": 415
+    },
+    {
+      "ea": 129312,
+      "name": "sub_1F920",
+      "size": 172
+    },
+    {
+      "ea": 129492,
+      "name": "sub_1F9D4",
+      "size": 245
+    },
+    {
+      "ea": 129744,
+      "name": "sub_1FAD0",
+      "size": 335
+    },
+    {
+      "ea": 130088,
+      "name": "sub_1FC28",
+      "size": 270
+    },
+    {
+      "ea": 130364,
+      "name": "sub_1FD3C",
+      "size": 1019
+    },
+    {
+      "ea": 131392,
+      "name": "sub_20140",
+      "size": 1098
+    },
+    {
+      "ea": 132496,
+      "name": "sub_20590",
+      "size": 941
+    },
+    {
+      "ea": 133444,
+      "name": "sub_20944",
+      "size": 1179
+    },
+    {
+      "ea": 134632,
+      "name": "sub_20DE8",
+      "size": 254
+    },
+    {
+      "ea": 134892,
+      "name": "sub_20EEC",
+      "size": 249
+    },
+    {
+      "ea": 135148,
+      "name": "sub_20FEC",
+      "size": 1957
+    },
+    {
+      "ea": 137112,
+      "name": "sub_21798",
+      "size": 175
+    },
+    {
+      "ea": 137296,
+      "name": "sub_21850",
+      "size": 354
+    },
+    {
+      "ea": 137656,
+      "name": "sub_219B8",
+      "size": 166
+    },
+    {
+      "ea": 137828,
+      "name": "sub_21A64",
+      "size": 126
+    },
+    {
+      "ea": 137960,
+      "name": "sub_21AE8",
+      "size": 120
+    },
+    {
+      "ea": 138088,
+      "name": "sub_21B68",
+      "size": 599
+    },
+    {
+      "ea": 138696,
+      "name": "sub_21DC8",
+      "size": 646
+    },
+    {
+      "ea": 139348,
+      "name": "sub_22054",
+      "size": 3963
+    },
+    {
+      "ea": 143320,
+      "name": "sub_22FD8",
+      "size": 1378
+    },
+    {
+      "ea": 144704,
+      "name": "sub_23540",
+      "size": 592
+    },
+    {
+      "ea": 145304,
+      "name": "sub_23798",
+      "size": 101
+    },
+    {
+      "ea": 145412,
+      "name": "sub_23804",
+      "size": 2175
+    },
+    {
+      "ea": 147596,
+      "name": "sub_2408C",
+      "size": 46
+    },
+    {
+      "ea": 147648,
+      "name": "sub_240C0",
+      "size": 16
+    },
+    {
+      "ea": 147672,
+      "name": "sub_240D8",
+      "size": 535
+    },
+    {
+      "ea": 148216,
+      "name": "sub_242F8",
+      "size": 20
+    },
+    {
+      "ea": 148244,
+      "name": "sub_24314",
+      "size": 642
+    },
+    {
+      "ea": 148892,
+      "name": "sub_2459C",
+      "size": 1119
+    },
+    {
+      "ea": 150020,
+      "name": "sub_24A04",
+      "size": 1349
+    },
+    {
+      "ea": 151376,
+      "name": "sub_24F50",
+      "size": 585
+    },
+    {
+      "ea": 151968,
+      "name": "sub_251A0",
+      "size": 5309
+    },
+    {
+      "ea": 157284,
+      "name": "sub_26664",
+      "size": 1688
+    },
+    {
+      "ea": 158980,
+      "name": "sub_26D04",
+      "size": 1604
+    },
+    {
+      "ea": 160592,
+      "name": "sub_27350",
+      "size": 889
+    },
+    {
+      "ea": 161488,
+      "name": "sub_276D0",
+      "size": 632
+    },
+    {
+      "ea": 162128,
+      "name": "sub_27950",
+      "size": 183
+    },
+    {
+      "ea": 162320,
+      "name": "sub_27A10",
+      "size": 180
+    },
+    {
+      "ea": 162508,
+      "name": "sub_27ACC",
+      "size": 138
+    },
+    {
+      "ea": 162652,
+      "name": "sub_27B5C",
+      "size": 24
+    },
+    {
+      "ea": 162684,
+      "name": "sub_27B7C",
+      "size": 201
+    },
+    {
+      "ea": 162892,
+      "name": "?PopGroupProperty@BackgroundViewElement@@UEAAXAEAVGroupPropertyStack@Art@@@Z",
+      "size": 32
+    },
+    {
+      "ea": 162932,
+      "name": "?PopGroupProperty@BackgroundViewElement@@UEAAXAEAVGroupPropertyStack@Art@@@Z_0",
+      "size": 32
+    },
+    {
+      "ea": 162972,
+      "name": "sub_27C9C",
+      "size": 21
+    },
+    {
+      "ea": 163000,
+      "name": "ExInitializeResourceLite",
+      "size": 7
+    },
+    {
+      "ea": 163016,
+      "name": "ExDeleteResourceLite",
+      "size": 7
+    },
+    {
+      "ea": 163032,
+      "name": "sub_27CD8",
+      "size": 24
+    },
+    {
+      "ea": 163064,
+      "name": "sub_27CF8",
+      "size": 17
+    },
+    {
+      "ea": 163088,
+      "name": "sub_27D10",
+      "size": 52
+    },
+    {
+      "ea": 163148,
+      "name": "sub_27D4C",
+      "size": 20
+    },
+    {
+      "ea": 163176,
+      "name": "sub_27D68",
+      "size": 20
+    },
+    {
+      "ea": 163204,
+      "name": "sub_27D84",
+      "size": 15
+    },
+    {
+      "ea": 163228,
+      "name": "sub_27D9C",
+      "size": 284
+    },
+    {
+      "ea": 163520,
+      "name": "sub_27EC0",
+      "size": 306
+    },
+    {
+      "ea": 163832,
+      "name": "sub_27FF8",
+      "size": 112
+    },
+    {
+      "ea": 163952,
+      "name": "sub_28070",
+      "size": 212
+    },
+    {
+      "ea": 164172,
+      "name": "sub_2814C",
+      "size": 95
+    },
+    {
+      "ea": 164276,
+      "name": "sub_281B4",
+      "size": 293
+    },
+    {
+      "ea": 164576,
+      "name": "sub_282E0",
+      "size": 156
+    },
+    {
+      "ea": 164740,
+      "name": "sub_28384",
+      "size": 677
+    },
+    {
+      "ea": 165424,
+      "name": "sub_28630",
+      "size": 301
+    },
+    {
+      "ea": 165732,
+      "name": "sub_28764",
+      "size": 2761
+    },
+    {
+      "ea": 168500,
+      "name": "sub_29234",
+      "size": 860
+    },
+    {
+      "ea": 169368,
+      "name": "RtlStringCchCopyW",
+      "size": 107
+    },
+    {
+      "ea": 169484,
+      "name": "RtlStringCbCatW",
+      "size": 200
+    },
+    {
+      "ea": 169692,
+      "name": "RtlStringCchPrintfW",
+      "size": 103
+    },
+    {
+      "ea": 169804,
+      "name": "sub_2974C",
+      "size": 404
+    },
+    {
+      "ea": 170216,
+      "name": "sub_298E8",
+      "size": 426
+    },
+    {
+      "ea": 170648,
+      "name": "sub_29A98",
+      "size": 928
+    },
+    {
+      "ea": 171584,
+      "name": "sub_29E40",
+      "size": 53
+    },
+    {
+      "ea": 171644,
+      "name": "sub_29E7C",
+      "size": 299
+    },
+    {
+      "ea": 171952,
+      "name": "sub_29FB0",
+      "size": 273
+    },
+    {
+      "ea": 172232,
+      "name": "sub_2A0C8",
+      "size": 185
+    },
+    {
+      "ea": 172424,
+      "name": "sub_2A188",
+      "size": 316
+    },
+    {
+      "ea": 172748,
+      "name": "sub_2A2CC",
+      "size": 230
+    },
+    {
+      "ea": 172984,
+      "name": "sub_2A3B8",
+      "size": 439
+    },
+    {
+      "ea": 173432,
+      "name": "sub_2A578",
+      "size": 534
+    },
+    {
+      "ea": 173972,
+      "name": "sub_2A794",
+      "size": 705
+    },
+    {
+      "ea": 174684,
+      "name": "sub_2AA5C",
+      "size": 204
+    },
+    {
+      "ea": 174896,
+      "name": "sub_2AB30",
+      "size": 244
+    },
+    {
+      "ea": 175148,
+      "name": "sub_2AC2C",
+      "size": 192
+    },
+    {
+      "ea": 175348,
+      "name": "sub_2ACF4",
+      "size": 209
+    },
+    {
+      "ea": 175564,
+      "name": "sub_2ADCC",
+      "size": 436
+    },
+    {
+      "ea": 176008,
+      "name": "sub_2AF88",
+      "size": 239
+    },
+    {
+      "ea": 176256,
+      "name": "sub_2B080",
+      "size": 323
+    },
+    {
+      "ea": 176588,
+      "name": "sub_2B1CC",
+      "size": 287
+    },
+    {
+      "ea": 176884,
+      "name": "sub_2B2F4",
+      "size": 388
+    },
+    {
+      "ea": 177280,
+      "name": "sub_2B480",
+      "size": 586
+    },
+    {
+      "ea": 177872,
+      "name": "sub_2B6D0",
+      "size": 195
+    },
+    {
+      "ea": 178076,
+      "name": "sub_2B79C",
+      "size": 816
+    },
+    {
+      "ea": 178900,
+      "name": "sub_2BAD4",
+      "size": 1345
+    },
+    {
+      "ea": 180252,
+      "name": "sub_2C01C",
+      "size": 1345
+    },
+    {
+      "ea": 181604,
+      "name": "sub_2C564",
+      "size": 37
+    },
+    {
+      "ea": 181648,
+      "name": "sub_2C590",
+      "size": 61
+    },
+    {
+      "ea": 181716,
+      "name": "sub_2C5D4",
+      "size": 60
+    },
+    {
+      "ea": 181784,
+      "name": "sub_2C618",
+      "size": 496
+    },
+    {
+      "ea": 182288,
+      "name": "sub_2C810",
+      "size": 288
+    },
+    {
+      "ea": 182584,
+      "name": "sub_2C938",
+      "size": 122
+    },
+    {
+      "ea": 182712,
+      "name": "sub_2C9B8",
+      "size": 305
+    },
+    {
+      "ea": 183024,
+      "name": "sub_2CAF0",
+      "size": 196
+    },
+    {
+      "ea": 183228,
+      "name": "sub_2CBBC",
+      "size": 146
+    },
+    {
+      "ea": 183380,
+      "name": "sub_2CC54",
+      "size": 563
+    },
+    {
+      "ea": 183952,
+      "name": "sub_2CE90",
+      "size": 448
+    },
+    {
+      "ea": 184408,
+      "name": "sub_2D058",
+      "size": 338
+    },
+    {
+      "ea": 184752,
+      "name": "sub_2D1B0",
+      "size": 908
+    },
+    {
+      "ea": 185668,
+      "name": "sub_2D544",
+      "size": 291
+    },
+    {
+      "ea": 185968,
+      "name": "sub_2D670",
+      "size": 253
+    },
+    {
+      "ea": 186228,
+      "name": "sub_2D774",
+      "size": 48
+    },
+    {
+      "ea": 186284,
+      "name": "sub_2D7AC",
+      "size": 604
+    },
+    {
+      "ea": 186896,
+      "name": "sub_2DA10",
+      "size": 655
+    },
+    {
+      "ea": 187560,
+      "name": "sub_2DCA8",
+      "size": 574
+    },
+    {
+      "ea": 188140,
+      "name": "sub_2DEEC",
+      "size": 176
+    },
+    {
+      "ea": 188324,
+      "name": "sub_2DFA4",
+      "size": 197
+    },
+    {
+      "ea": 188528,
+      "name": "sub_2E070",
+      "size": 297
+    },
+    {
+      "ea": 188832,
+      "name": "sub_2E1A0",
+      "size": 183
+    },
+    {
+      "ea": 189024,
+      "name": "sub_2E260",
+      "size": 201
+    },
+    {
+      "ea": 189232,
+      "name": "sub_2E330",
+      "size": 191
+    },
+    {
+      "ea": 189432,
+      "name": "sub_2E3F8",
+      "size": 280
+    },
+    {
+      "ea": 189720,
+      "name": "sub_2E518",
+      "size": 370
+    },
+    {
+      "ea": 190096,
+      "name": "sub_2E690",
+      "size": 362
+    },
+    {
+      "ea": 190464,
+      "name": "sub_2E800",
+      "size": 502
+    },
+    {
+      "ea": 190972,
+      "name": "sub_2E9FC",
+      "size": 303
+    },
+    {
+      "ea": 191284,
+      "name": "sub_2EB34",
+      "size": 203
+    },
+    {
+      "ea": 191496,
+      "name": "sub_2EC08",
+      "size": 50
+    },
+    {
+      "ea": 191552,
+      "name": "sub_2EC40",
+      "size": 450
+    },
+    {
+      "ea": 192008,
+      "name": "sub_2EE08",
+      "size": 462
+    },
+    {
+      "ea": 192476,
+      "name": "sub_2EFDC",
+      "size": 229
+    },
+    {
+      "ea": 192712,
+      "name": "sub_2F0C8",
+      "size": 294
+    },
+    {
+      "ea": 193012,
+      "name": "sub_2F1F4",
+      "size": 298
+    },
+    {
+      "ea": 193316,
+      "name": "sub_2F324",
+      "size": 595
+    },
+    {
+      "ea": 193920,
+      "name": "sub_2F580",
+      "size": 46
+    },
+    {
+      "ea": 193972,
+      "name": "sub_2F5B4",
+      "size": 59
+    },
+    {
+      "ea": 194040,
+      "name": "sub_2F5F8",
+      "size": 224
+    },
+    {
+      "ea": 194272,
+      "name": "sub_2F6E0",
+      "size": 216
+    },
+    {
+      "ea": 194496,
+      "name": "sub_2F7C0",
+      "size": 107
+    },
+    {
+      "ea": 194612,
+      "name": "sub_2F834",
+      "size": 455
+    },
+    {
+      "ea": 195076,
+      "name": "sub_2FA04",
+      "size": 481
+    },
+    {
+      "ea": 195564,
+      "name": "sub_2FBEC",
+      "size": 72
+    },
+    {
+      "ea": 195644,
+      "name": "sub_2FC3C",
+      "size": 721
+    },
+    {
+      "ea": 196372,
+      "name": "sub_2FF14",
+      "size": 140
+    },
+    {
+      "ea": 196520,
+      "name": "?PromoteNode@@YAXPEAU_WX_BALANCED_LINKS@@@Z",
+      "size": 77
+    },
+    {
+      "ea": 196604,
+      "name": "RebalanceNode",
+      "size": 178
+    },
+    {
+      "ea": 196788,
+      "name": "sub_300B4",
+      "size": 352
+    },
+    {
+      "ea": 197148,
+      "name": "sub_3021C",
+      "size": 300
+    },
+    {
+      "ea": 197456,
+      "name": "Wrk_RtlDeleteElementGenericTableAvl",
+      "size": 164
+    },
+    {
+      "ea": 197628,
+      "name": "?WxLookupElementGenericTableAvl@@YAPEAXPEAU_WX_AVL_TABLE@@PEAX@Z",
+      "size": 37
+    },
+    {
+      "ea": 197672,
+      "name": "sub_30428",
+      "size": 128
+    },
+    {
+      "ea": 197808,
+      "name": "Md5Transform",
+      "size": 2106
+    },
+    {
+      "ea": 199920,
+      "name": "sub_30CF0",
+      "size": 179
+    },
+    {
+      "ea": 200108,
+      "name": "MD5_Final",
+      "size": 240
+    },
+    {
+      "ea": 200356,
+      "name": "sub_30EA4",
+      "size": 316
+    },
+    {
+      "ea": 200680,
+      "name": "sub_30FE8",
+      "size": 233
+    },
+    {
+      "ea": 200920,
+      "name": "sub_310D8",
+      "size": 539
+    },
+    {
+      "ea": 201468,
+      "name": "sub_312FC",
+      "size": 474
+    },
+    {
+      "ea": 201948,
+      "name": "sub_314DC",
+      "size": 449
+    },
+    {
+      "ea": 202404,
+      "name": "sub_316A4",
+      "size": 75
+    },
+    {
+      "ea": 202488,
+      "name": "sub_316F8",
+      "size": 171
+    },
+    {
+      "ea": 202668,
+      "name": "sub_317AC",
+      "size": 204
+    },
+    {
+      "ea": 202880,
+      "name": "sub_31880",
+      "size": 174
+    },
+    {
+      "ea": 203060,
+      "name": "sub_31934",
+      "size": 319
+    },
+    {
+      "ea": 203388,
+      "name": "sub_31A7C",
+      "size": 1488
+    },
+    {
+      "ea": 204884,
+      "name": "sub_32054",
+      "size": 92
+    },
+    {
+      "ea": 204984,
+      "name": "sub_320B8",
+      "size": 90
+    },
+    {
+      "ea": 205080,
+      "name": "sub_32118",
+      "size": 158
+    },
+    {
+      "ea": 205244,
+      "name": "sub_321BC",
+      "size": 315
+    },
+    {
+      "ea": 205568,
+      "name": "sub_32300",
+      "size": 444
+    },
+    {
+      "ea": 206020,
+      "name": "sub_324C4",
+      "size": 1930
+    },
+    {
+      "ea": 207956,
+      "name": "sub_32C54",
+      "size": 8
+    },
+    {
+      "ea": 207972,
+      "name": "sub_32C64",
+      "size": 105
+    },
+    {
+      "ea": 208084,
+      "name": "sub_32CD4",
+      "size": 228
+    },
+    {
+      "ea": 208320,
+      "name": "sub_32DC0",
+      "size": 98
+    },
+    {
+      "ea": 208424,
+      "name": "nullsub_1",
+      "size": 3
+    },
+    {
+      "ea": 208436,
+      "name": "sub_32E34",
+      "size": 481
+    },
+    {
+      "ea": 208924,
+      "name": "sub_3301C",
+      "size": 20
+    },
+    {
+      "ea": 208952,
+      "name": "sub_33038",
+      "size": 355
+    },
+    {
+      "ea": 209316,
+      "name": "sub_331A4",
+      "size": 504
+    },
+    {
+      "ea": 209828,
+      "name": "sub_333A4",
+      "size": 166
+    },
+    {
+      "ea": 210000,
+      "name": "sub_33450",
+      "size": 727
+    },
+    {
+      "ea": 210736,
+      "name": "sub_33730",
+      "size": 174
+    },
+    {
+      "ea": 210916,
+      "name": "sub_337E4",
+      "size": 137
+    },
+    {
+      "ea": 211060,
+      "name": "sub_33874",
+      "size": 346
+    },
+    {
+      "ea": 211412,
+      "name": "sub_339D4",
+      "size": 169
+    },
+    {
+      "ea": 211588,
+      "name": "sub_33A84",
+      "size": 219
+    },
+    {
+      "ea": 211816,
+      "name": "UnicodeConcat",
+      "size": 296
+    },
+    {
+      "ea": 212120,
+      "name": "sub_33C98",
+      "size": 2824
+    },
+    {
+      "ea": 214952,
+      "name": "sub_347A8",
+      "size": 223
+    },
+    {
+      "ea": 215184,
+      "name": "sub_34890",
+      "size": 128
+    },
+    {
+      "ea": 215320,
+      "name": "sub_34918",
+      "size": 241
+    },
+    {
+      "ea": 215568,
+      "name": "sub_34A10",
+      "size": 332
+    },
+    {
+      "ea": 215908,
+      "name": "sub_34B64",
+      "size": 80
+    },
+    {
+      "ea": 215996,
+      "name": "sub_34BBC",
+      "size": 71
+    },
+    {
+      "ea": 216076,
+      "name": "sub_34C0C",
+      "size": 1622
+    },
+    {
+      "ea": 217704,
+      "name": "sub_35268",
+      "size": 80
+    },
+    {
+      "ea": 217792,
+      "name": "sub_352C0",
+      "size": 79
+    },
+    {
+      "ea": 217880,
+      "name": "sub_35318",
+      "size": 1053
+    },
+    {
+      "ea": 218940,
+      "name": "sub_3573C",
+      "size": 2154
+    },
+    {
+      "ea": 221100,
+      "name": "sub_35FAC",
+      "size": 301
+    },
+    {
+      "ea": 221408,
+      "name": "sub_360E0",
+      "size": 301
+    },
+    {
+      "ea": 221716,
+      "name": "sub_36214",
+      "size": 301
+    },
+    {
+      "ea": 222024,
+      "name": "sub_36348",
+      "size": 2131
+    },
+    {
+      "ea": 224164,
+      "name": "sub_36BA4",
+      "size": 498
+    },
+    {
+      "ea": 224668,
+      "name": "sub_36D9C",
+      "size": 230
+    },
+    {
+      "ea": 224904,
+      "name": "sub_36E88",
+      "size": 230
+    },
+    {
+      "ea": 225140,
+      "name": "sub_36F74",
+      "size": 243
+    },
+    {
+      "ea": 225392,
+      "name": "sub_37070",
+      "size": 261
+    },
+    {
+      "ea": 225660,
+      "name": "sub_3717C",
+      "size": 1248
+    },
+    {
+      "ea": 226916,
+      "name": "sub_37664",
+      "size": 810
+    },
+    {
+      "ea": 227732,
+      "name": "sub_37994",
+      "size": 1143
+    },
+    {
+      "ea": 228884,
+      "name": "sub_37E14",
+      "size": 1101
+    },
+    {
+      "ea": 229992,
+      "name": "sub_38268",
+      "size": 784
+    },
+    {
+      "ea": 230784,
+      "name": "sub_38580",
+      "size": 784
+    },
+    {
+      "ea": 231576,
+      "name": "sub_38898",
+      "size": 545
+    },
+    {
+      "ea": 232128,
+      "name": "sub_38AC0",
+      "size": 68
+    },
+    {
+      "ea": 232204,
+      "name": "sub_38B0C",
+      "size": 478
+    },
+    {
+      "ea": 232688,
+      "name": "sub_38CF0",
+      "size": 528
+    },
+    {
+      "ea": 233224,
+      "name": "sub_38F08",
+      "size": 662
+    },
+    {
+      "ea": 233892,
+      "name": "sub_391A4",
+      "size": 353
+    },
+    {
+      "ea": 234252,
+      "name": "sub_3930C",
+      "size": 250
+    },
+    {
+      "ea": 234508,
+      "name": "sub_3940C",
+      "size": 398
+    },
+    {
+      "ea": 234912,
+      "name": "sub_395A0",
+      "size": 651
+    },
+    {
+      "ea": 235572,
+      "name": "sub_39834",
+      "size": 253
+    },
+    {
+      "ea": 235832,
+      "name": "sub_39938",
+      "size": 239
+    },
+    {
+      "ea": 236080,
+      "name": "sub_39A30",
+      "size": 234
+    },
+    {
+      "ea": 236320,
+      "name": "sub_39B20",
+      "size": 239
+    },
+    {
+      "ea": 236568,
+      "name": "sub_39C18",
+      "size": 394
+    },
+    {
+      "ea": 236968,
+      "name": "sub_39DA8",
+      "size": 390
+    },
+    {
+      "ea": 237364,
+      "name": "sub_39F34",
+      "size": 190
+    },
+    {
+      "ea": 237560,
+      "name": "sub_39FF8",
+      "size": 268
+    },
+    {
+      "ea": 237836,
+      "name": "sub_3A10C",
+      "size": 370
+    },
+    {
+      "ea": 238212,
+      "name": "sub_3A284",
+      "size": 395
+    },
+    {
+      "ea": 238616,
+      "name": "sub_3A418",
+      "size": 121
+    },
+    {
+      "ea": 238744,
+      "name": "sub_3A498",
+      "size": 546
+    },
+    {
+      "ea": 239296,
+      "name": "sub_3A6C0",
+      "size": 575
+    },
+    {
+      "ea": 239880,
+      "name": "sub_3A908",
+      "size": 1504
+    },
+    {
+      "ea": 241392,
+      "name": "sub_3AEF0",
+      "size": 536
+    },
+    {
+      "ea": 241936,
+      "name": "sub_3B110",
+      "size": 178
+    },
+    {
+      "ea": 242120,
+      "name": "sub_3B1C8",
+      "size": 608
+    },
+    {
+      "ea": 242736,
+      "name": "sub_3B430",
+      "size": 430
+    },
+    {
+      "ea": 243172,
+      "name": "sub_3B5E4",
+      "size": 36
+    },
+    {
+      "ea": 243216,
+      "name": "sub_3B610",
+      "size": 415
+    },
+    {
+      "ea": 243640,
+      "name": "sub_3B7B8",
+      "size": 167
+    },
+    {
+      "ea": 243816,
+      "name": "sub_3B868",
+      "size": 161
+    },
+    {
+      "ea": 243984,
+      "name": "sub_3B910",
+      "size": 110
+    },
+    {
+      "ea": 244100,
+      "name": "sub_3B984",
+      "size": 324
+    },
+    {
+      "ea": 244432,
+      "name": "sub_3BAD0",
+      "size": 28
+    },
+    {
+      "ea": 244468,
+      "name": "sub_3BAF4",
+      "size": 115
+    },
+    {
+      "ea": 244592,
+      "name": "sub_3BB70",
+      "size": 410
+    },
+    {
+      "ea": 245008,
+      "name": "sub_3BD10",
+      "size": 207
+    },
+    {
+      "ea": 245224,
+      "name": "sub_3BDE8",
+      "size": 180
+    },
+    {
+      "ea": 245412,
+      "name": "sub_3BEA4",
+      "size": 201
+    },
+    {
+      "ea": 245620,
+      "name": "sub_3BF74",
+      "size": 1740
+    },
+    {
+      "ea": 247368,
+      "name": "sub_3C648",
+      "size": 928
+    },
+    {
+      "ea": 248304,
+      "name": "sub_3C9F0",
+      "size": 1278
+    },
+    {
+      "ea": 249588,
+      "name": "sub_3CEF4",
+      "size": 26
+    },
+    {
+      "ea": 249620,
+      "name": "sub_3CF14",
+      "size": 20
+    },
+    {
+      "ea": 249648,
+      "name": "DlFreePool",
+      "size": 12
+    },
+    {
+      "ea": 249668,
+      "name": "sub_3CF44",
+      "size": 321
+    },
+    {
+      "ea": 249996,
+      "name": "sub_3D08C",
+      "size": 528
+    },
+    {
+      "ea": 250532,
+      "name": "sub_3D2A4",
+      "size": 183
+    },
+    {
+      "ea": 250724,
+      "name": "sub_3D364",
+      "size": 207
+    },
+    {
+      "ea": 250940,
+      "name": "sub_3D43C",
+      "size": 166
+    },
+    {
+      "ea": 251112,
+      "name": "sub_3D4E8",
+      "size": 227
+    },
+    {
+      "ea": 251348,
+      "name": "sub_3D5D4",
+      "size": 141
+    },
+    {
+      "ea": 251496,
+      "name": "sub_3D668",
+      "size": 180
+    },
+    {
+      "ea": 251684,
+      "name": "sub_3D724",
+      "size": 180
+    },
+    {
+      "ea": 251872,
+      "name": "sub_3D7E0",
+      "size": 1059
+    },
+    {
+      "ea": 252940,
+      "name": "sub_3DC0C",
+      "size": 93
+    },
+    {
+      "ea": 253040,
+      "name": "sub_3DC70",
+      "size": 71
+    },
+    {
+      "ea": 253120,
+      "name": "sub_3DCC0",
+      "size": 79
+    },
+    {
+      "ea": 253208,
+      "name": "sub_3DD18",
+      "size": 79
+    },
+    {
+      "ea": 253296,
+      "name": "sub_3DD70",
+      "size": 79
+    },
+    {
+      "ea": 253384,
+      "name": "sub_3DDC8",
+      "size": 79
+    },
+    {
+      "ea": 253472,
+      "name": "sub_3DE20",
+      "size": 79
+    },
+    {
+      "ea": 253560,
+      "name": "sub_3DE78",
+      "size": 332
+    },
+    {
+      "ea": 253900,
+      "name": "sub_3DFCC",
+      "size": 1767
+    },
+    {
+      "ea": 255676,
+      "name": "sub_3E6BC",
+      "size": 529
+    },
+    {
+      "ea": 256212,
+      "name": "sub_3E8D4",
+      "size": 881
+    },
+    {
+      "ea": 257100,
+      "name": "sub_3EC4C",
+      "size": 299
+    },
+    {
+      "ea": 257408,
+      "name": "sub_3ED80",
+      "size": 95
+    },
+    {
+      "ea": 257512,
+      "name": "sub_3EDE8",
+      "size": 300
+    },
+    {
+      "ea": 257820,
+      "name": "sub_3EF1C",
+      "size": 686
+    },
+    {
+      "ea": 258512,
+      "name": "sub_3F1D0",
+      "size": 206
+    },
+    {
+      "ea": 258724,
+      "name": "sub_3F2A4",
+      "size": 54
+    },
+    {
+      "ea": 258784,
+      "name": "sub_3F2E0",
+      "size": 69
+    },
+    {
+      "ea": 258860,
+      "name": "sub_3F32C",
+      "size": 384
+    },
+    {
+      "ea": 259252,
+      "name": "sub_3F4B4",
+      "size": 695
+    },
+    {
+      "ea": 259956,
+      "name": "sub_3F774",
+      "size": 132
+    },
+    {
+      "ea": 260096,
+      "name": "sub_3F800",
+      "size": 347
+    },
+    {
+      "ea": 260452,
+      "name": "sub_3F964",
+      "size": 479
+    },
+    {
+      "ea": 260940,
+      "name": "sub_3FB4C",
+      "size": 23
+    },
+    {
+      "ea": 260972,
+      "name": "sub_3FB6C",
+      "size": 23
+    },
+    {
+      "ea": 261004,
+      "name": "sub_3FB8C",
+      "size": 260
+    },
+    {
+      "ea": 261272,
+      "name": "sub_3FC98",
+      "size": 60
+    },
+    {
+      "ea": 261340,
+      "name": "sub_3FCDC",
+      "size": 60
+    },
+    {
+      "ea": 261408,
+      "name": "sub_3FD20",
+      "size": 352
+    },
+    {
+      "ea": 261768,
+      "name": "sub_3FE88",
+      "size": 34
+    },
+    {
+      "ea": 261808,
+      "name": "sub_3FEB0",
+      "size": 12
+    },
+    {
+      "ea": 261828,
+      "name": "sub_3FEC4",
+      "size": 584
+    },
+    {
+      "ea": 262420,
+      "name": "sub_40114",
+      "size": 170
+    },
+    {
+      "ea": 262596,
+      "name": "sub_401C4",
+      "size": 24
+    },
+    {
+      "ea": 262628,
+      "name": "sub_401E4",
+      "size": 122
+    },
+    {
+      "ea": 262756,
+      "name": "sub_40264",
+      "size": 120
+    },
+    {
+      "ea": 262884,
+      "name": "sub_402E4",
+      "size": 122
+    },
+    {
+      "ea": 263012,
+      "name": "sub_40364",
+      "size": 397
+    },
+    {
+      "ea": 263416,
+      "name": "sub_404F8",
+      "size": 408
+    },
+    {
+      "ea": 263832,
+      "name": "sub_40698",
+      "size": 551
+    },
+    {
+      "ea": 264392,
+      "name": "sub_408C8",
+      "size": 98
+    },
+    {
+      "ea": 264496,
+      "name": "sub_40930",
+      "size": 321
+    },
+    {
+      "ea": 264824,
+      "name": "sub_40A78",
+      "size": 409
+    },
+    {
+      "ea": 265240,
+      "name": "sub_40C18",
+      "size": 227
+    },
+    {
+      "ea": 265476,
+      "name": "sub_40D04",
+      "size": 36
+    },
+    {
+      "ea": 265520,
+      "name": "sub_40D30",
+      "size": 266
+    },
+    {
+      "ea": 265792,
+      "name": "sub_40E40",
+      "size": 254
+    },
+    {
+      "ea": 266052,
+      "name": "sub_40F44",
+      "size": 294
+    },
+    {
+      "ea": 266352,
+      "name": "sub_41070",
+      "size": 57
+    },
+    {
+      "ea": 266416,
+      "name": "sub_410B0",
+      "size": 236
+    },
+    {
+      "ea": 266660,
+      "name": "sub_411A4",
+      "size": 197
+    },
+    {
+      "ea": 266864,
+      "name": "sub_41270",
+      "size": 415
+    },
+    {
+      "ea": 267288,
+      "name": "sub_41418",
+      "size": 158
+    },
+    {
+      "ea": 267452,
+      "name": "sub_414BC",
+      "size": 69
+    },
+    {
+      "ea": 267528,
+      "name": "sub_41508",
+      "size": 304
+    },
+    {
+      "ea": 267840,
+      "name": "sub_41640",
+      "size": 1051
+    },
+    {
+      "ea": 268900,
+      "name": "sub_41A64",
+      "size": 126
+    },
+    {
+      "ea": 269032,
+      "name": "sub_41AE8",
+      "size": 115
+    },
+    {
+      "ea": 269156,
+      "name": "sub_41B64",
+      "size": 451
+    },
+    {
+      "ea": 269616,
+      "name": "sub_41D30",
+      "size": 2484
+    },
+    {
+      "ea": 272108,
+      "name": "sub_426EC",
+      "size": 605
+    },
+    {
+      "ea": 272720,
+      "name": "sub_42950",
+      "size": 143
+    },
+    {
+      "ea": 272872,
+      "name": "sub_429E8",
+      "size": 173
+    },
+    {
+      "ea": 273052,
+      "name": "sub_42A9C",
+      "size": 149
+    },
+    {
+      "ea": 273208,
+      "name": "sub_42B38",
+      "size": 172
+    },
+    {
+      "ea": 273388,
+      "name": "sub_42BEC",
+      "size": 5
+    },
+    {
+      "ea": 273400,
+      "name": "sub_42BF8",
+      "size": 304
+    },
+    {
+      "ea": 273712,
+      "name": "sub_42D30",
+      "size": 185
+    },
+    {
+      "ea": 273904,
+      "name": "sub_42DF0",
+      "size": 297
+    },
+    {
+      "ea": 274208,
+      "name": "sub_42F20",
+      "size": 67
+    },
+    {
+      "ea": 274284,
+      "name": "sub_42F6C",
+      "size": 2091
+    },
+    {
+      "ea": 276384,
+      "name": "sub_437A0",
+      "size": 545
+    },
+    {
+      "ea": 276936,
+      "name": "sub_439C8",
+      "size": 578
+    },
+    {
+      "ea": 277520,
+      "name": "sub_43C10",
+      "size": 743
+    },
+    {
+      "ea": 278272,
+      "name": "sub_43F00",
+      "size": 86
+    },
+    {
+      "ea": 278364,
+      "name": "sub_43F5C",
+      "size": 496
+    },
+    {
+      "ea": 278868,
+      "name": "sub_44154",
+      "size": 168
+    },
+    {
+      "ea": 279044,
+      "name": "sub_44204",
+      "size": 504
+    },
+    {
+      "ea": 279556,
+      "name": "sub_44404",
+      "size": 424
+    },
+    {
+      "ea": 279988,
+      "name": "sub_445B4",
+      "size": 456
+    },
+    {
+      "ea": 280452,
+      "name": "sub_44784",
+      "size": 639
+    },
+    {
+      "ea": 281100,
+      "name": "sub_44A0C",
+      "size": 157
+    },
+    {
+      "ea": 281264,
+      "name": "sub_44AB0",
+      "size": 577
+    },
+    {
+      "ea": 281848,
+      "name": "sub_44CF8",
+      "size": 106
+    },
+    {
+      "ea": 281960,
+      "name": "sub_44D68",
+      "size": 632
+    },
+    {
+      "ea": 282600,
+      "name": "sub_44FE8",
+      "size": 120
+    },
+    {
+      "ea": 282728,
+      "name": "sub_45068",
+      "size": 407
+    },
+    {
+      "ea": 283144,
+      "name": "sub_45208",
+      "size": 491
+    },
+    {
+      "ea": 283644,
+      "name": "sub_453FC",
+      "size": 395
+    },
+    {
+      "ea": 284048,
+      "name": "sub_45590",
+      "size": 544
+    },
+    {
+      "ea": 284600,
+      "name": "sub_457B8",
+      "size": 144
+    },
+    {
+      "ea": 284752,
+      "name": "sub_45850",
+      "size": 164
+    },
+    {
+      "ea": 284924,
+      "name": "sub_458FC",
+      "size": 206
+    },
+    {
+      "ea": 285136,
+      "name": "sub_459D0",
+      "size": 275
+    },
+    {
+      "ea": 285420,
+      "name": "sub_45AEC",
+      "size": 207
+    },
+    {
+      "ea": 285636,
+      "name": "sub_45BC4",
+      "size": 382
+    },
+    {
+      "ea": 286024,
+      "name": "sub_45D48",
+      "size": 391
+    },
+    {
+      "ea": 286424,
+      "name": "sub_45ED8",
+      "size": 156
+    },
+    {
+      "ea": 286588,
+      "name": "sub_45F7C",
+      "size": 207
+    },
+    {
+      "ea": 286804,
+      "name": "sub_46054",
+      "size": 465
+    },
+    {
+      "ea": 287276,
+      "name": "sub_4622C",
+      "size": 292
+    },
+    {
+      "ea": 287576,
+      "name": "sub_46358",
+      "size": 333
+    },
+    {
+      "ea": 287916,
+      "name": "sub_464AC",
+      "size": 310
+    },
+    {
+      "ea": 288232,
+      "name": "sub_465E8",
+      "size": 209
+    },
+    {
+      "ea": 288448,
+      "name": "sub_466C0",
+      "size": 301
+    },
+    {
+      "ea": 288756,
+      "name": "sub_467F4",
+      "size": 132
+    },
+    {
+      "ea": 288896,
+      "name": "sub_46880",
+      "size": 355
+    },
+    {
+      "ea": 289260,
+      "name": "sub_469EC",
+      "size": 3630
+    },
+    {
+      "ea": 292896,
+      "name": "DriverReinitializationRoutine",
+      "size": 5
+    },
+    {
+      "ea": 292908,
+      "name": "sub_4782C",
+      "size": 218
+    },
+    {
+      "ea": 293132,
+      "name": "sub_4790C",
+      "size": 536
+    },
+    {
+      "ea": 293676,
+      "name": "sub_47B2C",
+      "size": 49
+    },
+    {
+      "ea": 293732,
+      "name": "sub_47B64",
+      "size": 20
+    },
+    {
+      "ea": 293760,
+      "name": "sub_47B80",
+      "size": 15
+    },
+    {
+      "ea": 293784,
+      "name": "sub_47B98",
+      "size": 516
+    },
+    {
+      "ea": 294308,
+      "name": "sub_47DA4",
+      "size": 220
+    },
+    {
+      "ea": 294536,
+      "name": "sub_47E88",
+      "size": 250
+    },
+    {
+      "ea": 294792,
+      "name": "sub_47F88",
+      "size": 271
+    },
+    {
+      "ea": 295072,
+      "name": "sub_480A0",
+      "size": 120
+    },
+    {
+      "ea": 295200,
+      "name": "sub_48120",
+      "size": 617
+    },
+    {
+      "ea": 295824,
+      "name": "sub_48390",
+      "size": 676
+    },
+    {
+      "ea": 296508,
+      "name": "sub_4863C",
+      "size": 618
+    },
+    {
+      "ea": 297132,
+      "name": "sub_488AC",
+      "size": 124
+    },
+    {
+      "ea": 297264,
+      "name": "sub_48930",
+      "size": 110
+    },
+    {
+      "ea": 297380,
+      "name": "sub_489A4",
+      "size": 639
+    },
+    {
+      "ea": 298028,
+      "name": "sub_48C2C",
+      "size": 125
+    },
+    {
+      "ea": 298160,
+      "name": "sub_48CB0",
+      "size": 181
+    },
+    {
+      "ea": 298348,
+      "name": "sub_48D6C",
+      "size": 187
+    },
+    {
+      "ea": 298544,
+      "name": "sub_48E30",
+      "size": 474
+    },
+    {
+      "ea": 299024,
+      "name": "sub_49010",
+      "size": 31
+    },
+    {
+      "ea": 299064,
+      "name": "sub_49038",
+      "size": 364
+    },
+    {
+      "ea": 299436,
+      "name": "sub_491AC",
+      "size": 31
+    },
+    {
+      "ea": 299476,
+      "name": "sub_491D4",
+      "size": 415
+    },
+    {
+      "ea": 299900,
+      "name": "sub_4937C",
+      "size": 31
+    },
+    {
+      "ea": 299940,
+      "name": "sub_493A4",
+      "size": 99
+    },
+    {
+      "ea": 300048,
+      "name": "sub_49410",
+      "size": 179
+    },
+    {
+      "ea": 300236,
+      "name": "sub_494CC",
+      "size": 107
+    },
+    {
+      "ea": 300352,
+      "name": "sub_49540",
+      "size": 129
+    },
+    {
+      "ea": 300488,
+      "name": "sub_495C8",
+      "size": 523
+    },
+    {
+      "ea": 301020,
+      "name": "sub_497DC",
+      "size": 202
+    },
+    {
+      "ea": 301228,
+      "name": "sub_498AC",
+      "size": 89
+    },
+    {
+      "ea": 301324,
+      "name": "sub_4990C",
+      "size": 247
+    },
+    {
+      "ea": 301580,
+      "name": "sub_49A0C",
+      "size": 214
+    },
+    {
+      "ea": 301800,
+      "name": "sub_49AE8",
+      "size": 194
+    },
+    {
+      "ea": 302000,
+      "name": "sub_49BB0",
+      "size": 96
+    },
+    {
+      "ea": 302104,
+      "name": "sub_49C18",
+      "size": 238
+    },
+    {
+      "ea": 302348,
+      "name": "sub_49D0C",
+      "size": 683
+    },
+    {
+      "ea": 303040,
+      "name": "sub_49FC0",
+      "size": 141
+    },
+    {
+      "ea": 303188,
+      "name": "sub_4A054",
+      "size": 196
+    },
+    {
+      "ea": 303392,
+      "name": "sub_4A120",
+      "size": 193
+    },
+    {
+      "ea": 303592,
+      "name": "sub_4A1E8",
+      "size": 256
+    },
+    {
+      "ea": 303856,
+      "name": "sub_4A2F0",
+      "size": 658
+    },
+    {
+      "ea": 304520,
+      "name": "sub_4A588",
+      "size": 15
+    },
+    {
+      "ea": 304544,
+      "name": "sub_4A5A0",
+      "size": 20
+    },
+    {
+      "ea": 304572,
+      "name": "sub_4A5BC",
+      "size": 44
+    },
+    {
+      "ea": 304624,
+      "name": "sub_4A5F0",
+      "size": 47
+    },
+    {
+      "ea": 304680,
+      "name": "sub_4A628",
+      "size": 572
+    },
+    {
+      "ea": 305260,
+      "name": "sub_4A86C",
+      "size": 302
+    },
+    {
+      "ea": 305568,
+      "name": "sub_4A9A0",
+      "size": 167
+    },
+    {
+      "ea": 305744,
+      "name": "sub_4AA50",
+      "size": 261
+    },
+    {
+      "ea": 306012,
+      "name": "sub_4AB5C",
+      "size": 1064
+    },
+    {
+      "ea": 307084,
+      "name": "NotifyRoutine",
+      "size": 395
+    },
+    {
+      "ea": 307488,
+      "name": "sub_4B120",
+      "size": 88
+    },
+    {
+      "ea": 307584,
+      "name": "sub_4B180",
+      "size": 246
+    },
+    {
+      "ea": 307836,
+      "name": "sub_4B27C",
+      "size": 256
+    },
+    {
+      "ea": 308100,
+      "name": "sub_4B384",
+      "size": 328
+    },
+    {
+      "ea": 308436,
+      "name": "sub_4B4D4",
+      "size": 256
+    },
+    {
+      "ea": 308700,
+      "name": "sub_4B5DC",
+      "size": 225
+    },
+    {
+      "ea": 308932,
+      "name": "sub_4B6C4",
+      "size": 123
+    },
+    {
+      "ea": 309064,
+      "name": "sub_4B748",
+      "size": 356
+    },
+    {
+      "ea": 309428,
+      "name": "sub_4B8B4",
+      "size": 365
+    },
+    {
+      "ea": 309800,
+      "name": "sub_4BA28",
+      "size": 313
+    },
+    {
+      "ea": 310120,
+      "name": "sub_4BB68",
+      "size": 94
+    },
+    {
+      "ea": 310220,
+      "name": "sub_4BBCC",
+      "size": 91
+    },
+    {
+      "ea": 310320,
+      "name": "sub_4BC30",
+      "size": 94
+    },
+    {
+      "ea": 310420,
+      "name": "sub_4BC94",
+      "size": 79
+    },
+    {
+      "ea": 310508,
+      "name": "sub_4BCEC",
+      "size": 79
+    },
+    {
+      "ea": 310596,
+      "name": "sub_4BD44",
+      "size": 79
+    },
+    {
+      "ea": 310684,
+      "name": "sub_4BD9C",
+      "size": 69
+    },
+    {
+      "ea": 310760,
+      "name": "sub_4BDE8",
+      "size": 135
+    },
+    {
+      "ea": 310904,
+      "name": "sub_4BE78",
+      "size": 346
+    },
+    {
+      "ea": 311256,
+      "name": "sub_4BFD8",
+      "size": 234
+    },
+    {
+      "ea": 311496,
+      "name": "sub_4C0C8",
+      "size": 72
+    },
+    {
+      "ea": 311576,
+      "name": "sub_4C118",
+      "size": 643
+    },
+    {
+      "ea": 312228,
+      "name": "sub_4C3A4",
+      "size": 65
+    },
+    {
+      "ea": 312300,
+      "name": "sub_4C3EC",
+      "size": 90
+    },
+    {
+      "ea": 312396,
+      "name": "sub_4C44C",
+      "size": 200
+    },
+    {
+      "ea": 312604,
+      "name": "sub_4C51C",
+      "size": 602
+    },
+    {
+      "ea": 313212,
+      "name": "sub_4C77C",
+      "size": 21
+    },
+    {
+      "ea": 313240,
+      "name": "sub_4C798",
+      "size": 210
+    },
+    {
+      "ea": 313456,
+      "name": "sub_4C870",
+      "size": 316
+    },
+    {
+      "ea": 313780,
+      "name": "sub_4C9B4",
+      "size": 1176
+    },
+    {
+      "ea": 314964,
+      "name": "sub_4CE54",
+      "size": 562
+    },
+    {
+      "ea": 315532,
+      "name": "sub_4D08C",
+      "size": 103
+    },
+    {
+      "ea": 315644,
+      "name": "sub_4D0FC",
+      "size": 93
+    },
+    {
+      "ea": 315744,
+      "name": "sub_4D160",
+      "size": 161
+    },
+    {
+      "ea": 315912,
+      "name": "sub_4D208",
+      "size": 151
+    },
+    {
+      "ea": 316072,
+      "name": "sub_4D2A8",
+      "size": 215
+    },
+    {
+      "ea": 316296,
+      "name": "sub_4D388",
+      "size": 717
+    },
+    {
+      "ea": 317020,
+      "name": "sub_4D65C",
+      "size": 241
+    },
+    {
+      "ea": 317268,
+      "name": "sub_4D754",
+      "size": 408
+    },
+    {
+      "ea": 317684,
+      "name": "sub_4D8F4",
+      "size": 793
+    },
+    {
+      "ea": 318484,
+      "name": "sub_4DC14",
+      "size": 160
+    },
+    {
+      "ea": 318652,
+      "name": "sub_4DCBC",
+      "size": 363
+    },
+    {
+      "ea": 319024,
+      "name": "sub_4DE30",
+      "size": 332
+    },
+    {
+      "ea": 319364,
+      "name": "sub_4DF84",
+      "size": 427
+    },
+    {
+      "ea": 319800,
+      "name": "sub_4E138",
+      "size": 268
+    },
+    {
+      "ea": 320076,
+      "name": "sub_4E24C",
+      "size": 628
+    },
+    {
+      "ea": 320712,
+      "name": "sub_4E4C8",
+      "size": 185
+    },
+    {
+      "ea": 320904,
+      "name": "sub_4E588",
+      "size": 440
+    },
+    {
+      "ea": 321352,
+      "name": "sub_4E748",
+      "size": 130
+    },
+    {
+      "ea": 321488,
+      "name": "sub_4E7D0",
+      "size": 327
+    },
+    {
+      "ea": 321824,
+      "name": "sub_4E920",
+      "size": 105
+    },
+    {
+      "ea": 321936,
+      "name": "sub_4E990",
+      "size": 371
+    },
+    {
+      "ea": 322316,
+      "name": "sub_4EB0C",
+      "size": 160
+    },
+    {
+      "ea": 322484,
+      "name": "sub_4EBB4",
+      "size": 145
+    },
+    {
+      "ea": 322636,
+      "name": "sub_4EC4C",
+      "size": 144
+    },
+    {
+      "ea": 322788,
+      "name": "sub_4ECE4",
+      "size": 77
+    },
+    {
+      "ea": 322872,
+      "name": "sub_4ED38",
+      "size": 150
+    },
+    {
+      "ea": 323028,
+      "name": "sub_4EDD4",
+      "size": 98
+    },
+    {
+      "ea": 323132,
+      "name": "sub_4EE3C",
+      "size": 43
+    },
+    {
+      "ea": 323184,
+      "name": "sub_4EE70",
+      "size": 291
+    },
+    {
+      "ea": 323484,
+      "name": "sub_4EF9C",
+      "size": 426
+    },
+    {
+      "ea": 323916,
+      "name": "sub_4F14C",
+      "size": 42
+    },
+    {
+      "ea": 323964,
+      "name": "sub_4F17C",
+      "size": 335
+    },
+    {
+      "ea": 324308,
+      "name": "sub_4F2D4",
+      "size": 218
+    },
+    {
+      "ea": 324532,
+      "name": "sub_4F3B4",
+      "size": 828
+    },
+    {
+      "ea": 325368,
+      "name": "sub_4F6F8",
+      "size": 2180
+    },
+    {
+      "ea": 327556,
+      "name": "sub_4FF84",
+      "size": 892
+    },
+    {
+      "ea": 328456,
+      "name": "sub_50308",
+      "size": 1678
+    },
+    {
+      "ea": 330140,
+      "name": "sub_5099C",
+      "size": 1000
+    },
+    {
+      "ea": 331148,
+      "name": "sub_50D8C",
+      "size": 387
+    },
+    {
+      "ea": 331544,
+      "name": "sub_50F18",
+      "size": 355
+    },
+    {
+      "ea": 331908,
+      "name": "sub_51084",
+      "size": 878
+    },
+    {
+      "ea": 332792,
+      "name": "sub_513F8",
+      "size": 350
+    },
+    {
+      "ea": 333148,
+      "name": "sub_5155C",
+      "size": 231
+    },
+    {
+      "ea": 333388,
+      "name": "sub_5164C",
+      "size": 382
+    },
+    {
+      "ea": 333776,
+      "name": "sub_517D0",
+      "size": 938
+    },
+    {
+      "ea": 334720,
+      "name": "Function",
+      "size": 222
+    },
+    {
+      "ea": 334948,
+      "name": "sub_51C64",
+      "size": 101
+    },
+    {
+      "ea": 335056,
+      "name": "sub_51CD0",
+      "size": 92
+    },
+    {
+      "ea": 335156,
+      "name": "sub_51D34",
+      "size": 204
+    },
+    {
+      "ea": 335368,
+      "name": "sub_51E08",
+      "size": 221
+    },
+    {
+      "ea": 335596,
+      "name": "sub_51EEC",
+      "size": 158
+    },
+    {
+      "ea": 335760,
+      "name": "sub_51F90",
+      "size": 249
+    },
+    {
+      "ea": 336016,
+      "name": "sub_52090",
+      "size": 878
+    },
+    {
+      "ea": 336900,
+      "name": "sub_52404",
+      "size": 82
+    },
+    {
+      "ea": 336988,
+      "name": "sub_5245C",
+      "size": 102
+    },
+    {
+      "ea": 337096,
+      "name": "sub_524C8",
+      "size": 100
+    },
+    {
+      "ea": 337204,
+      "name": "RtlStringCbCopyW",
+      "size": 113
+    },
+    {
+      "ea": 337324,
+      "name": "sub_525AC",
+      "size": 197
+    },
+    {
+      "ea": 337528,
+      "name": "sub_52678",
+      "size": 195
+    },
+    {
+      "ea": 337732,
+      "name": "sub_52744",
+      "size": 722
+    },
+    {
+      "ea": 338460,
+      "name": "sub_52A1C",
+      "size": 147
+    },
+    {
+      "ea": 338616,
+      "name": "sub_52AB8",
+      "size": 173
+    },
+    {
+      "ea": 338796,
+      "name": "sub_52B6C",
+      "size": 224
+    },
+    {
+      "ea": 339028,
+      "name": "sub_52C54",
+      "size": 441
+    },
+    {
+      "ea": 339476,
+      "name": "sub_52E14",
+      "size": 75
+    },
+    {
+      "ea": 339560,
+      "name": "sub_52E68",
+      "size": 70
+    },
+    {
+      "ea": 339636,
+      "name": "sub_52EB4",
+      "size": 553
+    },
+    {
+      "ea": 340196,
+      "name": "sub_530E4",
+      "size": 793
+    },
+    {
+      "ea": 340996,
+      "name": "sub_53404",
+      "size": 3011
+    },
+    {
+      "ea": 344016,
+      "name": "sub_53FD0",
+      "size": 34
+    },
+    {
+      "ea": 344056,
+      "name": "sub_53FF8",
+      "size": 25
+    },
+    {
+      "ea": 344088,
+      "name": "sub_54018",
+      "size": 323
+    },
+    {
+      "ea": 344420,
+      "name": "sub_54164",
+      "size": 401
+    },
+    {
+      "ea": 344828,
+      "name": "sub_542FC",
+      "size": 249
+    },
+    {
+      "ea": 345084,
+      "name": "sub_543FC",
+      "size": 2493
+    },
+    {
+      "ea": 347584,
+      "name": "sub_54DC0",
+      "size": 54
+    },
+    {
+      "ea": 347644,
+      "name": "sub_54DFC",
+      "size": 3217
+    },
+    {
+      "ea": 350868,
+      "name": "sub_55A94",
+      "size": 274
+    },
+    {
+      "ea": 351148,
+      "name": "sub_55BAC",
+      "size": 275
+    },
+    {
+      "ea": 351432,
+      "name": "sub_55CC8",
+      "size": 995
+    },
+    {
+      "ea": 352436,
+      "name": "sub_560B4",
+      "size": 1007
+    },
+    {
+      "ea": 353452,
+      "name": "sub_564AC",
+      "size": 92
+    },
+    {
+      "ea": 353552,
+      "name": "sub_56510",
+      "size": 277
+    },
+    {
+      "ea": 353836,
+      "name": "sub_5662C",
+      "size": 202
+    },
+    {
+      "ea": 354044,
+      "name": "sub_566FC",
+      "size": 1672
+    },
+    {
+      "ea": 355724,
+      "name": "sub_56D8C",
+      "size": 198
+    },
+    {
+      "ea": 355928,
+      "name": "sub_56E58",
+      "size": 823
+    },
+    {
+      "ea": 356760,
+      "name": "sub_57198",
+      "size": 25
+    },
+    {
+      "ea": 356792,
+      "name": "sub_571B8",
+      "size": 768
+    },
+    {
+      "ea": 357568,
+      "name": "sub_574C0",
+      "size": 264
+    },
+    {
+      "ea": 357840,
+      "name": "sub_575D0",
+      "size": 799
+    },
+    {
+      "ea": 358648,
+      "name": "sub_578F8",
+      "size": 537
+    },
+    {
+      "ea": 359192,
+      "name": "sub_57B18",
+      "size": 3132
+    },
+    {
+      "ea": 362332,
+      "name": "sub_5875C",
+      "size": 417
+    },
+    {
+      "ea": 362756,
+      "name": "sub_58904",
+      "size": 302
+    },
+    {
+      "ea": 363064,
+      "name": "sub_58A38",
+      "size": 468
+    },
+    {
+      "ea": 363540,
+      "name": "sub_58C14",
+      "size": 81
+    },
+    {
+      "ea": 363628,
+      "name": "sub_58C6C",
+      "size": 600
+    },
+    {
+      "ea": 364236,
+      "name": "sub_58ECC",
+      "size": 181
+    },
+    {
+      "ea": 364424,
+      "name": "sub_58F88",
+      "size": 132
+    },
+    {
+      "ea": 364564,
+      "name": "sub_59014",
+      "size": 365
+    },
+    {
+      "ea": 364936,
+      "name": "sub_59188",
+      "size": 1668
+    },
+    {
+      "ea": 366612,
+      "name": "sub_59814",
+      "size": 236
+    },
+    {
+      "ea": 366856,
+      "name": "sub_59908",
+      "size": 299
+    },
+    {
+      "ea": 367164,
+      "name": "sub_59A3C",
+      "size": 262
+    },
+    {
+      "ea": 367432,
+      "name": "sub_59B48",
+      "size": 582
+    },
+    {
+      "ea": 368020,
+      "name": "sub_59D94",
+      "size": 153
+    },
+    {
+      "ea": 368180,
+      "name": "sub_59E34",
+      "size": 283
+    },
+    {
+      "ea": 368472,
+      "name": "sub_59F58",
+      "size": 1601
+    },
+    {
+      "ea": 370080,
+      "name": "sub_5A5A0",
+      "size": 1018
+    },
+    {
+      "ea": 371104,
+      "name": "sub_5A9A0",
+      "size": 1101
+    },
+    {
+      "ea": 372212,
+      "name": "sub_5ADF4",
+      "size": 822
+    },
+    {
+      "ea": 373040,
+      "name": "sub_5B130",
+      "size": 31
+    },
+    {
+      "ea": 373080,
+      "name": "sub_5B158",
+      "size": 296
+    },
+    {
+      "ea": 373384,
+      "name": "sub_5B288",
+      "size": 451
+    },
+    {
+      "ea": 373844,
+      "name": "sub_5B454",
+      "size": 1497
+    },
+    {
+      "ea": 375348,
+      "name": "sub_5BA34",
+      "size": 260
+    },
+    {
+      "ea": 375616,
+      "name": "sub_5BB40",
+      "size": 1071
+    },
+    {
+      "ea": 376696,
+      "name": "sub_5BF78",
+      "size": 327
+    },
+    {
+      "ea": 377032,
+      "name": "sub_5C0C8",
+      "size": 209
+    },
+    {
+      "ea": 377248,
+      "name": "sub_5C1A0",
+      "size": 232
+    },
+    {
+      "ea": 377488,
+      "name": "sub_5C290",
+      "size": 264
+    },
+    {
+      "ea": 377760,
+      "name": "sub_5C3A0",
+      "size": 294
+    },
+    {
+      "ea": 378060,
+      "name": "sub_5C4CC",
+      "size": 169
+    },
+    {
+      "ea": 378236,
+      "name": "sub_5C57C",
+      "size": 586
+    },
+    {
+      "ea": 378828,
+      "name": "sub_5C7CC",
+      "size": 86
+    },
+    {
+      "ea": 378920,
+      "name": "sub_5C828",
+      "size": 1025
+    },
+    {
+      "ea": 379952,
+      "name": "sub_5CC30",
+      "size": 141
+    },
+    {
+      "ea": 380100,
+      "name": "InsertLpcPortNameEntry",
+      "size": 105
+    },
+    {
+      "ea": 380212,
+      "name": "Alloca",
+      "size": 151
+    },
+    {
+      "ea": 380372,
+      "name": "sub_5CDD4",
+      "size": 85
+    },
+    {
+      "ea": 380464,
+      "name": "sub_5CE30",
+      "size": 171
+    },
+    {
+      "ea": 380644,
+      "name": "sub_5CEE4",
+      "size": 360
+    },
+    {
+      "ea": 381012,
+      "name": "sub_5D054",
+      "size": 5
+    },
+    {
+      "ea": 381024,
+      "name": "sub_5D060",
+      "size": 1664
+    },
+    {
+      "ea": 382696,
+      "name": "sub_5D6E8",
+      "size": 318
+    },
+    {
+      "ea": 383020,
+      "name": "sub_5D82C",
+      "size": 83
+    },
+    {
+      "ea": 383112,
+      "name": "sub_5D888",
+      "size": 76
+    },
+    {
+      "ea": 383196,
+      "name": "sub_5D8DC",
+      "size": 79
+    },
+    {
+      "ea": 383284,
+      "name": "sub_5D934",
+      "size": 73
+    },
+    {
+      "ea": 383364,
+      "name": "sub_5D984",
+      "size": 74
+    },
+    {
+      "ea": 383444,
+      "name": "sub_5D9D4",
+      "size": 79
+    },
+    {
+      "ea": 383532,
+      "name": "sub_5DA2C",
+      "size": 79
+    },
+    {
+      "ea": 383620,
+      "name": "sub_5DA84",
+      "size": 98
+    },
+    {
+      "ea": 383724,
+      "name": "sub_5DAEC",
+      "size": 154
+    },
+    {
+      "ea": 383884,
+      "name": "sub_5DB8C",
+      "size": 77
+    },
+    {
+      "ea": 383968,
+      "name": "sub_5DBE0",
+      "size": 359
+    },
+    {
+      "ea": 384336,
+      "name": "sub_5DD50",
+      "size": 266
+    },
+    {
+      "ea": 384608,
+      "name": "sub_5DE60",
+      "size": 860
+    },
+    {
+      "ea": 385476,
+      "name": "sub_5E1C4",
+      "size": 136
+    },
+    {
+      "ea": 385620,
+      "name": "sub_5E254",
+      "size": 148
+    },
+    {
+      "ea": 385776,
+      "name": "sub_5E2F0",
+      "size": 208
+    },
+    {
+      "ea": 385992,
+      "name": "sub_5E3C8",
+      "size": 304
+    },
+    {
+      "ea": 386304,
+      "name": "sub_5E500",
+      "size": 68
+    },
+    {
+      "ea": 386380,
+      "name": "sub_5E54C",
+      "size": 3001
+    },
+    {
+      "ea": 389388,
+      "name": "sub_5F10C",
+      "size": 1233
+    },
+    {
+      "ea": 390628,
+      "name": "sub_5F5E4",
+      "size": 1171
+    },
+    {
+      "ea": 391808,
+      "name": "sub_5FA80",
+      "size": 439
+    },
+    {
+      "ea": 392256,
+      "name": "sub_5FC40",
+      "size": 267
+    },
+    {
+      "ea": 392532,
+      "name": "sub_5FD54",
+      "size": 86
+    },
+    {
+      "ea": 392624,
+      "name": "sub_5FDB0",
+      "size": 113
+    },
+    {
+      "ea": 392744,
+      "name": "sub_5FE28",
+      "size": 232
+    },
+    {
+      "ea": 392984,
+      "name": "sub_5FF18",
+      "size": 84
+    },
+    {
+      "ea": 393076,
+      "name": "sub_5FF74",
+      "size": 3237
+    },
+    {
+      "ea": 396320,
+      "name": "sub_60C20",
+      "size": 732
+    },
+    {
+      "ea": 397060,
+      "name": "sub_60F04",
+      "size": 408
+    },
+    {
+      "ea": 397476,
+      "name": "sub_610A4",
+      "size": 532
+    },
+    {
+      "ea": 398016,
+      "name": "sub_612C0",
+      "size": 452
+    },
+    {
+      "ea": 398476,
+      "name": "sub_6148C",
+      "size": 2300
+    },
+    {
+      "ea": 400784,
+      "name": "sub_61D90",
+      "size": 108
+    },
+    {
+      "ea": 400912,
+      "name": "sub_61E10",
+      "size": 92
+    },
+    {
+      "ea": 401012,
+      "name": "sub_61E74",
+      "size": 96
+    },
+    {
+      "ea": 401116,
+      "name": "sub_61EDC",
+      "size": 97
+    },
+    {
+      "ea": 401220,
+      "name": "sub_61F44",
+      "size": 110
+    },
+    {
+      "ea": 401336,
+      "name": "sub_61FB8",
+      "size": 85
+    },
+    {
+      "ea": 401428,
+      "name": "sub_62014",
+      "size": 410
+    },
+    {
+      "ea": 401844,
+      "name": "sub_621B4",
+      "size": 438
+    },
+    {
+      "ea": 402288,
+      "name": "sub_62370",
+      "size": 99
+    },
+    {
+      "ea": 402396,
+      "name": "sub_623DC",
+      "size": 206
+    },
+    {
+      "ea": 402608,
+      "name": "sub_624B0",
+      "size": 688
+    },
+    {
+      "ea": 403304,
+      "name": "sub_62768",
+      "size": 652
+    },
+    {
+      "ea": 403964,
+      "name": "sub_629FC",
+      "size": 1382
+    },
+    {
+      "ea": 405352,
+      "name": "sub_62F68",
+      "size": 482
+    },
+    {
+      "ea": 405840,
+      "name": "sub_63150",
+      "size": 156
+    },
+    {
+      "ea": 406004,
+      "name": "sub_631F4",
+      "size": 182
+    },
+    {
+      "ea": 406192,
+      "name": "sub_632B0",
+      "size": 205
+    },
+    {
+      "ea": 406404,
+      "name": "sub_63384",
+      "size": 555
+    },
+    {
+      "ea": 406968,
+      "name": "sub_635B8",
+      "size": 158
+    },
+    {
+      "ea": 407132,
+      "name": "sub_6365C",
+      "size": 552
+    },
+    {
+      "ea": 407692,
+      "name": "sub_6388C",
+      "size": 509
+    },
+    {
+      "ea": 408208,
+      "name": "sub_63A90",
+      "size": 259
+    },
+    {
+      "ea": 408476,
+      "name": "sub_63B9C",
+      "size": 390
+    },
+    {
+      "ea": 408872,
+      "name": "sub_63D28",
+      "size": 350
+    },
+    {
+      "ea": 409228,
+      "name": "sub_63E8C",
+      "size": 195
+    },
+    {
+      "ea": 409432,
+      "name": "sub_63F58",
+      "size": 181
+    },
+    {
+      "ea": 409620,
+      "name": "sub_64014",
+      "size": 235
+    },
+    {
+      "ea": 409864,
+      "name": "sub_64108",
+      "size": 539
+    },
+    {
+      "ea": 410412,
+      "name": "sub_6432C",
+      "size": 501
+    },
+    {
+      "ea": 410920,
+      "name": "sub_64528",
+      "size": 205
+    },
+    {
+      "ea": 411132,
+      "name": "sub_645FC",
+      "size": 90
+    },
+    {
+      "ea": 411228,
+      "name": "sub_6465C",
+      "size": 159
+    },
+    {
+      "ea": 411396,
+      "name": "sub_64704",
+      "size": 241
+    },
+    {
+      "ea": 411644,
+      "name": "sub_647FC",
+      "size": 2484
+    },
+    {
+      "ea": 414136,
+      "name": "sub_651B8",
+      "size": 267
+    },
+    {
+      "ea": 414412,
+      "name": "sub_652CC",
+      "size": 565
+    },
+    {
+      "ea": 414984,
+      "name": "sub_65508",
+      "size": 265
+    },
+    {
+      "ea": 415256,
+      "name": "sub_65618",
+      "size": 2390
+    },
+    {
+      "ea": 417652,
+      "name": "sub_65F74",
+      "size": 266
+    },
+    {
+      "ea": 417924,
+      "name": "sub_66084",
+      "size": 538
+    },
+    {
+      "ea": 418468,
+      "name": "sub_662A4",
+      "size": 120
+    },
+    {
+      "ea": 418596,
+      "name": "sub_66324",
+      "size": 112
+    },
+    {
+      "ea": 418716,
+      "name": "sub_6639C",
+      "size": 89
+    },
+    {
+      "ea": 418812,
+      "name": "sub_663FC",
+      "size": 1239
+    },
+    {
+      "ea": 420060,
+      "name": "sub_668DC",
+      "size": 461
+    },
+    {
+      "ea": 420528,
+      "name": "sub_66AB0",
+      "size": 513
+    },
+    {
+      "ea": 421048,
+      "name": "sub_66CB8",
+      "size": 401
+    },
+    {
+      "ea": 421456,
+      "name": "sub_66E50",
+      "size": 238
+    },
+    {
+      "ea": 421700,
+      "name": "NaptrDnsRecordConvert",
+      "size": 1402
+    },
+    {
+      "ea": 423108,
+      "name": "sub_674C4",
+      "size": 356
+    },
+    {
+      "ea": 423472,
+      "name": "sub_67630",
+      "size": 280
+    },
+    {
+      "ea": 423760,
+      "name": "sub_67750",
+      "size": 71
+    },
+    {
+      "ea": 423840,
+      "name": "sub_677A0",
+      "size": 84
+    },
+    {
+      "ea": 423932,
+      "name": "sub_677FC",
+      "size": 439
+    },
+    {
+      "ea": 424380,
+      "name": "sub_679BC",
+      "size": 1105
+    },
+    {
+      "ea": 425492,
+      "name": "sub_67E14",
+      "size": 9
+    },
+    {
+      "ea": 425508,
+      "name": "sub_67E24",
+      "size": 624
+    },
+    {
+      "ea": 426140,
+      "name": "sub_6809C",
+      "size": 538
+    },
+    {
+      "ea": 426684,
+      "name": "sub_682BC",
+      "size": 628
+    },
+    {
+      "ea": 427320,
+      "name": "wcslen",
+      "size": 25
+    },
+    {
+      "ea": 427352,
+      "name": "sub_68558",
+      "size": 59
+    },
+    {
+      "ea": 427420,
+      "name": "sub_6859C",
+      "size": 216
+    },
+    {
+      "ea": 427644,
+      "name": "sub_6867C",
+      "size": 260
+    },
+    {
+      "ea": 427912,
+      "name": "sub_68788",
+      "size": 599
+    },
+    {
+      "ea": 428520,
+      "name": "sub_689E8",
+      "size": 339
+    },
+    {
+      "ea": 428868,
+      "name": "sub_68B44",
+      "size": 3979
+    },
+    {
+      "ea": 432856,
+      "name": "sub_69AD8",
+      "size": 945
+    },
+    {
+      "ea": 433808,
+      "name": "sub_69E90",
+      "size": 118
+    },
+    {
+      "ea": 433932,
+      "name": "sub_69F0C",
+      "size": 451
+    },
+    {
+      "ea": 434392,
+      "name": "sub_6A0D8",
+      "size": 444
+    },
+    {
+      "ea": 434844,
+      "name": "sub_6A29C",
+      "size": 220
+    },
+    {
+      "ea": 435072,
+      "name": "sub_6A380",
+      "size": 524
+    },
+    {
+      "ea": 435604,
+      "name": "sub_6A594",
+      "size": 1041
+    },
+    {
+      "ea": 436652,
+      "name": "sha256_compile",
+      "size": 2561
+    },
+    {
+      "ea": 439220,
+      "name": "sub_6B3B4",
+      "size": 205
+    },
+    {
+      "ea": 439432,
+      "name": "sub_6B488",
+      "size": 293
+    },
+    {
+      "ea": 439732,
+      "name": "sub_6B5B4",
+      "size": 121
+    },
+    {
+      "ea": 439860,
+      "name": "sub_6B634",
+      "size": 94
+    },
+    {
+      "ea": 439960,
+      "name": "sub_6B698",
+      "size": 1215
+    },
+    {
+      "ea": 441184,
+      "name": "sub_6BB60",
+      "size": 503
+    },
+    {
+      "ea": 441696,
+      "name": "sub_6BD60",
+      "size": 530
+    },
+    {
+      "ea": 442232,
+      "name": "sub_6BF78",
+      "size": 446
+    },
+    {
+      "ea": 442684,
+      "name": "sub_6C13C",
+      "size": 245
+    },
+    {
+      "ea": 442936,
+      "name": "sub_6C238",
+      "size": 292
+    },
+    {
+      "ea": 443236,
+      "name": "sub_6C364",
+      "size": 481
+    },
+    {
+      "ea": 443724,
+      "name": "sub_6C54C",
+      "size": 198
+    },
+    {
+      "ea": 443928,
+      "name": "sub_6C618",
+      "size": 528
+    },
+    {
+      "ea": 444464,
+      "name": "sub_6C830",
+      "size": 247
+    },
+    {
+      "ea": 444720,
+      "name": "sub_6C930",
+      "size": 181
+    },
+    {
+      "ea": 444908,
+      "name": "sub_6C9EC",
+      "size": 593
+    },
+    {
+      "ea": 445508,
+      "name": "sub_6CC44",
+      "size": 284
+    },
+    {
+      "ea": 445800,
+      "name": "sub_6CD68",
+      "size": 348
+    },
+    {
+      "ea": 446156,
+      "name": "sub_6CECC",
+      "size": 230
+    },
+    {
+      "ea": 446392,
+      "name": "sub_6CFB8",
+      "size": 317
+    },
+    {
+      "ea": 446716,
+      "name": "StartRoutine",
+      "size": 723
+    },
+    {
+      "ea": 447448,
+      "name": "sub_6D3D8",
+      "size": 619
+    },
+    {
+      "ea": 448076,
+      "name": "sub_6D64C",
+      "size": 870
+    },
+    {
+      "ea": 448952,
+      "name": "sub_6D9B8",
+      "size": 117
+    },
+    {
+      "ea": 449076,
+      "name": "sub_6DA34",
+      "size": 189
+    },
+    {
+      "ea": 449272,
+      "name": "sub_6DAF8",
+      "size": 158
+    },
+    {
+      "ea": 449436,
+      "name": "sub_6DB9C",
+      "size": 20
+    },
+    {
+      "ea": 449464,
+      "name": "sub_6DBB8",
+      "size": 15
+    },
+    {
+      "ea": 449488,
+      "name": "sub_6DBD0",
+      "size": 111
+    },
+    {
+      "ea": 449608,
+      "name": "sub_6DC48",
+      "size": 241
+    },
+    {
+      "ea": 449856,
+      "name": "sub_6DD40",
+      "size": 196
+    },
+    {
+      "ea": 450060,
+      "name": "sub_6DE0C",
+      "size": 40
+    },
+    {
+      "ea": 450108,
+      "name": "sub_6DE3C",
+      "size": 466
+    },
+    {
+      "ea": 450580,
+      "name": "sub_6E014",
+      "size": 72
+    },
+    {
+      "ea": 450660,
+      "name": "sub_6E064",
+      "size": 83
+    },
+    {
+      "ea": 450752,
+      "name": "sub_6E0C0",
+      "size": 71
+    },
+    {
+      "ea": 450832,
+      "name": "sub_6E110",
+      "size": 619
+    },
+    {
+      "ea": 451460,
+      "name": "sub_6E384",
+      "size": 153
+    },
+    {
+      "ea": 451620,
+      "name": "sub_6E424",
+      "size": 512
+    },
+    {
+      "ea": 452140,
+      "name": "sub_6E62C",
+      "size": 410
+    },
+    {
+      "ea": 452556,
+      "name": "sub_6E7CC",
+      "size": 661
+    },
+    {
+      "ea": 453224,
+      "name": "sub_6EA68",
+      "size": 429
+    },
+    {
+      "ea": 453660,
+      "name": "sub_6EC1C",
+      "size": 429
+    },
+    {
+      "ea": 454096,
+      "name": "sub_6EDD0",
+      "size": 73
+    },
+    {
+      "ea": 454176,
+      "name": "sub_6EE20",
+      "size": 66
+    },
+    {
+      "ea": 454248,
+      "name": "sub_6EE68",
+      "size": 433
+    },
+    {
+      "ea": 454688,
+      "name": "sub_6F020",
+      "size": 709
+    },
+    {
+      "ea": 455404,
+      "name": "sub_6F2EC",
+      "size": 773
+    },
+    {
+      "ea": 456184,
+      "name": "sub_6F5F8",
+      "size": 3959
+    },
+    {
+      "ea": 460152,
+      "name": "sub_70578",
+      "size": 211
+    },
+    {
+      "ea": 460372,
+      "name": "sub_70654",
+      "size": 187
+    },
+    {
+      "ea": 460568,
+      "name": "sub_70718",
+      "size": 1236
+    },
+    {
+      "ea": 461812,
+      "name": "sub_70BF4",
+      "size": 49
+    },
+    {
+      "ea": 461868,
+      "name": "sub_70C2C",
+      "size": 88
+    },
+    {
+      "ea": 461964,
+      "name": "sub_70C8C",
+      "size": 500
+    },
+    {
+      "ea": 462472,
+      "name": "sub_70E88",
+      "size": 426
+    },
+    {
+      "ea": 462904,
+      "name": "sub_71038",
+      "size": 20
+    },
+    {
+      "ea": 462932,
+      "name": "sub_71054",
+      "size": 15
+    },
+    {
+      "ea": 462956,
+      "name": "sub_7106C",
+      "size": 111
+    },
+    {
+      "ea": 463076,
+      "name": "sub_710E4",
+      "size": 236
+    },
+    {
+      "ea": 463320,
+      "name": "sub_711D8",
+      "size": 374
+    },
+    {
+      "ea": 463700,
+      "name": "sub_71354",
+      "size": 543
+    },
+    {
+      "ea": 464252,
+      "name": "sub_7157C",
+      "size": 323
+    },
+    {
+      "ea": 464584,
+      "name": "sub_716C8",
+      "size": 138
+    },
+    {
+      "ea": 464728,
+      "name": "sub_71758",
+      "size": 232
+    },
+    {
+      "ea": 464968,
+      "name": "sub_71848",
+      "size": 414
+    },
+    {
+      "ea": 465388,
+      "name": "sub_719EC",
+      "size": 123
+    },
+    {
+      "ea": 465520,
+      "name": "sub_71A70",
+      "size": 325
+    },
+    {
+      "ea": 465852,
+      "name": "sub_71BBC",
+      "size": 428
+    },
+    {
+      "ea": 466288,
+      "name": "sub_71D70",
+      "size": 435
+    },
+    {
+      "ea": 466732,
+      "name": "sub_71F2C",
+      "size": 573
+    },
+    {
+      "ea": 467312,
+      "name": "sub_72170",
+      "size": 685
+    },
+    {
+      "ea": 468004,
+      "name": "sub_72424",
+      "size": 1014
+    },
+    {
+      "ea": 469024,
+      "name": "sub_72820",
+      "size": 128
+    },
+    {
+      "ea": 469160,
+      "name": "sub_728A8",
+      "size": 667
+    },
+    {
+      "ea": 469836,
+      "name": "sub_72B4C",
+      "size": 950
+    },
+    {
+      "ea": 470792,
+      "name": "sub_72F08",
+      "size": 441
+    },
+    {
+      "ea": 471240,
+      "name": "sub_730C8",
+      "size": 127
+    },
+    {
+      "ea": 471376,
+      "name": "_dynamic_atexit_destructor_for__DefaultFormatter___4",
+      "size": 56
+    },
+    {
+      "ea": 471440,
+      "name": "sub_73190",
+      "size": 400
+    },
+    {
+      "ea": 471848,
+      "name": "sub_73328",
+      "size": 678
+    },
+    {
+      "ea": 472532,
+      "name": "sub_735D4",
+      "size": 892
+    },
+    {
+      "ea": 473432,
+      "name": "sub_73958",
+      "size": 84
+    },
+    {
+      "ea": 473524,
+      "name": "sub_739B4",
+      "size": 384
+    },
+    {
+      "ea": 473916,
+      "name": "sub_73B3C",
+      "size": 1262
+    },
+    {
+      "ea": 475184,
+      "name": "sub_74030",
+      "size": 681
+    },
+    {
+      "ea": 475872,
+      "name": "sub_742E0",
+      "size": 61
+    },
+    {
+      "ea": 475940,
+      "name": "sub_74324",
+      "size": 100
+    },
+    {
+      "ea": 476048,
+      "name": "sub_74390",
+      "size": 482
+    },
+    {
+      "ea": 476536,
+      "name": "sub_74578",
+      "size": 300
+    },
+    {
+      "ea": 476844,
+      "name": "sub_746AC",
+      "size": 230
+    },
+    {
+      "ea": 477080,
+      "name": "sub_74798",
+      "size": 402
+    },
+    {
+      "ea": 477488,
+      "name": "sub_74930",
+      "size": 151
+    },
+    {
+      "ea": 477648,
+      "name": "sub_749D0",
+      "size": 76
+    },
+    {
+      "ea": 477732,
+      "name": "sub_74A24",
+      "size": 616
+    },
+    {
+      "ea": 478356,
+      "name": "sub_74C94",
+      "size": 49
+    },
+    {
+      "ea": 478412,
+      "name": "sub_74CCC",
+      "size": 275
+    },
+    {
+      "ea": 478696,
+      "name": "sub_74DE8",
+      "size": 216
+    },
+    {
+      "ea": 478920,
+      "name": "sub_74EC8",
+      "size": 205
+    },
+    {
+      "ea": 479132,
+      "name": "sub_74F9C",
+      "size": 371
+    },
+    {
+      "ea": 479512,
+      "name": "sub_75118",
+      "size": 426
+    },
+    {
+      "ea": 479944,
+      "name": "sub_752C8",
+      "size": 186
+    },
+    {
+      "ea": 480136,
+      "name": "sub_75388",
+      "size": 79
+    },
+    {
+      "ea": 480224,
+      "name": "sub_753E0",
+      "size": 2354
+    },
+    {
+      "ea": 482584,
+      "name": "sub_75D18",
+      "size": 415
+    },
+    {
+      "ea": 483008,
+      "name": "sub_75EC0",
+      "size": 20
+    },
+    {
+      "ea": 483036,
+      "name": "sub_75EDC",
+      "size": 15
+    },
+    {
+      "ea": 483060,
+      "name": "sub_75EF4",
+      "size": 211
+    },
+    {
+      "ea": 483280,
+      "name": "sub_75FD0",
+      "size": 254
+    },
+    {
+      "ea": 483540,
+      "name": "sub_760D4",
+      "size": 268
+    },
+    {
+      "ea": 483816,
+      "name": "sub_761E8",
+      "size": 135
+    },
+    {
+      "ea": 483960,
+      "name": "sub_76278",
+      "size": 176
+    },
+    {
+      "ea": 484144,
+      "name": "sub_76330",
+      "size": 185
+    },
+    {
+      "ea": 484336,
+      "name": "sub_763F0",
+      "size": 1534
+    },
+    {
+      "ea": 485876,
+      "name": "sub_769F4",
+      "size": 280
+    },
+    {
+      "ea": 486164,
+      "name": "sub_76B14",
+      "size": 529
+    },
+    {
+      "ea": 486700,
+      "name": "sub_76D2C",
+      "size": 611
+    },
+    {
+      "ea": 487320,
+      "name": "sub_76F98",
+      "size": 177
+    },
+    {
+      "ea": 487504,
+      "name": "sub_77050",
+      "size": 181
+    },
+    {
+      "ea": 487692,
+      "name": "sub_7710C",
+      "size": 118
+    },
+    {
+      "ea": 487816,
+      "name": "sub_77188",
+      "size": 437
+    },
+    {
+      "ea": 488260,
+      "name": "sub_77344",
+      "size": 322
+    },
+    {
+      "ea": 488588,
+      "name": "sub_7748C",
+      "size": 155
+    },
+    {
+      "ea": 488752,
+      "name": "sub_77530",
+      "size": 556
+    },
+    {
+      "ea": 489316,
+      "name": "sub_77764",
+      "size": 41
+    },
+    {
+      "ea": 489364,
+      "name": "sub_77794",
+      "size": 93
+    },
+    {
+      "ea": 489464,
+      "name": "sub_777F8",
+      "size": 699
+    },
+    {
+      "ea": 490172,
+      "name": "sub_77ABC",
+      "size": 31
+    },
+    {
+      "ea": 490212,
+      "name": "sub_77AE4",
+      "size": 71
+    },
+    {
+      "ea": 490292,
+      "name": "sub_77B34",
+      "size": 107
+    },
+    {
+      "ea": 490408,
+      "name": "sub_77BA8",
+      "size": 85
+    },
+    {
+      "ea": 490500,
+      "name": "sub_77C04",
+      "size": 163
+    },
+    {
+      "ea": 490672,
+      "name": "sub_77CB0",
+      "size": 225
+    },
+    {
+      "ea": 490904,
+      "name": "sub_77D98",
+      "size": 59
+    },
+    {
+      "ea": 490972,
+      "name": "sub_77DDC",
+      "size": 489
+    },
+    {
+      "ea": 491468,
+      "name": "sub_77FCC",
+      "size": 902
+    },
+    {
+      "ea": 492376,
+      "name": "sub_78358",
+      "size": 249
+    },
+    {
+      "ea": 492632,
+      "name": "sub_78458",
+      "size": 249
+    },
+    {
+      "ea": 492888,
+      "name": "sub_78558",
+      "size": 483
+    },
+    {
+      "ea": 493380,
+      "name": "sub_78744",
+      "size": 44
+    },
+    {
+      "ea": 493432,
+      "name": "sub_78778",
+      "size": 135
+    },
+    {
+      "ea": 493576,
+      "name": "sub_78808",
+      "size": 168
+    },
+    {
+      "ea": 493752,
+      "name": "sub_788B8",
+      "size": 13
+    },
+    {
+      "ea": 493772,
+      "name": "sub_788CC",
+      "size": 118
+    },
+    {
+      "ea": 493896,
+      "name": "sub_78948",
+      "size": 247
+    },
+    {
+      "ea": 494152,
+      "name": "sub_78A48",
+      "size": 198
+    },
+    {
+      "ea": 494356,
+      "name": "sub_78B14",
+      "size": 302
+    },
+    {
+      "ea": 494664,
+      "name": "sub_78C48",
+      "size": 795
+    },
+    {
+      "ea": 495468,
+      "name": "sub_78F6C",
+      "size": 708
+    },
+    {
+      "ea": 496184,
+      "name": "sub_79238",
+      "size": 595
+    },
+    {
+      "ea": 496788,
+      "name": "sub_79494",
+      "size": 623
+    },
+    {
+      "ea": 497420,
+      "name": "sub_7970C",
+      "size": 829
+    },
+    {
+      "ea": 498256,
+      "name": "sub_79A50",
+      "size": 562
+    },
+    {
+      "ea": 498824,
+      "name": "sub_79C88",
+      "size": 103
+    },
+    {
+      "ea": 498936,
+      "name": "sub_79CF8",
+      "size": 690
+    },
+    {
+      "ea": 499632,
+      "name": "sub_79FB0",
+      "size": 225
+    },
+    {
+      "ea": 499864,
+      "name": "sub_7A098",
+      "size": 480
+    },
+    {
+      "ea": 500352,
+      "name": "sub_7A280",
+      "size": 640
+    },
+    {
+      "ea": 501000,
+      "name": "sub_7A508",
+      "size": 201
+    },
+    {
+      "ea": 501208,
+      "name": "sub_7A5D8",
+      "size": 20
+    },
+    {
+      "ea": 501236,
+      "name": "sub_7A5F4",
+      "size": 31
+    },
+    {
+      "ea": 501276,
+      "name": "sub_7A61C",
+      "size": 853
+    },
+    {
+      "ea": 502136,
+      "name": "sub_7A978",
+      "size": 221
+    },
+    {
+      "ea": 502364,
+      "name": "sub_7AA5C",
+      "size": 281
+    },
+    {
+      "ea": 502652,
+      "name": "sub_7AB7C",
+      "size": 1063
+    },
+    {
+      "ea": 503724,
+      "name": "sub_7AFAC",
+      "size": 957
+    },
+    {
+      "ea": 504688,
+      "name": "sub_7B370",
+      "size": 229
+    },
+    {
+      "ea": 504924,
+      "name": "sub_7B45C",
+      "size": 446
+    },
+    {
+      "ea": 505376,
+      "name": "sub_7B620",
+      "size": 365
+    },
+    {
+      "ea": 505748,
+      "name": "sub_7B794",
+      "size": 436
+    },
+    {
+      "ea": 506192,
+      "name": "sub_7B950",
+      "size": 327
+    },
+    {
+      "ea": 506528,
+      "name": "sub_7BAA0",
+      "size": 368
+    },
+    {
+      "ea": 506904,
+      "name": "sub_7BC18",
+      "size": 556
+    },
+    {
+      "ea": 507468,
+      "name": "sub_7BE4C",
+      "size": 19
+    },
+    {
+      "ea": 507496,
+      "name": "sub_7BE68",
+      "size": 225
+    },
+    {
+      "ea": 507728,
+      "name": "sub_7BF50",
+      "size": 373
+    },
+    {
+      "ea": 508108,
+      "name": "sub_7C0CC",
+      "size": 177
+    },
+    {
+      "ea": 508292,
+      "name": "sub_7C184",
+      "size": 807
+    },
+    {
+      "ea": 509108,
+      "name": "sub_7C4B4",
+      "size": 94
+    },
+    {
+      "ea": 509208,
+      "name": "sub_7C518",
+      "size": 19
+    },
+    {
+      "ea": 509236,
+      "name": "sub_7C534",
+      "size": 228
+    },
+    {
+      "ea": 509472,
+      "name": "sub_7C620",
+      "size": 592
+    },
+    {
+      "ea": 510072,
+      "name": "sub_7C878",
+      "size": 815
+    },
+    {
+      "ea": 510896,
+      "name": "sub_7CBB0",
+      "size": 234
+    },
+    {
+      "ea": 511136,
+      "name": "sub_7CCA0",
+      "size": 87
+    },
+    {
+      "ea": 511232,
+      "name": "sub_7CD00",
+      "size": 100
+    },
+    {
+      "ea": 511340,
+      "name": "sub_7CD6C",
+      "size": 140
+    },
+    {
+      "ea": 511488,
+      "name": "sub_7CE00",
+      "size": 113
+    },
+    {
+      "ea": 511608,
+      "name": "sub_7CE78",
+      "size": 87
+    },
+    {
+      "ea": 511704,
+      "name": "sub_7CED8",
+      "size": 192
+    },
+    {
+      "ea": 511904,
+      "name": "sub_7CFA0",
+      "size": 404
+    },
+    {
+      "ea": 512316,
+      "name": "sub_7D13C",
+      "size": 218
+    },
+    {
+      "ea": 512540,
+      "name": "sub_7D21C",
+      "size": 258
+    },
+    {
+      "ea": 512804,
+      "name": "sub_7D324",
+      "size": 435
+    },
+    {
+      "ea": 513248,
+      "name": "sub_7D4E0",
+      "size": 318
+    },
+    {
+      "ea": 513572,
+      "name": "sub_7D624",
+      "size": 83
+    },
+    {
+      "ea": 513664,
+      "name": "sub_7D680",
+      "size": 66
+    },
+    {
+      "ea": 513736,
+      "name": "sub_7D6C8",
+      "size": 346
+    },
+    {
+      "ea": 514088,
+      "name": "sub_7D828",
+      "size": 1109
+    },
+    {
+      "ea": 515204,
+      "name": "sub_7DC84",
+      "size": 209
+    },
+    {
+      "ea": 515420,
+      "name": "sub_7DD5C",
+      "size": 221
+    },
+    {
+      "ea": 515648,
+      "name": "sub_7DE40",
+      "size": 453
+    },
+    {
+      "ea": 516108,
+      "name": "sub_7E00C",
+      "size": 108
+    },
+    {
+      "ea": 516224,
+      "name": "sub_7E080",
+      "size": 78
+    },
+    {
+      "ea": 516308,
+      "name": "sub_7E0D4",
+      "size": 334
+    },
+    {
+      "ea": 516648,
+      "name": "sub_7E228",
+      "size": 209
+    },
+    {
+      "ea": 516864,
+      "name": "sub_7E300",
+      "size": 534
+    },
+    {
+      "ea": 517404,
+      "name": "sub_7E51C",
+      "size": 268
+    },
+    {
+      "ea": 517680,
+      "name": "sub_7E630",
+      "size": 269
+    },
+    {
+      "ea": 517956,
+      "name": "sub_7E744",
+      "size": 185
+    },
+    {
+      "ea": 518148,
+      "name": "sub_7E804",
+      "size": 367
+    },
+    {
+      "ea": 518524,
+      "name": "sub_7E97C",
+      "size": 244
+    },
+    {
+      "ea": 518776,
+      "name": "sub_7EA78",
+      "size": 413
+    },
+    {
+      "ea": 519196,
+      "name": "sub_7EC1C",
+      "size": 120
+    },
+    {
+      "ea": 519324,
+      "name": "sub_7EC9C",
+      "size": 107
+    },
+    {
+      "ea": 519440,
+      "name": "sub_7ED10",
+      "size": 694
+    },
+    {
+      "ea": 520140,
+      "name": "sub_7EFCC",
+      "size": 165
+    },
+    {
+      "ea": 520312,
+      "name": "sub_7F078",
+      "size": 283
+    },
+    {
+      "ea": 520604,
+      "name": "sub_7F19C",
+      "size": 189
+    },
+    {
+      "ea": 520800,
+      "name": "sub_7F260",
+      "size": 166
+    },
+    {
+      "ea": 520972,
+      "name": "sub_7F30C",
+      "size": 438
+    },
+    {
+      "ea": 521416,
+      "name": "sub_7F4C8",
+      "size": 238
+    },
+    {
+      "ea": 521660,
+      "name": "sub_7F5BC",
+      "size": 228
+    },
+    {
+      "ea": 521896,
+      "name": "sub_7F6A8",
+      "size": 591
+    },
+    {
+      "ea": 522496,
+      "name": "sub_7F900",
+      "size": 170
+    },
+    {
+      "ea": 522672,
+      "name": "sub_7F9B0",
+      "size": 203
+    },
+    {
+      "ea": 522884,
+      "name": "sub_7FA84",
+      "size": 65
+    },
+    {
+      "ea": 522956,
+      "name": "sub_7FACC",
+      "size": 5176
+    },
+    {
+      "ea": 528160,
+      "name": "__security_check_cookie",
+      "size": 32
+    },
+    {
+      "ea": 528200,
+      "name": "__report_gsfailure",
+      "size": 39
+    },
+    {
+      "ea": 528246,
+      "name": "ZwQuerySystemInformation",
+      "size": 6
+    },
+    {
+      "ea": 528258,
+      "name": "DbgPrint",
+      "size": 6
+    },
+    {
+      "ea": 528270,
+      "name": "PsGetProcessSessionId",
+      "size": 6
+    },
+    {
+      "ea": 528282,
+      "name": "ZwQueryInformationProcess",
+      "size": 6
+    },
+    {
+      "ea": 528294,
+      "name": "_wcsicmp",
+      "size": 6
+    },
+    {
+      "ea": 528306,
+      "name": "ZwUnloadKey",
+      "size": 6
+    },
+    {
+      "ea": 528318,
+      "name": "ZwSaveKey",
+      "size": 6
+    },
+    {
+      "ea": 528330,
+      "name": "ZwLoadKey",
+      "size": 6
+    },
+    {
+      "ea": 528342,
+      "name": "_stricmp",
+      "size": 6
+    },
+    {
+      "ea": 528354,
+      "name": "PsGetProcessImageFileName",
+      "size": 6
+    },
+    {
+      "ea": 528366,
+      "name": "PsIsThreadImpersonating",
+      "size": 6
+    },
+    {
+      "ea": 528378,
+      "name": "PsGetProcessInheritedFromUniqueProcessId",
+      "size": 6
+    },
+    {
+      "ea": 528390,
+      "name": "ObCloseHandle",
+      "size": 6
+    },
+    {
+      "ea": 528402,
+      "name": "PsGetProcessWow64Process",
+      "size": 6
+    },
+    {
+      "ea": 528432,
+      "name": "memmove",
+      "size": 820
+    },
+    {
+      "ea": 529258,
+      "name": "ObOpenObjectByName",
+      "size": 6
+    },
+    {
+      "ea": 529270,
+      "name": "_wcsnicmp",
+      "size": 6
+    },
+    {
+      "ea": 529282,
+      "name": "wcsncpy",
+      "size": 6
+    },
+    {
+      "ea": 529294,
+      "name": "SeLocateProcessImageName",
+      "size": 6
+    },
+    {
+      "ea": 529306,
+      "name": "LdrAccessResource",
+      "size": 6
+    },
+    {
+      "ea": 529318,
+      "name": "IoGetTransactionParameterBlock",
+      "size": 6
+    },
+    {
+      "ea": 529330,
+      "name": "PsGetCurrentThreadTeb",
+      "size": 6
+    },
+    {
+      "ea": 529342,
+      "name": "LdrFindResource_U",
+      "size": 6
+    },
+    {
+      "ea": 529354,
+      "name": "_strnicmp",
+      "size": 6
+    },
+    {
+      "ea": 529366,
+      "name": "ObReferenceObjectByName",
+      "size": 6
+    },
+    {
+      "ea": 529378,
+      "name": "RtlImageNtHeader",
+      "size": 6
+    },
+    {
+      "ea": 529390,
+      "name": "FltCloseClientPort",
+      "size": 6
+    },
+    {
+      "ea": 529402,
+      "name": "FltCreateCommunicationPort",
+      "size": 6
+    },
+    {
+      "ea": 529414,
+      "name": "FltFreeSecurityDescriptor",
+      "size": 6
+    },
+    {
+      "ea": 529426,
+      "name": "FltUnregisterFilter",
+      "size": 6
+    },
+    {
+      "ea": 529438,
+      "name": "FltCloseCommunicationPort",
+      "size": 6
+    },
+    {
+      "ea": 529450,
+      "name": "FltBuildDefaultSecurityDescriptor",
+      "size": 6
+    },
+    {
+      "ea": 529462,
+      "name": "FltRegisterFilter",
+      "size": 6
+    },
+    {
+      "ea": 529474,
+      "name": "FltStartFiltering",
+      "size": 6
+    },
+    {
+      "ea": 529486,
+      "name": "FltReferenceFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529498,
+      "name": "FltGetDeviceObject",
+      "size": 6
+    },
+    {
+      "ea": 529510,
+      "name": "FltGetStreamHandleContext",
+      "size": 6
+    },
+    {
+      "ea": 529522,
+      "name": "FltSendMessage",
+      "size": 6
+    },
+    {
+      "ea": 529534,
+      "name": "FltSetStreamHandleContext",
+      "size": 6
+    },
+    {
+      "ea": 529546,
+      "name": "FltGetRequestorProcessId",
+      "size": 6
+    },
+    {
+      "ea": 529558,
+      "name": "FltGetTunneledName",
+      "size": 6
+    },
+    {
+      "ea": 529570,
+      "name": "FltCancelFileOpen",
+      "size": 6
+    },
+    {
+      "ea": 529582,
+      "name": "FltGetDestinationFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529594,
+      "name": "FltDeleteContext",
+      "size": 6
+    },
+    {
+      "ea": 529606,
+      "name": "FltSetCallbackDataDirty",
+      "size": 6
+    },
+    {
+      "ea": 529618,
+      "name": "FltReadFile",
+      "size": 6
+    },
+    {
+      "ea": 529630,
+      "name": "FltCreateFile",
+      "size": 6
+    },
+    {
+      "ea": 529642,
+      "name": "FltQueryInformationFile",
+      "size": 6
+    },
+    {
+      "ea": 529654,
+      "name": "FltReleaseContext",
+      "size": 6
+    },
+    {
+      "ea": 529666,
+      "name": "FltClose",
+      "size": 6
+    },
+    {
+      "ea": 529678,
+      "name": "FltAllocateContext",
+      "size": 6
+    },
+    {
+      "ea": 529690,
+      "name": "FltGetFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529702,
+      "name": "FltGetRoutineAddress",
+      "size": 6
+    },
+    {
+      "ea": 529714,
+      "name": "FltReleaseFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529726,
+      "name": "FltParseFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529738,
+      "name": "FltObjectDereference",
+      "size": 6
+    },
+    {
+      "ea": 529750,
+      "name": "FltWriteFile",
+      "size": 6
+    },
+    {
+      "ea": 529762,
+      "name": "FltGetFileNameInformationUnsafe",
+      "size": 6
+    },
+    {
+      "ea": 529774,
+      "name": "FltSetInformationFile",
+      "size": 6
+    },
+    {
+      "ea": 529786,
+      "name": "FltGetTopInstance",
+      "size": 6
+    },
+    {
+      "ea": 529798,
+      "name": "FltGetVolumeFromFileObject",
+      "size": 6
+    },
+    {
+      "ea": 529824,
+      "name": "sub_815A0",
+      "size": 72
+    },
+    {
+      "ea": 529910,
+      "name": "RtlImageDirectoryEntryToData",
+      "size": 6
+    },
+    {
+      "ea": 529922,
+      "name": "wcsstr",
+      "size": 6
+    },
+    {
+      "ea": 529934,
+      "name": "KeInitializeApc",
+      "size": 6
+    },
+    {
+      "ea": 529946,
+      "name": "KeInsertQueueApc",
+      "size": 6
+    },
+    {
+      "ea": 529958,
+      "name": "RtlFormatCurrentUserKeyPath",
+      "size": 6
+    },
+    {
+      "ea": 529970,
+      "name": "NtQueryInformationThread",
+      "size": 6
+    },
+    {
+      "ea": 529982,
+      "name": "strncpy",
+      "size": 6
+    },
+    {
+      "ea": 529994,
+      "name": "PsGetCurrentProcessSessionId",
+      "size": 6
+    },
+    {
+      "ea": 530006,
+      "name": "wcsrchr",
+      "size": 6
+    },
+    {
+      "ea": 530018,
+      "name": "_itow",
+      "size": 6
+    },
+    {
+      "ea": 530030,
+      "name": "_vsnprintf",
+      "size": 6
+    },
+    {
+      "ea": 530042,
+      "name": "FltParseFileName",
+      "size": 6
+    },
+    {
+      "ea": 530064,
+      "name": "memset",
+      "size": 234
+    },
+    {
+      "ea": 530304,
+      "name": "__GSHandlerCheckCommon",
+      "size": 99
+    },
+    {
+      "ea": 530412,
+      "name": "__GSHandlerCheck",
+      "size": 29
+    },
+    {
+      "ea": 530448,
+      "name": "__C_specific_handler",
+      "size": 6
+    },
+    {
+      "ea": 530480,
+      "name": "memcmp",
+      "size": 199
+    },
+    {
+      "ea": 530688,
+      "name": "__GSHandlerCheck_SEH",
+      "size": 148
+    },
+    {
+      "ea": 530864,
+      "name": "sub_819B0",
+      "size": 18
+    },
+    {
+      "ea": 530896,
+      "name": "sub_819D0",
+      "size": 29
+    },
+    {
+      "ea": 530944,
+      "name": "sub_81A00",
+      "size": 4
+    },
+    {
+      "ea": 530960,
+      "name": "sub_81A10",
+      "size": 8
+    },
+    {
+      "ea": 531120,
+      "name": "sub_81AB0",
+      "size": 4
+    },
+    {
+      "ea": 531152,
+      "name": "sub_81AD0",
+      "size": 23
+    },
+    {
+      "ea": 531184,
+      "name": "sub_81AF0",
+      "size": 24
+    },
+    {
+      "ea": 531216,
+      "name": "sub_81B10",
+      "size": 24
+    },
+    {
+      "ea": 531248,
+      "name": "sub_81B30",
+      "size": 24
+    },
+    {
+      "ea": 531280,
+      "name": "sub_81B50",
+      "size": 24
+    },
+    {
+      "ea": 531312,
+      "name": "sub_81B70",
+      "size": 24
+    },
+    {
+      "ea": 531344,
+      "name": "sub_81B90",
+      "size": 14
+    },
+    {
+      "ea": 1007624,
+      "name": "DriverEntry",
+      "size": 1568
+    },
+    {
+      "ea": 1009200,
+      "name": "sub_F6630",
+      "size": 219
+    },
+    {
+      "ea": 1009428,
+      "name": "__security_init_cookie",
+      "size": 85
+    },
+    {
+      "ea": 1009520,
+      "name": "start",
+      "size": 30
+    }
+  ],
+  "interesting_functions": [
+    {
+      "ea": 69640,
+      "name": "ConnectNotifyCallback",
+      "size": 124
+    },
+    {
+      "ea": 69936,
+      "name": "DisconnectNotifyCallback",
+      "size": 229
+    },
+    {
+      "ea": 70476,
+      "name": "MessageNotifyCallback",
+      "size": 21256
+    },
+    {
+      "ea": 292896,
+      "name": "DriverReinitializationRoutine",
+      "size": 5
+    },
+    {
+      "ea": 307084,
+      "name": "NotifyRoutine",
+      "size": 395
+    },
+    {
+      "ea": 528270,
+      "name": "PsGetProcessSessionId",
+      "size": 6
+    },
+    {
+      "ea": 528282,
+      "name": "ZwQueryInformationProcess",
+      "size": 6
+    },
+    {
+      "ea": 528294,
+      "name": "_wcsicmp",
+      "size": 6
+    },
+    {
+      "ea": 528306,
+      "name": "ZwUnloadKey",
+      "size": 6
+    },
+    {
+      "ea": 528342,
+      "name": "_stricmp",
+      "size": 6
+    },
+    {
+      "ea": 528354,
+      "name": "PsGetProcessImageFileName",
+      "size": 6
+    },
+    {
+      "ea": 528366,
+      "name": "PsIsThreadImpersonating",
+      "size": 6
+    },
+    {
+      "ea": 528378,
+      "name": "PsGetProcessInheritedFromUniqueProcessId",
+      "size": 6
+    },
+    {
+      "ea": 528390,
+      "name": "ObCloseHandle",
+      "size": 6
+    },
+    {
+      "ea": 528402,
+      "name": "PsGetProcessWow64Process",
+      "size": 6
+    },
+    {
+      "ea": 529258,
+      "name": "ObOpenObjectByName",
+      "size": 6
+    },
+    {
+      "ea": 529270,
+      "name": "_wcsnicmp",
+      "size": 6
+    },
+    {
+      "ea": 529294,
+      "name": "SeLocateProcessImageName",
+      "size": 6
+    },
+    {
+      "ea": 529330,
+      "name": "PsGetCurrentThreadTeb",
+      "size": 6
+    },
+    {
+      "ea": 529354,
+      "name": "_strnicmp",
+      "size": 6
+    },
+    {
+      "ea": 529366,
+      "name": "ObReferenceObjectByName",
+      "size": 6
+    },
+    {
+      "ea": 529390,
+      "name": "FltCloseClientPort",
+      "size": 6
+    },
+    {
+      "ea": 529402,
+      "name": "FltCreateCommunicationPort",
+      "size": 6
+    },
+    {
+      "ea": 529414,
+      "name": "FltFreeSecurityDescriptor",
+      "size": 6
+    },
+    {
+      "ea": 529426,
+      "name": "FltUnregisterFilter",
+      "size": 6
+    },
+    {
+      "ea": 529438,
+      "name": "FltCloseCommunicationPort",
+      "size": 6
+    },
+    {
+      "ea": 529450,
+      "name": "FltBuildDefaultSecurityDescriptor",
+      "size": 6
+    },
+    {
+      "ea": 529462,
+      "name": "FltRegisterFilter",
+      "size": 6
+    },
+    {
+      "ea": 529474,
+      "name": "FltStartFiltering",
+      "size": 6
+    },
+    {
+      "ea": 529486,
+      "name": "FltReferenceFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529498,
+      "name": "FltGetDeviceObject",
+      "size": 6
+    },
+    {
+      "ea": 529510,
+      "name": "FltGetStreamHandleContext",
+      "size": 6
+    },
+    {
+      "ea": 529522,
+      "name": "FltSendMessage",
+      "size": 6
+    },
+    {
+      "ea": 529534,
+      "name": "FltSetStreamHandleContext",
+      "size": 6
+    },
+    {
+      "ea": 529546,
+      "name": "FltGetRequestorProcessId",
+      "size": 6
+    },
+    {
+      "ea": 529558,
+      "name": "FltGetTunneledName",
+      "size": 6
+    },
+    {
+      "ea": 529570,
+      "name": "FltCancelFileOpen",
+      "size": 6
+    },
+    {
+      "ea": 529582,
+      "name": "FltGetDestinationFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529594,
+      "name": "FltDeleteContext",
+      "size": 6
+    },
+    {
+      "ea": 529606,
+      "name": "FltSetCallbackDataDirty",
+      "size": 6
+    },
+    {
+      "ea": 529618,
+      "name": "FltReadFile",
+      "size": 6
+    },
+    {
+      "ea": 529630,
+      "name": "FltCreateFile",
+      "size": 6
+    },
+    {
+      "ea": 529642,
+      "name": "FltQueryInformationFile",
+      "size": 6
+    },
+    {
+      "ea": 529654,
+      "name": "FltReleaseContext",
+      "size": 6
+    },
+    {
+      "ea": 529666,
+      "name": "FltClose",
+      "size": 6
+    },
+    {
+      "ea": 529678,
+      "name": "FltAllocateContext",
+      "size": 6
+    },
+    {
+      "ea": 529690,
+      "name": "FltGetFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529702,
+      "name": "FltGetRoutineAddress",
+      "size": 6
+    },
+    {
+      "ea": 529714,
+      "name": "FltReleaseFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529726,
+      "name": "FltParseFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 529738,
+      "name": "FltObjectDereference",
+      "size": 6
+    },
+    {
+      "ea": 529750,
+      "name": "FltWriteFile",
+      "size": 6
+    },
+    {
+      "ea": 529762,
+      "name": "FltGetFileNameInformationUnsafe",
+      "size": 6
+    },
+    {
+      "ea": 529774,
+      "name": "FltSetInformationFile",
+      "size": 6
+    },
+    {
+      "ea": 529786,
+      "name": "FltGetTopInstance",
+      "size": 6
+    },
+    {
+      "ea": 529798,
+      "name": "FltGetVolumeFromFileObject",
+      "size": 6
+    },
+    {
+      "ea": 529970,
+      "name": "NtQueryInformationThread",
+      "size": 6
+    },
+    {
+      "ea": 529994,
+      "name": "PsGetCurrentProcessSessionId",
+      "size": 6
+    },
+    {
+      "ea": 530042,
+      "name": "FltParseFileName",
+      "size": 6
+    },
+    {
+      "ea": 530480,
+      "name": "memcmp",
+      "size": 199
+    },
+    {
+      "ea": 1007624,
+      "name": "DriverEntry",
+      "size": 1568
+    }
+  ],
+  "interesting_strings": [
+    {
+      "ea": 531360,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\mspykern.h"
+    },
+    {
+      "ea": 531536,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\rules.c"
+    },
+    {
+      "ea": 531680,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\dllcache.c"
+    },
+    {
+      "ea": 532848,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\360filter.c"
+    },
+    {
+      "ea": 533376,
+      "type": 0,
+      "value": "FltFindExtraCreateParameter"
+    },
+    {
+      "ea": 533408,
+      "type": 0,
+      "value": "FltGetEcpListFromCallbackData"
+    },
+    {
+      "ea": 533984,
+      "type": 0,
+      "value": "FltGetCopyInformationFromCallbackData"
+    },
+    {
+      "ea": 536672,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\exception.c"
+    },
+    {
+      "ea": 536752,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\protectiecom.c"
+    },
+    {
+      "ea": 536832,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\rpcblock.c"
+    },
+    {
+      "ea": 537216,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\hookwritembr.c"
+    },
+    {
+      "ea": 546904,
+      "type": 0,
+      "value": "o%%Jr..\\$"
+    },
+    {
+      "ea": 547311,
+      "type": 0,
+      "value": "O44h\\"
+    },
+    {
+      "ea": 547815,
+      "type": 0,
+      "value": "\n$$Hl\\\\"
+    },
+    {
+      "ea": 547928,
+      "type": 0,
+      "value": "%%Jo..\\r"
+    },
+    {
+      "ea": 548840,
+      "type": 0,
+      "value": "$Hl$\\"
+    },
+    {
+      "ea": 548951,
+      "type": 0,
+      "value": "x%Jo%.\\r."
+    },
+    {
+      "ea": 549360,
+      "type": 0,
+      "value": "h\\44Q"
+    },
+    {
+      "ea": 549974,
+      "type": 0,
+      "value": "xxJo%%\\r..8$"
+    },
+    {
+      "ea": 551240,
+      "type": 0,
+      "value": "t\\lHBW"
+    },
+    {
+      "ea": 551685,
+      "type": 0,
+      "value": "\\h!T["
+    },
+    {
+      "ea": 552263,
+      "type": 0,
+      "value": "p\\lHtW"
+    },
+    {
+      "ea": 554311,
+      "type": 0,
+      "value": "2Ht\\l"
+    },
+    {
+      "ea": 556224,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\ad\\adrules.c"
+    },
+    {
+      "ea": 556488,
+      "type": 0,
+      "value": "360AP.EXE"
+    },
+    {
+      "ea": 556816,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\ad\\aklrules.c"
+    },
+    {
+      "ea": 563768,
+      "type": 0,
+      "value": "liveupdate360"
+    },
+    {
+      "ea": 563784,
+      "type": 0,
+      "value": "360MobileMgr."
+    },
+    {
+      "ea": 569144,
+      "type": 0,
+      "value": "NtTerminateProcess"
+    },
+    {
+      "ea": 569248,
+      "type": 0,
+      "value": "NtQueryInformationProcess"
+    },
+    {
+      "ea": 569336,
+      "type": 0,
+      "value": "RtlQueueApcWow64Thread"
+    },
+    {
+      "ea": 573648,
+      "type": 0,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\exploitcap\\capfilters.c"
+    },
+    {
+      "ea": 574400,
+      "type": 0,
+      "value": "\\??\\PhysicalDrive%d"
+    },
+    {
+      "ea": 575176,
+      "type": 16777216,
+      "value": "c:\\vmagent_new\\bin\\joblist\\965209\\src\\3\\360fsflt_sys_sspi\\filter\\objfre_win7_amd64\\amd64\\360FsFlt.pdb"
+    },
+    {
+      "ea": 600783,
+      "type": 0,
+      "value": "V1s._BN\\"
+    },
+    {
+      "ea": 605088,
+      "type": 0,
+      "value": "360tray.exe"
+    },
+    {
+      "ea": 1013936,
+      "type": 0,
+      "value": "PsProcessType"
+    },
+    {
+      "ea": 1014006,
+      "type": 0,
+      "value": "PsLookupProcessByProcessId"
+    },
+    {
+      "ea": 1014178,
+      "type": 0,
+      "value": "KeUnstackDetachProcess"
+    },
+    {
+      "ea": 1014252,
+      "type": 0,
+      "value": "IoGetCurrentProcess"
+    },
+    {
+      "ea": 1014356,
+      "type": 0,
+      "value": "PsThreadType"
+    },
+    {
+      "ea": 1014372,
+      "type": 0,
+      "value": "PsGetCurrentProcessId"
+    },
+    {
+      "ea": 1014534,
+      "type": 0,
+      "value": "KeStackAttachProcess"
+    },
+    {
+      "ea": 1014558,
+      "type": 0,
+      "value": "PsLookupThreadByThreadId"
+    },
+    {
+      "ea": 1014832,
+      "type": 0,
+      "value": "PsGetProcessSessionId"
+    },
+    {
+      "ea": 1014856,
+      "type": 0,
+      "value": "ZwOpenProcess"
+    },
+    {
+      "ea": 1014872,
+      "type": 0,
+      "value": "ZwQueryInformationProcess"
+    },
+    {
+      "ea": 1014974,
+      "type": 0,
+      "value": "IoThreadToProcess"
+    },
+    {
+      "ea": 1015096,
+      "type": 0,
+      "value": "PsGetProcessId"
+    },
+    {
+      "ea": 1015410,
+      "type": 0,
+      "value": "KeDelayExecutionThread"
+    },
+    {
+      "ea": 1015684,
+      "type": 0,
+      "value": "PsGetProcessImageFileName"
+    },
+    {
+      "ea": 1015712,
+      "type": 0,
+      "value": "PsIsSystemThread"
+    },
+    {
+      "ea": 1015732,
+      "type": 0,
+      "value": "PsIsThreadImpersonating"
+    },
+    {
+      "ea": 1015794,
+      "type": 0,
+      "value": "PsGetThreadId"
+    },
+    {
+      "ea": 1015940,
+      "type": 0,
+      "value": "PsGetProcessInheritedFromUniqueProcessId"
+    },
+    {
+      "ea": 1016078,
+      "type": 0,
+      "value": "PsGetCurrentThreadId"
+    },
+    {
+      "ea": 1016130,
+      "type": 0,
+      "value": "PsGetProcessWow64Process"
+    },
+    {
+      "ea": 1016554,
+      "type": 0,
+      "value": "SeLocateProcessImageName"
+    },
+    {
+      "ea": 1016840,
+      "type": 0,
+      "value": "PsInitialSystemProcess"
+    },
+    {
+      "ea": 1016982,
+      "type": 0,
+      "value": "ZwTerminateProcess"
+    },
+    {
+      "ea": 1017148,
+      "type": 0,
+      "value": "PsGetCurrentThreadTeb"
+    },
+    {
+      "ea": 1017252,
+      "type": 0,
+      "value": "PsGetProcessSectionBaseAddress"
+    },
+    {
+      "ea": 1017286,
+      "type": 0,
+      "value": "ObRegisterCallbacks"
+    },
+    {
+      "ea": 1017308,
+      "type": 0,
+      "value": "PsSetCreateThreadNotifyRoutine"
+    },
+    {
+      "ea": 1017342,
+      "type": 0,
+      "value": "PsSetCreateProcessNotifyRoutine"
+    },
+    {
+      "ea": 1017576,
+      "type": 0,
+      "value": "IoIs32bitProcess"
+    },
+    {
+      "ea": 1017892,
+      "type": 0,
+      "value": "FltCloseClientPort"
+    },
+    {
+      "ea": 1017914,
+      "type": 0,
+      "value": "FltCreateCommunicationPort"
+    },
+    {
+      "ea": 1017944,
+      "type": 0,
+      "value": "FltFreeSecurityDescriptor"
+    },
+    {
+      "ea": 1017972,
+      "type": 0,
+      "value": "FltUnregisterFilter"
+    },
+    {
+      "ea": 1017994,
+      "type": 0,
+      "value": "FltCloseCommunicationPort"
+    },
+    {
+      "ea": 1018022,
+      "type": 0,
+      "value": "FltBuildDefaultSecurityDescriptor"
+    },
+    {
+      "ea": 1018058,
+      "type": 0,
+      "value": "FltRegisterFilter"
+    },
+    {
+      "ea": 1018078,
+      "type": 0,
+      "value": "FltStartFiltering"
+    },
+    {
+      "ea": 1018098,
+      "type": 0,
+      "value": "FltReferenceFileNameInformation"
+    },
+    {
+      "ea": 1018132,
+      "type": 0,
+      "value": "FltGetDeviceObject"
+    },
+    {
+      "ea": 1018154,
+      "type": 0,
+      "value": "FltGetStreamHandleContext"
+    },
+    {
+      "ea": 1018182,
+      "type": 0,
+      "value": "FltSendMessage"
+    },
+    {
+      "ea": 1018200,
+      "type": 0,
+      "value": "FltSetStreamHandleContext"
+    },
+    {
+      "ea": 1018228,
+      "type": 0,
+      "value": "FltGetRequestorProcessId"
+    },
+    {
+      "ea": 1018256,
+      "type": 0,
+      "value": "FltGetTunneledName"
+    },
+    {
+      "ea": 1018278,
+      "type": 0,
+      "value": "FltCancelFileOpen"
+    },
+    {
+      "ea": 1018298,
+      "type": 0,
+      "value": "FltGetDestinationFileNameInformation"
+    },
+    {
+      "ea": 1018338,
+      "type": 0,
+      "value": "FltDeleteContext"
+    },
+    {
+      "ea": 1018358,
+      "type": 0,
+      "value": "FltSetCallbackDataDirty"
+    },
+    {
+      "ea": 1018384,
+      "type": 0,
+      "value": "FltReadFile"
+    },
+    {
+      "ea": 1018398,
+      "type": 0,
+      "value": "FltCreateFile"
+    },
+    {
+      "ea": 1018414,
+      "type": 0,
+      "value": "FltQueryInformationFile"
+    },
+    {
+      "ea": 1018440,
+      "type": 0,
+      "value": "FltReleaseContext"
+    },
+    {
+      "ea": 1018460,
+      "type": 0,
+      "value": "FltClose"
+    },
+    {
+      "ea": 1018472,
+      "type": 0,
+      "value": "FltAllocateContext"
+    },
+    {
+      "ea": 1018494,
+      "type": 0,
+      "value": "FltGetFileNameInformation"
+    },
+    {
+      "ea": 1018522,
+      "type": 0,
+      "value": "FltGetRoutineAddress"
+    },
+    {
+      "ea": 1018546,
+      "type": 0,
+      "value": "FltReleaseFileNameInformation"
+    },
+    {
+      "ea": 1018578,
+      "type": 0,
+      "value": "FltParseFileNameInformation"
+    },
+    {
+      "ea": 1018608,
+      "type": 0,
+      "value": "FltObjectDereference"
+    },
+    {
+      "ea": 1018632,
+      "type": 0,
+      "value": "FltWriteFile"
+    },
+    {
+      "ea": 1018648,
+      "type": 0,
+      "value": "FltGetFileNameInformationUnsafe"
+    },
+    {
+      "ea": 1018682,
+      "type": 0,
+      "value": "FltSetInformationFile"
+    },
+    {
+      "ea": 1018706,
+      "type": 0,
+      "value": "FltGetTopInstance"
+    },
+    {
+      "ea": 1018726,
+      "type": 0,
+      "value": "FltGetVolumeFromFileObject"
+    },
+    {
+      "ea": 1018754,
+      "type": 0,
+      "value": "FLTMGR.SYS"
+    },
+    {
+      "ea": 1019252,
+      "type": 0,
+      "value": "CmRegisterCallback"
+    },
+    {
+      "ea": 1019438,
+      "type": 0,
+      "value": "IoGetRequestorProcessId"
+    },
+    {
+      "ea": 1019632,
+      "type": 0,
+      "value": "PsGetThreadTeb"
+    },
+    {
+      "ea": 1019684,
+      "type": 0,
+      "value": "NtQueryInformationThread"
+    },
+    {
+      "ea": 1019712,
+      "type": 0,
+      "value": "NtQueryInformationProcess"
+    },
+    {
+      "ea": 1019888,
+      "type": 0,
+      "value": "PsGetThreadProcessId"
+    },
+    {
+      "ea": 1019912,
+      "type": 0,
+      "value": "IoIsSystemThread"
+    },
+    {
+      "ea": 1019988,
+      "type": 0,
+      "value": "PsGetCurrentProcessSessionId"
+    },
+    {
+      "ea": 1020086,
+      "type": 0,
+      "value": "ZwSetInformationProcess"
+    },
+    {
+      "ea": 1020154,
+      "type": 0,
+      "value": "PsSetLoadImageNotifyRoutine"
+    },
+    {
+      "ea": 1020184,
+      "type": 0,
+      "value": "PsCreateSystemThread"
+    },
+    {
+      "ea": 1020208,
+      "type": 0,
+      "value": "PsTerminateSystemThread"
+    },
+    {
+      "ea": 1020312,
+      "type": 0,
+      "value": "PsGetContextThread"
+    },
+    {
+      "ea": 1020574,
+      "type": 0,
+      "value": "FltParseFileName"
+    }
+  ],
+  "string_count_sampled": 510
+}

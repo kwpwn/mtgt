@@ -1,0 +1,1771 @@
+{
+  "metadata": {
+    "input_file": "E:\\temp\\360_reverse_CTF\\360AntiSteal64.sys",
+    "root_filename": "360AntiSteal64.sys",
+    "imagebase": 65536,
+    "start_ea": 107196,
+    "procname": "metapc",
+    "is_64bit": true
+  },
+  "sections": [
+    {
+      "name": ".text",
+      "start": 69632,
+      "end": 90112,
+      "size": 20480,
+      "perm": 5
+    },
+    {
+      "name": ".idata",
+      "start": 90112,
+      "end": 90960,
+      "size": 848,
+      "perm": 4
+    },
+    {
+      "name": ".rdata",
+      "start": 90960,
+      "end": 94208,
+      "size": 3248,
+      "perm": 4
+    },
+    {
+      "name": ".data",
+      "start": 94208,
+      "end": 98304,
+      "size": 4096,
+      "perm": 6
+    },
+    {
+      "name": ".pdata",
+      "start": 98304,
+      "end": 102400,
+      "size": 4096,
+      "perm": 4
+    },
+    {
+      "name": "PAGE",
+      "start": 102400,
+      "end": 106496,
+      "size": 4096,
+      "perm": 5
+    },
+    {
+      "name": "INIT",
+      "start": 106496,
+      "end": 114688,
+      "size": 8192,
+      "perm": 7
+    }
+  ],
+  "imports": [
+    {
+      "ea": 90320,
+      "name": "IoGetTopLevelIrp",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90328,
+      "name": "IoThreadToProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90336,
+      "name": "IoGetStackLimits",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90344,
+      "name": "RtlEqualUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90352,
+      "name": "FsRtlIsPagingFile",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90360,
+      "name": "IoGetCurrentProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90368,
+      "name": "PsInitialSystemProcess",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90376,
+      "name": "PsGetCurrentProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90384,
+      "name": "PsGetProcessId",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90392,
+      "name": "SeTokenIsAdmin",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90400,
+      "name": "ProbeForRead",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90408,
+      "name": "PsGetCurrentProcessWow64Process",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90416,
+      "name": "IoBuildDeviceIoControlRequest",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90424,
+      "name": "ProbeForWrite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90432,
+      "name": "PsReferencePrimaryToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90440,
+      "name": "KeInitializeEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90448,
+      "name": "PsDereferencePrimaryToken",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90456,
+      "name": "IofCallDriver",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90464,
+      "name": "ExQueueWorkItem",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90472,
+      "name": "ExAcquireResourceExclusiveLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90480,
+      "name": "KeLeaveCriticalRegion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90488,
+      "name": "KeSetEvent",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90496,
+      "name": "IoFreeWorkItem",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90504,
+      "name": "PsSetCreateProcessNotifyRoutine",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90512,
+      "name": "KeEnterCriticalRegion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90520,
+      "name": "ZwWaitForSingleObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90528,
+      "name": "PsCreateSystemThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90536,
+      "name": "IoAllocateWorkItem",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90544,
+      "name": "ExReleaseResourceLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90552,
+      "name": "ZwClose",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90560,
+      "name": "IoQueueWorkItem",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90568,
+      "name": "VerSetConditionMask",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90576,
+      "name": "RtlGetVersion",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90584,
+      "name": "RtlVerifyVersionInfo",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90592,
+      "name": "RtlDeleteElementGenericTableAvl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90600,
+      "name": "RtlInsertElementGenericTableAvl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90608,
+      "name": "ExpInterlockedPushEntrySList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90616,
+      "name": "ExpInterlockedPopEntrySList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90624,
+      "name": "RtlNumberGenericTableElementsAvl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90632,
+      "name": "RtlIsGenericTableEmptyAvl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90640,
+      "name": "ExDeletePagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90648,
+      "name": "ExAcquireResourceSharedLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90656,
+      "name": "ExQueryDepthSList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90664,
+      "name": "RtlInitializeGenericTableAvl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90672,
+      "name": "RtlEnumerateGenericTableAvl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90680,
+      "name": "ExInitializePagedLookasideList",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90688,
+      "name": "RtlLookupElementGenericTableAvl",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90696,
+      "name": "RtlInitializeBitMap",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90704,
+      "name": "RtlSetBit",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90712,
+      "name": "RtlClearAllBits",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90720,
+      "name": "RtlFindSetBits",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90728,
+      "name": "RtlClearBit",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90736,
+      "name": "KeBugCheckEx",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90744,
+      "name": "KeWaitForSingleObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90752,
+      "name": "MmGetSystemRoutineAddress",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90760,
+      "name": "KeAreApcsDisabled",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90768,
+      "name": "ObfDereferenceObject",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90776,
+      "name": "IoGetDeviceObjectPointer",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90784,
+      "name": "RtlInitUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90792,
+      "name": "KeDelayExecutionThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90800,
+      "name": "ExAllocatePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90808,
+      "name": "ExInitializeResourceLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90816,
+      "name": "ExDeleteResourceLite",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90824,
+      "name": "ExFreePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90832,
+      "name": "RtlCreateRegistryKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90840,
+      "name": "IoCreateDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90848,
+      "name": "RtlCopyUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90856,
+      "name": "RtlWriteRegistryValue",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90864,
+      "name": "RtlAppendUnicodeStringToString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90872,
+      "name": "RtlPrefixUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90880,
+      "name": "InitSafeBootMode",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90888,
+      "name": "RtlFreeUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90896,
+      "name": "RtlQueryRegistryValues",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90904,
+      "name": "RtlAppendUnicodeToString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90912,
+      "name": "RtlCheckRegistryKey",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90920,
+      "name": "IoDeleteDevice",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90928,
+      "name": "PsTerminateSystemThread",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90936,
+      "name": "RtlIntegerToUnicodeString",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90944,
+      "name": "__C_specific_handler",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 90112,
+      "name": "FltCloseCommunicationPort",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90120,
+      "name": "FltFreeSecurityDescriptor",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90128,
+      "name": "FltCreateCommunicationPort",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90136,
+      "name": "FltCloseClientPort",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90144,
+      "name": "FltSendMessage",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90152,
+      "name": "FltStartFiltering",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90160,
+      "name": "FltParseFileNameInformation",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90168,
+      "name": "FltParseFileName",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90176,
+      "name": "FltReleaseFileNameInformation",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90184,
+      "name": "FltRegisterFilter",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90192,
+      "name": "FltGetRoutineAddress",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90200,
+      "name": "FltUnregisterFilter",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90208,
+      "name": "FltGetFileNameInformation",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90216,
+      "name": "FltQueryInformationFile",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90224,
+      "name": "FltIsDirectory",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90232,
+      "name": "FltDoCompletionProcessingWhenSafe",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90240,
+      "name": "FltGetRequestorProcess",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90248,
+      "name": "FltAcquireResourceExclusive",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90256,
+      "name": "FltAllocateContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90264,
+      "name": "FltReleaseContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90272,
+      "name": "FltReleaseResource",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90280,
+      "name": "FltSetStreamHandleContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90288,
+      "name": "FltGetStreamHandleContext",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90296,
+      "name": "FltAcquireResourceShared",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    },
+    {
+      "ea": 90304,
+      "name": "FltBuildDefaultSecurityDescriptor",
+      "ordinal": 0,
+      "module": "FLTMGR"
+    }
+  ],
+  "exports": [
+    {
+      "ea": 107196,
+      "ordinal": 107196,
+      "name": "start"
+    }
+  ],
+  "api_surface": [
+    "IoCreateDevice",
+    "IoDeleteDevice",
+    "FltRegisterFilter",
+    "FltStartFiltering",
+    "FltCreateCommunicationPort",
+    "FltUnregisterFilter",
+    "PsSetCreateProcessNotifyRoutine",
+    "ExAllocatePoolWithTag"
+  ],
+  "functions": [
+    {
+      "ea": 69640,
+      "name": "sub_11008",
+      "size": 667
+    },
+    {
+      "ea": 70316,
+      "name": "sub_112AC",
+      "size": 118
+    },
+    {
+      "ea": 70440,
+      "name": "sub_11328",
+      "size": 352
+    },
+    {
+      "ea": 70800,
+      "name": "sub_11490",
+      "size": 250
+    },
+    {
+      "ea": 71056,
+      "name": "sub_11590",
+      "size": 263
+    },
+    {
+      "ea": 71328,
+      "name": "sub_116A0",
+      "size": 169
+    },
+    {
+      "ea": 71504,
+      "name": "sub_11750",
+      "size": 422
+    },
+    {
+      "ea": 71932,
+      "name": "sub_118FC",
+      "size": 303
+    },
+    {
+      "ea": 72244,
+      "name": "sub_11A34",
+      "size": 79
+    },
+    {
+      "ea": 72332,
+      "name": "sub_11A8C",
+      "size": 55
+    },
+    {
+      "ea": 72396,
+      "name": "sub_11ACC",
+      "size": 16
+    },
+    {
+      "ea": 72420,
+      "name": "sub_11AE4",
+      "size": 63
+    },
+    {
+      "ea": 72492,
+      "name": "sub_11B2C",
+      "size": 36
+    },
+    {
+      "ea": 72536,
+      "name": "sub_11B58",
+      "size": 36
+    },
+    {
+      "ea": 72580,
+      "name": "sub_11B84",
+      "size": 149
+    },
+    {
+      "ea": 72736,
+      "name": "sub_11C20",
+      "size": 114
+    },
+    {
+      "ea": 72856,
+      "name": "sub_11C98",
+      "size": 27
+    },
+    {
+      "ea": 72892,
+      "name": "sub_11CBC",
+      "size": 43
+    },
+    {
+      "ea": 72944,
+      "name": "sub_11CF0",
+      "size": 18
+    },
+    {
+      "ea": 72968,
+      "name": "sub_11D08",
+      "size": 15
+    },
+    {
+      "ea": 72992,
+      "name": "sub_11D20",
+      "size": 38
+    },
+    {
+      "ea": 73036,
+      "name": "sub_11D4C",
+      "size": 106
+    },
+    {
+      "ea": 73148,
+      "name": "sub_11DBC",
+      "size": 150
+    },
+    {
+      "ea": 73304,
+      "name": "sub_11E58",
+      "size": 217
+    },
+    {
+      "ea": 73528,
+      "name": "sub_11F38",
+      "size": 113
+    },
+    {
+      "ea": 73648,
+      "name": "sub_11FB0",
+      "size": 106
+    },
+    {
+      "ea": 73760,
+      "name": "sub_12020",
+      "size": 110
+    },
+    {
+      "ea": 73876,
+      "name": "sub_12094",
+      "size": 315
+    },
+    {
+      "ea": 74200,
+      "name": "sub_121D8",
+      "size": 132
+    },
+    {
+      "ea": 74340,
+      "name": "sub_12264",
+      "size": 122
+    },
+    {
+      "ea": 74468,
+      "name": "sub_122E4",
+      "size": 135
+    },
+    {
+      "ea": 74612,
+      "name": "sub_12374",
+      "size": 140
+    },
+    {
+      "ea": 74760,
+      "name": "sub_12408",
+      "size": 119
+    },
+    {
+      "ea": 74888,
+      "name": "SafePostCallback",
+      "size": 70
+    },
+    {
+      "ea": 74964,
+      "name": "sub_124D4",
+      "size": 14
+    },
+    {
+      "ea": 74984,
+      "name": "sub_124E8",
+      "size": 13
+    },
+    {
+      "ea": 75004,
+      "name": "sub_124FC",
+      "size": 162
+    },
+    {
+      "ea": 75172,
+      "name": "sub_125A4",
+      "size": 52
+    },
+    {
+      "ea": 75232,
+      "name": "sub_125E0",
+      "size": 461
+    },
+    {
+      "ea": 75700,
+      "name": "sub_127B4",
+      "size": 161
+    },
+    {
+      "ea": 75868,
+      "name": "sub_1285C",
+      "size": 477
+    },
+    {
+      "ea": 76352,
+      "name": "sub_12A40",
+      "size": 146
+    },
+    {
+      "ea": 76504,
+      "name": "sub_12AD8",
+      "size": 341
+    },
+    {
+      "ea": 76852,
+      "name": "sub_12C34",
+      "size": 115
+    },
+    {
+      "ea": 76976,
+      "name": "IsProcessProtected",
+      "size": 229
+    },
+    {
+      "ea": 77212,
+      "name": "sub_12D9C",
+      "size": 275
+    },
+    {
+      "ea": 77496,
+      "name": "sub_12EB8",
+      "size": 94
+    },
+    {
+      "ea": 77596,
+      "name": "ConnectNotifyCallback",
+      "size": 167
+    },
+    {
+      "ea": 77772,
+      "name": "DisconnectNotifyCallback",
+      "size": 81
+    },
+    {
+      "ea": 77860,
+      "name": "sub_13024",
+      "size": 194
+    },
+    {
+      "ea": 78060,
+      "name": "sub_130EC",
+      "size": 163
+    },
+    {
+      "ea": 78232,
+      "name": "sub_13198",
+      "size": 180
+    },
+    {
+      "ea": 78420,
+      "name": "MessageNotifyCallback",
+      "size": 967
+    },
+    {
+      "ea": 79396,
+      "name": "sub_13624",
+      "size": 88
+    },
+    {
+      "ea": 79492,
+      "name": "sub_13684",
+      "size": 95
+    },
+    {
+      "ea": 79596,
+      "name": "sub_136EC",
+      "size": 104
+    },
+    {
+      "ea": 79708,
+      "name": "sub_1375C",
+      "size": 236
+    },
+    {
+      "ea": 79952,
+      "name": "sub_13850",
+      "size": 280
+    },
+    {
+      "ea": 80240,
+      "name": "StartRoutine",
+      "size": 231
+    },
+    {
+      "ea": 80480,
+      "name": "sub_13A60",
+      "size": 203
+    },
+    {
+      "ea": 80692,
+      "name": "sub_13B34",
+      "size": 51
+    },
+    {
+      "ea": 80752,
+      "name": "WorkerRoutine",
+      "size": 8
+    },
+    {
+      "ea": 80768,
+      "name": "sub_13B80",
+      "size": 422
+    },
+    {
+      "ea": 81196,
+      "name": "sub_13D2C",
+      "size": 110
+    },
+    {
+      "ea": 81312,
+      "name": "NotifyRoutine",
+      "size": 56
+    },
+    {
+      "ea": 81376,
+      "name": "sub_13DE0",
+      "size": 73
+    },
+    {
+      "ea": 81456,
+      "name": "sub_13E30",
+      "size": 169
+    },
+    {
+      "ea": 81632,
+      "name": "sub_13EE0",
+      "size": 179
+    },
+    {
+      "ea": 81820,
+      "name": "sub_13F9C",
+      "size": 16
+    },
+    {
+      "ea": 81844,
+      "name": "sub_13FB4",
+      "size": 14
+    },
+    {
+      "ea": 81864,
+      "name": "sub_13FC8",
+      "size": 19
+    },
+    {
+      "ea": 81892,
+      "name": "sub_13FE4",
+      "size": 165
+    },
+    {
+      "ea": 82064,
+      "name": "sub_14090",
+      "size": 167
+    },
+    {
+      "ea": 82240,
+      "name": "sub_14140",
+      "size": 135
+    },
+    {
+      "ea": 82384,
+      "name": "CompareRoutine",
+      "size": 23
+    },
+    {
+      "ea": 82416,
+      "name": "AllocateRoutine",
+      "size": 64
+    },
+    {
+      "ea": 82488,
+      "name": "FreeRoutine",
+      "size": 80
+    },
+    {
+      "ea": 82576,
+      "name": "sub_14290",
+      "size": 201
+    },
+    {
+      "ea": 82784,
+      "name": "sub_14360",
+      "size": 112
+    },
+    {
+      "ea": 82904,
+      "name": "sub_143D8",
+      "size": 233
+    },
+    {
+      "ea": 83144,
+      "name": "sub_144C8",
+      "size": 171
+    },
+    {
+      "ea": 83324,
+      "name": "sub_1457C",
+      "size": 223
+    },
+    {
+      "ea": 83556,
+      "name": "sub_14664",
+      "size": 147
+    },
+    {
+      "ea": 83712,
+      "name": "sub_14700",
+      "size": 21
+    },
+    {
+      "ea": 83740,
+      "name": "sub_1471C",
+      "size": 52
+    },
+    {
+      "ea": 83800,
+      "name": "sub_14758",
+      "size": 31
+    },
+    {
+      "ea": 83840,
+      "name": "sub_14780",
+      "size": 150
+    },
+    {
+      "ea": 83996,
+      "name": "sub_1481C",
+      "size": 106
+    },
+    {
+      "ea": 84108,
+      "name": "sub_1488C",
+      "size": 456
+    },
+    {
+      "ea": 84572,
+      "name": "sub_14A5C",
+      "size": 248
+    },
+    {
+      "ea": 84828,
+      "name": "sub_14B5C",
+      "size": 85
+    },
+    {
+      "ea": 84920,
+      "name": "sub_14BB8",
+      "size": 309
+    },
+    {
+      "ea": 85236,
+      "name": "sub_14CF4",
+      "size": 261
+    },
+    {
+      "ea": 85504,
+      "name": "sub_14E00",
+      "size": 190
+    },
+    {
+      "ea": 85700,
+      "name": "sub_14EC4",
+      "size": 299
+    },
+    {
+      "ea": 86008,
+      "name": "sub_14FF8",
+      "size": 124
+    },
+    {
+      "ea": 86140,
+      "name": "sub_1507C",
+      "size": 303
+    },
+    {
+      "ea": 86452,
+      "name": "sub_151B4",
+      "size": 151
+    },
+    {
+      "ea": 86612,
+      "name": "sub_15254",
+      "size": 174
+    },
+    {
+      "ea": 86792,
+      "name": "sub_15308",
+      "size": 163
+    },
+    {
+      "ea": 86976,
+      "name": "__security_check_cookie",
+      "size": 32
+    },
+    {
+      "ea": 87016,
+      "name": "__report_gsfailure",
+      "size": 39
+    },
+    {
+      "ea": 87062,
+      "name": "FltAcquireResourceShared",
+      "size": 6
+    },
+    {
+      "ea": 87074,
+      "name": "FltGetStreamHandleContext",
+      "size": 6
+    },
+    {
+      "ea": 87086,
+      "name": "FltSetStreamHandleContext",
+      "size": 6
+    },
+    {
+      "ea": 87098,
+      "name": "FltReleaseResource",
+      "size": 6
+    },
+    {
+      "ea": 87110,
+      "name": "FltReleaseContext",
+      "size": 6
+    },
+    {
+      "ea": 87122,
+      "name": "FltAllocateContext",
+      "size": 6
+    },
+    {
+      "ea": 87134,
+      "name": "FltAcquireResourceExclusive",
+      "size": 6
+    },
+    {
+      "ea": 87146,
+      "name": "FltGetRequestorProcess",
+      "size": 6
+    },
+    {
+      "ea": 87158,
+      "name": "FltDoCompletionProcessingWhenSafe",
+      "size": 6
+    },
+    {
+      "ea": 87170,
+      "name": "FltIsDirectory",
+      "size": 6
+    },
+    {
+      "ea": 87182,
+      "name": "FltQueryInformationFile",
+      "size": 6
+    },
+    {
+      "ea": 87194,
+      "name": "FltGetFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 87206,
+      "name": "FltUnregisterFilter",
+      "size": 6
+    },
+    {
+      "ea": 87218,
+      "name": "FltGetRoutineAddress",
+      "size": 6
+    },
+    {
+      "ea": 87230,
+      "name": "FltRegisterFilter",
+      "size": 6
+    },
+    {
+      "ea": 87242,
+      "name": "FltReleaseFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 87254,
+      "name": "FltParseFileName",
+      "size": 6
+    },
+    {
+      "ea": 87266,
+      "name": "FltParseFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 87278,
+      "name": "FltStartFiltering",
+      "size": 6
+    },
+    {
+      "ea": 87290,
+      "name": "FltSendMessage",
+      "size": 6
+    },
+    {
+      "ea": 87302,
+      "name": "FltCloseClientPort",
+      "size": 6
+    },
+    {
+      "ea": 87314,
+      "name": "FltCreateCommunicationPort",
+      "size": 6
+    },
+    {
+      "ea": 87326,
+      "name": "FltFreeSecurityDescriptor",
+      "size": 6
+    },
+    {
+      "ea": 87338,
+      "name": "FltCloseCommunicationPort",
+      "size": 6
+    },
+    {
+      "ea": 87350,
+      "name": "FltBuildDefaultSecurityDescriptor",
+      "size": 6
+    },
+    {
+      "ea": 87376,
+      "name": "memset",
+      "size": 234
+    },
+    {
+      "ea": 87616,
+      "name": "__GSHandlerCheckCommon",
+      "size": 99
+    },
+    {
+      "ea": 87724,
+      "name": "__GSHandlerCheck",
+      "size": 29
+    },
+    {
+      "ea": 87776,
+      "name": "memmove",
+      "size": 820
+    },
+    {
+      "ea": 88602,
+      "name": "__C_specific_handler",
+      "size": 6
+    },
+    {
+      "ea": 102420,
+      "name": "sub_19014",
+      "size": 227
+    },
+    {
+      "ea": 102656,
+      "name": "sub_19100",
+      "size": 156
+    },
+    {
+      "ea": 102924,
+      "name": "sub_1920C",
+      "size": 415
+    },
+    {
+      "ea": 106504,
+      "name": "DriverEntry",
+      "size": 592
+    },
+    {
+      "ea": 107104,
+      "name": "__security_init_cookie",
+      "size": 85
+    },
+    {
+      "ea": 107196,
+      "name": "start",
+      "size": 30
+    }
+  ],
+  "interesting_functions": [
+    {
+      "ea": 74888,
+      "name": "SafePostCallback",
+      "size": 70
+    },
+    {
+      "ea": 76976,
+      "name": "IsProcessProtected",
+      "size": 229
+    },
+    {
+      "ea": 77596,
+      "name": "ConnectNotifyCallback",
+      "size": 167
+    },
+    {
+      "ea": 77772,
+      "name": "DisconnectNotifyCallback",
+      "size": 81
+    },
+    {
+      "ea": 78420,
+      "name": "MessageNotifyCallback",
+      "size": 967
+    },
+    {
+      "ea": 81312,
+      "name": "NotifyRoutine",
+      "size": 56
+    },
+    {
+      "ea": 87062,
+      "name": "FltAcquireResourceShared",
+      "size": 6
+    },
+    {
+      "ea": 87074,
+      "name": "FltGetStreamHandleContext",
+      "size": 6
+    },
+    {
+      "ea": 87086,
+      "name": "FltSetStreamHandleContext",
+      "size": 6
+    },
+    {
+      "ea": 87098,
+      "name": "FltReleaseResource",
+      "size": 6
+    },
+    {
+      "ea": 87110,
+      "name": "FltReleaseContext",
+      "size": 6
+    },
+    {
+      "ea": 87122,
+      "name": "FltAllocateContext",
+      "size": 6
+    },
+    {
+      "ea": 87134,
+      "name": "FltAcquireResourceExclusive",
+      "size": 6
+    },
+    {
+      "ea": 87146,
+      "name": "FltGetRequestorProcess",
+      "size": 6
+    },
+    {
+      "ea": 87158,
+      "name": "FltDoCompletionProcessingWhenSafe",
+      "size": 6
+    },
+    {
+      "ea": 87170,
+      "name": "FltIsDirectory",
+      "size": 6
+    },
+    {
+      "ea": 87182,
+      "name": "FltQueryInformationFile",
+      "size": 6
+    },
+    {
+      "ea": 87194,
+      "name": "FltGetFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 87206,
+      "name": "FltUnregisterFilter",
+      "size": 6
+    },
+    {
+      "ea": 87218,
+      "name": "FltGetRoutineAddress",
+      "size": 6
+    },
+    {
+      "ea": 87230,
+      "name": "FltRegisterFilter",
+      "size": 6
+    },
+    {
+      "ea": 87242,
+      "name": "FltReleaseFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 87254,
+      "name": "FltParseFileName",
+      "size": 6
+    },
+    {
+      "ea": 87266,
+      "name": "FltParseFileNameInformation",
+      "size": 6
+    },
+    {
+      "ea": 87278,
+      "name": "FltStartFiltering",
+      "size": 6
+    },
+    {
+      "ea": 87290,
+      "name": "FltSendMessage",
+      "size": 6
+    },
+    {
+      "ea": 87302,
+      "name": "FltCloseClientPort",
+      "size": 6
+    },
+    {
+      "ea": 87314,
+      "name": "FltCreateCommunicationPort",
+      "size": 6
+    },
+    {
+      "ea": 87326,
+      "name": "FltFreeSecurityDescriptor",
+      "size": 6
+    },
+    {
+      "ea": 87338,
+      "name": "FltCloseCommunicationPort",
+      "size": 6
+    },
+    {
+      "ea": 87350,
+      "name": "FltBuildDefaultSecurityDescriptor",
+      "size": 6
+    },
+    {
+      "ea": 106504,
+      "name": "DriverEntry",
+      "size": 592
+    }
+  ],
+  "interesting_strings": [
+    {
+      "ea": 89136,
+      "type": 0,
+      "value": "FltVetoBypassIo"
+    },
+    {
+      "ea": 91680,
+      "type": 16777216,
+      "value": "c:\\vmagent_new\\bin\\joblist\\866102\\src\\3\\360antisteal_driver\\driver\\objfre_win7_amd64\\amd64\\360AntiSteal64.pdb"
+    },
+    {
+      "ea": 108216,
+      "type": 0,
+      "value": "RtlCheckRegistryKey"
+    },
+    {
+      "ea": 108266,
+      "type": 0,
+      "value": "RtlQueryRegistryValues"
+    },
+    {
+      "ea": 108396,
+      "type": 0,
+      "value": "RtlWriteRegistryValue"
+    },
+    {
+      "ea": 108462,
+      "type": 0,
+      "value": "RtlCreateRegistryKey"
+    },
+    {
+      "ea": 108582,
+      "type": 0,
+      "value": "KeDelayExecutionThread"
+    },
+    {
+      "ea": 108776,
+      "type": 0,
+      "value": "IoThreadToProcess"
+    },
+    {
+      "ea": 108860,
+      "type": 0,
+      "value": "IoGetCurrentProcess"
+    },
+    {
+      "ea": 108882,
+      "type": 0,
+      "value": "PsInitialSystemProcess"
+    },
+    {
+      "ea": 108908,
+      "type": 0,
+      "value": "PsGetCurrentProcessId"
+    },
+    {
+      "ea": 108932,
+      "type": 0,
+      "value": "PsGetProcessId"
+    },
+    {
+      "ea": 108984,
+      "type": 0,
+      "value": "PsGetCurrentProcessWow64Process"
+    },
+    {
+      "ea": 109264,
+      "type": 0,
+      "value": "PsSetCreateProcessNotifyRoutine"
+    },
+    {
+      "ea": 109346,
+      "type": 0,
+      "value": "PsCreateSystemThread"
+    },
+    {
+      "ea": 109370,
+      "type": 0,
+      "value": "PsTerminateSystemThread"
+    },
+    {
+      "ea": 110050,
+      "type": 0,
+      "value": "FltAcquireResourceShared"
+    },
+    {
+      "ea": 110078,
+      "type": 0,
+      "value": "FltGetStreamHandleContext"
+    },
+    {
+      "ea": 110106,
+      "type": 0,
+      "value": "FltSetStreamHandleContext"
+    },
+    {
+      "ea": 110134,
+      "type": 0,
+      "value": "FltReleaseResource"
+    },
+    {
+      "ea": 110156,
+      "type": 0,
+      "value": "FltReleaseContext"
+    },
+    {
+      "ea": 110176,
+      "type": 0,
+      "value": "FltAllocateContext"
+    },
+    {
+      "ea": 110198,
+      "type": 0,
+      "value": "FltAcquireResourceExclusive"
+    },
+    {
+      "ea": 110228,
+      "type": 0,
+      "value": "FltGetRequestorProcess"
+    },
+    {
+      "ea": 110254,
+      "type": 0,
+      "value": "FltDoCompletionProcessingWhenSafe"
+    },
+    {
+      "ea": 110290,
+      "type": 0,
+      "value": "FltIsDirectory"
+    },
+    {
+      "ea": 110308,
+      "type": 0,
+      "value": "FltQueryInformationFile"
+    },
+    {
+      "ea": 110334,
+      "type": 0,
+      "value": "FltGetFileNameInformation"
+    },
+    {
+      "ea": 110362,
+      "type": 0,
+      "value": "FltUnregisterFilter"
+    },
+    {
+      "ea": 110384,
+      "type": 0,
+      "value": "FltGetRoutineAddress"
+    },
+    {
+      "ea": 110408,
+      "type": 0,
+      "value": "FltRegisterFilter"
+    },
+    {
+      "ea": 110428,
+      "type": 0,
+      "value": "FltReleaseFileNameInformation"
+    },
+    {
+      "ea": 110460,
+      "type": 0,
+      "value": "FltParseFileName"
+    },
+    {
+      "ea": 110480,
+      "type": 0,
+      "value": "FltParseFileNameInformation"
+    },
+    {
+      "ea": 110510,
+      "type": 0,
+      "value": "FltStartFiltering"
+    },
+    {
+      "ea": 110530,
+      "type": 0,
+      "value": "FltSendMessage"
+    },
+    {
+      "ea": 110548,
+      "type": 0,
+      "value": "FltCloseClientPort"
+    },
+    {
+      "ea": 110570,
+      "type": 0,
+      "value": "FltCreateCommunicationPort"
+    },
+    {
+      "ea": 110600,
+      "type": 0,
+      "value": "FltFreeSecurityDescriptor"
+    },
+    {
+      "ea": 110628,
+      "type": 0,
+      "value": "FltCloseCommunicationPort"
+    },
+    {
+      "ea": 110656,
+      "type": 0,
+      "value": "FltBuildDefaultSecurityDescriptor"
+    },
+    {
+      "ea": 110690,
+      "type": 0,
+      "value": "FLTMGR.SYS"
+    }
+  ],
+  "string_count_sampled": 108
+}

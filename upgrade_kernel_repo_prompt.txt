@@ -1,0 +1,435 @@
+Bạn là một senior Windows kernel security researcher, technical writer, reverse engineer, và curriculum designer. Nhiệm vụ của bạn là nâng cấp repo Markdown hiện tại thành một Windows Kernel Pwn Research Notebook chất lượng cao, có cấu trúc học sâu, dễ học, có kiểm chứng nguồn, có roadmap, có câu hỏi “vì sao/tại sao”, có mapping theo Windows version/mitigation/detection, và phù hợp cho lab research hợp pháp.
+
+QUAN TRỌNG: Làm việc tự chủ, không hỏi lại tôi. Khi thiếu thông tin, hãy tự đưa giả định hợp lý, ghi rõ giả định trong file TODO hoặc CHANGELOG. Không dừng giữa chừng để hỏi. Không phá format cũ nếu không cần. Không xóa nội dung cũ trừ khi duplicate rõ ràng. Ưu tiên tạo thêm tài liệu mới, index mới, cross-link, bảng tổng hợp, checklist, glossary, và learning path.
+
+GIỚI HẠN AN TOÀN:
+
+* Không tạo hướng dẫn tấn công thực chiến, không viết exploit weaponized, không viết code dump credential, không hướng dẫn bypass EDR/AV để né phát hiện ngoài lab.
+* Không tạo payload, loader, stealth implant, LSASS dumper, callback tamper tool, DSE bypass tool, HVCI bypass tool, hoặc BYOVD exploit có thể chạy được.
+* Được phép giải thích cơ chế ở mức research/defensive/lab-safe: primitive là gì, vì sao bug xảy ra, mitigation nào chặn, detection telemetry nào quan sát được, Windows version nào liên quan, điều kiện exploitability, cách đọc bài research, cách reverse IOCTL, cách threat model.
+* Khi gặp nguồn có exploit code hoặc nội dung nhạy cảm, hãy tóm tắt khái niệm, điều kiện, mitigation, detection, và chỉ giữ pseudo-code phi thực thi hoặc mô hình hóa high-level.
+
+MỤC TIÊU CUỐI:
+Biến repo thành một bộ tài liệu học Windows kernel pwn từ nền tảng đến nâng cao:
+
+1. Học được Windows internals.
+2. Hiểu driver model, IOCTL, device object, SDDL/ACL, METHOD_BUFFERED, METHOD_IN_DIRECT, METHOD_OUT_DIRECT, METHOD_NEITHER.
+3. Hiểu kernel memory model, paging, PTE/PDE/PDPTE/PML4, CR3, KASLR, KVA shadow, SMEP/SMAP/NX, CFG/KCFG/XFG/CET, HVCI/VBS/KDP/VT-rp/HLAT.
+4. Hiểu vulnerability classes: arbitrary read/write, physical memory R/W, MSR write, MMIO/port I/O, wild copy, arbitrary pointer dereference, null pointer-ish classes, type confusion, UAF, pool overflow, race/TOCTOU, PreviousMode, handle/object abuse, callback tamper concepts.
+5. Hiểu BYOVD taxonomy và defensive detection.
+6. Hiểu version-aware exploitation: Windows 7, 10, 11, Server, HVCI on/off, Secure Boot, Memory Integrity, blocklist, vulnerable driver blocklist.
+7. Có câu hỏi học sâu: “Tại sao primitive này đủ mạnh?”, “Mitigation nào phá chain?”, “Nếu HVCI bật thì chain đổi ra sao?”, “Telemetry nào xuất hiện?”, “Điều kiện lab nào cần?”.
+8. Có resource index sạch, có citation, có status từng nguồn: unread/read/summarized/integrated/needs-review.
+
+REPO HIỆN TẠI:
+Repo có khoảng 139 Markdown chính, bỏ qua cache/dependency và 90_sources.
+Các nhóm chính:
+
+* 01_core-handbook/
+* 02_mitigations-vbs-hvci-vtrp/
+* 03_byovd/
+* 04_connor-mcgarr-study/
+* 05_global-research-map/
+* docs/kernel-research/
+* docs/detection-and-mitigation/
+* docs/research-index/
+* docs/userland-to-kernel/
+* docs/windows-internals/
+* docs/windows-heap/
+* docs/debugging/
+* docs/mitigations/
+* docs/vulnerable-drivers/
+* dsark64/README.md
+
+CÁC NGUỒN PHẢI ĐỌC VÀ TÍCH HỢP:
+Đọc, tóm tắt, phân loại, và tích hợp các link sau. Với mỗi link, hãy tạo entry trong resource index và nếu nội dung đủ quan trọng thì tạo hoặc cập nhật tài liệu riêng.
+
+Nguồn:
+
+* https://idafchev.github.io/blog/wrmsr/
+* https://blog.quarkslab.com/exploiting-lenovo-driver-cve-2025-8061_part2.html
+* https://medium.com/@s12deff/loading-kernel-drivers-in-memory-fc5d71c576e2
+* https://g3tsyst3m.com/byovd/BYOVD-and-Looting-LSASS-in-the-Modern-EDR-Era/
+* https://xacone.github.io/eneio-driver.html
+* https://julian-pena.com/2025-09-29-exploiting-drivers-1/
+* https://github.com/jeffaf/CVE-2025-3464-AsIO3-LPE
+* https://github.com/BlackSnufkin/BYOVD
+* https://securelist.com/sas-ctf-windows-7-challenge-explained/114180/
+* https://blog.xpnsec.com/gcioptions-in-a-virtualized-world/
+* https://tandasat.github.io/blog/2023/07/05/intel-vt-rp-part-1.html
+* https://connormcgarr.github.io/hvci/
+* https://github.com/worawit/malk
+* https://datafarm-cybersecurity.medium.com/code-execution-against-windows-hvci-f617570e9df0
+* https://github.com/zer0condition/BusterCall
+* https://blog.cryptoplague.net/main/research/windows-research/offset-free-dse-bypass-across-windows-11-and-10-utilising-ntkrnlmp.pdb
+* https://www.unknowncheats.me/forum/valorant/690970-hvci-bypass-kernel.html
+* https://pwn2nimron.com/blog
+* https://blog.ghostwolflab.com/apt/737/
+* https://kernullist.github.io/kernullist-blog/posts/hiding-on-windows/
+* https://theori.io/blog/exploiting-windows-kernel-wild-copy-with-user-fault-handling-cve-2023-28218
+* https://unit42.paloaltonetworks.com/win32k-analysis-part-1/
+* https://hnsecurity.it/blog/from-arbitrary-pointer-dereference-to-arbitrary-read-write-in-latest-windows-11/
+* https://github.com/yardenshafir/IoRingReadWritePrimitive
+* https://windowsforum.com/threads/cve-2026-21222-windows-kernel-information-disclosure-risk-and-mitigation.400816/
+* https://github.com/nccgroup/exploit_mitigations/blob/main/windows_mitigations.md
+* https://www.synacktiv.com/sites/default/files/2025-06/sstic_windows_kernel_shadow_stack_mitigation.pdf
+* https://github.com/SecWiki/windows-kernel-exploits
+* https://big5-sec.github.io/posts/component-filter-mitigation/
+* https://github.com/vp777/Windows-Non-Paged-Pool-Overflow-Exploitation
+* https://www.exploitpack.com/blogs/news/shadow-ssdt-hijacking-to-achieve-kernel-code-execution-via-rw-primitives
+
+CÁCH ĐỌC NGUỒN:
+Với mỗi nguồn, trả lời các mục sau trong Markdown:
+
+1. Source metadata:
+
+   * Title
+   * URL
+   * Author/org nếu có
+   * Date hoặc estimated date
+   * Topic tags
+   * Windows versions liên quan
+   * Mitigations liên quan
+   * Driver/CVE liên quan nếu có
+   * Độ tin cậy nguồn: official/vendor/researcher/blog/forum/github/unknown
+2. Bài này giải quyết vấn đề gì?
+3. Bug class hoặc technique class là gì?
+4. Primitive đạt được là gì?
+5. Điều kiện cần để primitive có ý nghĩa là gì?
+6. Tại sao primitive này nguy hiểm?
+7. Mitigation nào chặn hoặc làm yếu nó?
+8. Detection telemetry nào có thể nhìn thấy?
+9. Điều gì chỉ đúng ở version cũ? Điều gì còn đúng ở Windows 11 hiện đại?
+10. Nếu HVCI/VBS bật thì kết luận thay đổi ra sao?
+11. Nếu Secure Boot + vulnerable driver blocklist bật thì thay đổi ra sao?
+12. Có phần nào dễ gây hiểu nhầm không?
+13. Bài này nên được nối vào tài liệu nào trong repo?
+14. Câu hỏi tự học:
+
+    * 5 câu cơ bản
+    * 5 câu trung cấp
+    * 5 câu nâng cao
+15. Lab-safe takeaway:
+
+    * Chỉ mô tả ở mức high-level.
+    * Không đưa exploit code chạy được.
+    * Không đưa hướng dẫn credential dumping hoặc bypass EDR thực chiến.
+
+VIỆC CẦN LÀM TRONG REPO:
+
+PHASE 0 - AUDIT:
+
+* Đọc cây thư mục.
+* Đếm Markdown chính.
+* Tạo hoặc cập nhật:
+
+  * docs/research-index/repo-audit.md
+  * docs/research-index/topic-index.md
+  * docs/research-index/source-integration-status.md
+  * docs/research-index/duplicate-and-gap-report.md
+* Xác định tài liệu nào trùng nội dung, tài liệu nào quá mỏng, tài liệu nào cần cross-link.
+
+PHASE 1 - MASTER LEARNING PATH:
+Tạo:
+
+* docs/research-index/windows-kernel-pwn-learning-path.md
+
+Nội dung gồm:
+
+1. Level 0: C/C++, Windows basics, PE, calling convention, WinDbg basics.
+2. Level 1: Windows kernel architecture, processes/threads/handles/objects.
+3. Level 2: Driver model, IRP, IOCTL, device object, symbolic link, SDDL.
+4. Level 3: Kernel memory, pool, paging, PTE, CR3, KVA shadow.
+5. Level 4: Vulnerability classes.
+6. Level 5: Exploit primitive reasoning.
+7. Level 6: Mitigation-aware exploitation concepts.
+8. Level 7: BYOVD research methodology.
+9. Level 8: Detection engineering and telemetry.
+10. Level 9: Case study reading methodology.
+11. Level 10: Capstone lab design, defensive and lab-safe.
+
+Mỗi level phải có:
+
+* Mục tiêu học
+* Vì sao cần học
+* Tài liệu trong repo nên đọc
+* Nguồn ngoài nên đọc
+* Câu hỏi kiểm tra
+* Bài tập lab-safe
+* Common pitfalls
+
+PHASE 2 - SOURCE NOTEBOOK:
+Tạo folder:
+
+* 90_sources/curated-windows-kernel-pwn/
+
+Mỗi nguồn tạo một file Markdown riêng theo slug.
+Ví dụ:
+
+* 90_sources/curated-windows-kernel-pwn/wrmsr-idafchev.md
+* 90_sources/curated-windows-kernel-pwn/lenovo-cve-2025-8061-quarkslab.md
+* 90_sources/curated-windows-kernel-pwn/driver-loading-in-memory-s12deff.md
+* 90_sources/curated-windows-kernel-pwn/byovd-lsass-modern-edr-era-g3tsyst3m.md
+* 90_sources/curated-windows-kernel-pwn/eneio-driver-xacone.md
+* ... tiếp tục cho toàn bộ nguồn.
+
+Mỗi file dùng template “CÁCH ĐỌC NGUỒN” ở trên.
+
+PHASE 3 - DEEP EXPLAINER DOCS:
+Tạo hoặc nâng cấp các tài liệu sau:
+
+1. docs/windows-internals/page-table-and-address-translation-deep-dive.md
+
+   * CR3, PML4, PDPT, PD, PT, PTE
+   * PFN + page offset
+   * user VA vs kernel VA
+   * KASLR và symbol/PDB
+   * Vì sao page table walking quan trọng trong physical R/W
+   * HVCI/VBS ảnh hưởng gì
+   * Detection angle
+
+2. docs/kernel-research/primitive-reasoning-framework.md
+
+   * Arbitrary read
+   * Arbitrary write
+   * Physical R/W
+   * MSR write
+   * MMIO/port I/O
+   * Wild copy
+   * PreviousMode
+   * Handle/object abuse
+   * Callback tamper concept
+   * DSE/g_CiOptions concept
+   * Với mỗi primitive: power, constraints, mitigations, detection, safe mental model.
+
+3. docs/mitigations/hvci-vbs-kdp-vtrp-hlat-deep-dive.md
+
+   * VBS/HVCI architecture
+   * KDP
+   * VT-rp
+   * HLAT
+   * Existing-code invocation concept
+   * Why writable/executable memory matters
+   * What HVCI blocks vs does not block
+   * Version-aware matrix
+
+4. docs/byovd/byovd-modern-windows-11-threat-model.md
+
+   * BYOVD chain model ở mức high-level
+   * Driver loading requirements
+   * Code signing
+   * Blocklist
+   * Secure Boot
+   * HVCI
+   * EDR visibility
+   * Detection KQL ideas at high level
+   * Không hướng dẫn bypass thực chiến.
+
+5. docs/detection-and-mitigation/byovd-detection-engineering-playbook.md
+
+   * Driver load telemetry
+   * Code Integrity events
+   * ETW providers
+   * Sysmon high-level mapping
+   * MDE hunting fields
+   * Hash/cert/path/device object indicators
+   * Behavioral detections
+   * False positive handling
+   * Incident response checklist
+
+6. docs/userland-to-kernel/ioctl-reversing-workflow-deep-dive.md
+
+   * Finding device names
+   * Finding IOCTL dispatch
+   * CTL_CODE fields
+   * Buffer method
+   * Access bits
+   * Input/output validation
+   * Common vulnerable patterns
+   * IDA/Ghidra/WinDbg workflow
+   * Safe pseudo-code only
+
+7. docs/kernel-research/msr-wrmsr-research-notes.md
+
+   * MSR là gì
+   * WRMSR/RDMSR là gì
+   * LSTAR/syscall path concept
+   * Why arbitrary MSR write is dangerous
+   * Mitigation and detection
+   * Safe explanation only
+
+8. docs/windows-heap/kernel-pool-exploitation-study-map.md
+
+   * Non-paged pool
+   * Pool overflow
+   * UAF
+   * object adjacency
+   * modern pool hardening
+   * Windows version changes
+   * Reading list
+
+9. docs/kernel-research/win32k-and-gui-kernel-attack-surface.md
+
+   * win32k overview
+   * GUI kernel boundary
+   * syscall surface
+   * session space concept
+   * mitigations
+   * detection and crash triage
+
+10. docs/research-index/case-study-matrix.md
+
+    * Bảng case studies từ tất cả nguồn.
+    * Columns:
+
+      * Source
+      * Year
+      * CVE/driver
+      * Bug class
+      * Primitive
+      * Target Windows version
+      * HVCI relevant?
+      * VBS relevant?
+      * Blocklist relevant?
+      * Detection notes
+      * Integrated doc links
+
+PHASE 4 - CROSS-LINKING:
+
+* Mỗi tài liệu mới phải link ngược về:
+
+  * README.md
+  * docs/research-index/topic-index.md
+  * docs/research-index/windows-kernel-pwn-learning-path.md
+* Các tài liệu BYOVD phải link tới mitigation matrix.
+* Các tài liệu mitigation phải link tới primitive reasoning framework.
+* Các case study phải link tới case-study-matrix.
+* Không tạo dead links.
+
+PHASE 5 - QUESTION BANK:
+Tạo:
+
+* docs/research-index/windows-kernel-pwn-question-bank.md
+
+Chia câu hỏi:
+
+1. Beginner
+2. Intermediate
+3. Advanced
+4. Case-study reasoning
+5. Mitigation reasoning
+6. Detection reasoning
+7. Version-diff reasoning
+
+Mỗi câu hỏi phải có:
+
+* Câu hỏi
+* Vì sao câu này quan trọng
+* Gợi ý trả lời
+* Link tài liệu liên quan trong repo
+
+PHASE 6 - GLOSSARY:
+Tạo hoặc cập nhật:
+
+* docs/research-index/glossary.md
+
+Bổ sung thuật ngữ:
+
+* IRP
+* IOCTL
+* CTL_CODE
+* DEVICE_OBJECT
+* DRIVER_OBJECT
+* SDDL
+* METHOD_NEITHER
+* MDL
+* NonPagedPool
+* PTE/PDE/PDPTE/PML4E
+* CR3
+* PFN
+* SMEP
+* SMAP
+* NX
+* KASLR
+* KCFG
+* XFG
+* CET
+* Shadow Stack
+* VBS
+* HVCI
+* KDP
+* VT-rp
+* HLAT
+* PatchGuard
+* KVA Shadow
+* g_CiOptions
+* DSE
+* BYOVD
+* vulnerable driver blocklist
+* ETW
+* Code Integrity
+* callback
+* minifilter
+* LSASS, nhưng chỉ giải thích vai trò hệ thống và defensive protection, không hướng dẫn dump.
+
+PHASE 7 - QUALITY PASS:
+Sau khi tạo/sửa tài liệu:
+
+* Chạy kiểm tra Markdown links nếu có tool sẵn.
+* Chạy grep để tìm TODO, broken link, duplicate title.
+* Tạo:
+
+  * docs/research-index/upgrade-changelog.md
+  * docs/research-index/remaining-work.md
+  * docs/research-index/source-coverage-report.md
+
+FORMAT YÊU CẦU:
+
+* Markdown rõ ràng.
+* Dùng bảng khi so sánh primitive/mitigation/version.
+* Dùng Mermaid diagram nếu giúp dễ hiểu.
+* Mỗi tài liệu dài phải có:
+
+  * Purpose
+  * What you will learn
+  * Prerequisites
+  * Core concepts
+  * Deep dive
+  * Why this matters
+  * Version and mitigation notes
+  * Detection notes
+  * Common misconceptions
+  * Questions to ask yourself
+  * Related repo docs
+  * References
+* Viết dễ hiểu, giải thích từ gốc.
+* Ưu tiên tiếng Việt nếu file hiện tại tiếng Việt; giữ tiếng Anh nếu file hiện tại tiếng Anh. Nếu repo lẫn lộn, tài liệu mới dùng English technical headings nhưng giải thích có thể song ngữ ngắn gọn.
+
+NGUYÊN TẮC “SIÊU CHẤT”:
+
+* Không chỉ tóm tắt. Phải dạy lại.
+* Luôn hỏi “why”.
+* Luôn nối primitive -> exploitability -> mitigation -> detection -> version.
+* Luôn phân biệt:
+
+  * concept
+  * lab-safe mental model
+  * real-world limitation
+  * detection/defense
+* Khi gặp claims mạnh, phải ghi nguồn và ghi uncertainty.
+* Nếu một bài nói HVCI bypass/DSE bypass/EDR bypass, chỉ giải thích điều kiện và defensive lesson; không tạo recipe.
+* Nếu một nguồn là forum hoặc GitHub PoC, phải đánh dấu trust thấp/trung bình và cần verify.
+
+DELIVERABLE CUỐI:
+Khi hoàn tất, in ra summary:
+
+1. Số file đã tạo.
+2. Số file đã sửa.
+3. Danh sách tài liệu quan trọng mới.
+4. Nguồn nào đã đọc/tích hợp.
+5. Nguồn nào chưa đọc được và lý do.
+6. Gap còn lại.
+7. Lệnh kiểm tra đã chạy.
+8. Đề xuất bước tiếp theo.
+
+Bắt đầu ngay từ repo hiện tại. Không hỏi lại.

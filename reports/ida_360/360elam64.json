@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "input_file": "E:\\temp\\360_reverse_CTF\\360elam64.sys",
+    "root_filename": "360elam64.sys",
+    "imagebase": 5368709120,
+    "start_ea": 5368733776,
+    "procname": "metapc",
+    "is_64bit": true
+  },
+  "sections": [
+    {
+      "name": ".text",
+      "start": 5368713216,
+      "end": 5368717312,
+      "size": 4096,
+      "perm": 5
+    },
+    {
+      "name": ".idata",
+      "start": 5368717312,
+      "end": 5368717344,
+      "size": 32,
+      "perm": 4
+    },
+    {
+      "name": ".rdata",
+      "start": 5368717344,
+      "end": 5368721408,
+      "size": 4064,
+      "perm": 4
+    },
+    {
+      "name": ".data",
+      "start": 5368721408,
+      "end": 5368725504,
+      "size": 4096,
+      "perm": 6
+    },
+    {
+      "name": ".pdata",
+      "start": 5368725504,
+      "end": 5368729600,
+      "size": 4096,
+      "perm": 4
+    },
+    {
+      "name": "PAGE",
+      "start": 5368729600,
+      "end": 5368733696,
+      "size": 4096,
+      "perm": 5
+    },
+    {
+      "name": "INIT",
+      "start": 5368733696,
+      "end": 5368737792,
+      "size": 4096,
+      "perm": 5
+    }
+  ],
+  "imports": [
+    {
+      "ea": 5368717312,
+      "name": "IoUnregisterBootDriverCallback",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 5368717320,
+      "name": "IoRegisterBootDriverCallback",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    },
+    {
+      "ea": 5368717328,
+      "name": "ExFreePoolWithTag",
+      "ordinal": 0,
+      "module": "ntoskrnl"
+    }
+  ],
+  "exports": [
+    {
+      "ea": 5368733776,
+      "ordinal": 5368733776,
+      "name": "DriverEntry"
+    }
+  ],
+  "api_surface": [],
+  "functions": [
+    {
+      "ea": 5368713232,
+      "name": "__security_check_cookie",
+      "size": 30
+    },
+    {
+      "ea": 5368713264,
+      "name": "__report_gsfailure",
+      "size": 7
+    },
+    {
+      "ea": 5368713280,
+      "name": "_guard_check_icall_nop",
+      "size": 3
+    },
+    {
+      "ea": 5368713296,
+      "name": "IoRegisterBootDriverCallback",
+      "size": 6
+    },
+    {
+      "ea": 5368713302,
+      "name": "IoUnregisterBootDriverCallback",
+      "size": 6
+    },
+    {
+      "ea": 5368713328,
+      "name": "_guard_dispatch_icall_nop",
+      "size": 2
+    },
+    {
+      "ea": 5368713360,
+      "name": "_guard_xfg_dispatch_icall_nop",
+      "size": 6
+    },
+    {
+      "ea": 5368729600,
+      "name": "sub_140005000",
+      "size": 14
+    },
+    {
+      "ea": 5368729616,
+      "name": "sub_140005010",
+      "size": 88
+    },
+    {
+      "ea": 5368733696,
+      "name": "sub_140006000",
+      "size": 66
+    },
+    {
+      "ea": 5368733776,
+      "name": "DriverEntry_0",
+      "size": 44
+    },
+    {
+      "ea": 5368733820,
+      "name": "__security_init_cookie",
+      "size": 46
+    }
+  ],
+  "interesting_functions": [
+    {
+      "ea": 5368713296,
+      "name": "IoRegisterBootDriverCallback",
+      "size": 6
+    },
+    {
+      "ea": 5368713302,
+      "name": "IoUnregisterBootDriverCallback",
+      "size": 6
+    },
+    {
+      "ea": 5368713328,
+      "name": "_guard_dispatch_icall_nop",
+      "size": 2
+    },
+    {
+      "ea": 5368713360,
+      "name": "_guard_xfg_dispatch_icall_nop",
+      "size": 6
+    },
+    {
+      "ea": 5368733776,
+      "name": "DriverEntry_0",
+      "size": 44
+    }
+  ],
+  "interesting_strings": [
+    {
+      "ea": 5368717808,
+      "type": 16777216,
+      "value": "C:\\vmagent_new\\bin\\joblist\\712834\\out\\Release\\360elam64.pdb"
+    }
+  ],
+  "string_count_sampled": 25
+}
