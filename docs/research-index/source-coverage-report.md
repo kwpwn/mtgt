@@ -6,11 +6,11 @@ Backlinks: [README](../../README.md) | [source status](source-integration-status
 
 | Category | Count | Notes |
 |---|---:|---|
-| Sources requested | 31 | All were added to the integration table and source notebook plan. |
-| Readable via browser | 28 | Content or metadata was fetched for most sources. |
+| Sources requested | 32 | All were added to the integration table and source notebook plan. |
+| Readable via browser | 29 | Content or metadata was fetched for most sources. |
 | Blocked/fetch failed | 3 | UnknownCheats, pwn2nimron, kernullist. |
 | Integrated into deep docs | 23 | Core concepts mapped to hubs. |
-| Marked needs-review | 11 | GitHub PoCs, forum/AI-like pages, or operationally sensitive posts. |
+| Marked needs-review | 12 | GitHub PoCs, forum/AI-like pages, operationally sensitive posts, or newly disclosed claims without vendor confirmation. |
 
 ## Coverage by Topic
 
@@ -24,7 +24,14 @@ Backlinks: [README](../../README.md) | [source status](source-integration-status
 | Pool/wild copy | Theori, vp777 |
 | Win32k | Unit42, SecWiki, big5 component filter |
 | Information disclosure | WindowsForum CVE-2026-21222 |
+| Network firewall driver DoS | MalwareTech ComoDoS |
+| June 2026 source queue | pipe-intercept, Windows Internals dynamic analysis, core-jmp Windows catalog/deep notes, Kernullist segment heap, Quarkslab IUM, post-patch-postmortem, UUP dump |
+| Windows Internals abuse atlas | Project Zero COM/Object Manager/race posts, Securelist PhantomRPC, SLYP COM paper, 0xc4r CVE-2026-21508, Microsoft CLFS, Blackfort GreenPlasma, Akamai BadSuccessor |
 | DSE/CI concepts | XPN, Cryptoplague, worawit, Datafarm |
+
+## Additional Queue 2026-06-05
+
+The user-submitted June 2026 queue is tracked separately in [source reading notes](source-reading-notes-2026-06-05.md), [source deep notes](source-deep-notes-2026-06-05.md), and [core-jmp deep notes](core-jmp-deep-notes-2026-06-05.md). It mixes primary research, source maps, social workflow notes, and operational red-team material. The operational sources were not converted into technique recipes; they were reduced to defensive taxonomy, study questions, and follow-up document candidates.
 
 ## Blocked Sources
 

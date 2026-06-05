@@ -15,6 +15,7 @@ Start from a concept, read the deep-dive hub, then choose one or two case studie
 | Buffer methods | [IOCTL reversing workflow](../userland-to-kernel/ioctl-reversing-workflow-deep-dive.md) | WRMSR, BYOVD driver notes |
 | Kernel memory and paging | [page tables](../windows-internals/page-table-and-address-translation-deep-dive.md) | eneio64, Datafarm, BusterCall, VT-rp |
 | Primitive reasoning | [primitive framework](../kernel-research/primitive-reasoning-framework.md) | All source notes |
+| Windows Internals abuse surfaces | [abuse surface atlas 2026](../kernel-research/windows-internals-abuse-surface-atlas-2026.md), [IPC atlas](../kernel-research/windows-ipc-boundary-atlas.md), [Object Manager](../windows-internals/object-manager-and-handle-tables.md) | COM, RPC, ALPC, Object Manager, CTF, CLFS, Cloud Files, dMSA |
 | HVCI/VBS/KDP/VT-rp/HLAT | [mitigation deep dive](../mitigations/hvci-vbs-kdp-vtrp-hlat-deep-dive.md) | Connor, XPN, Datafarm, malk, BusterCall, Tandasat |
 | BYOVD | [Windows 11 threat model](../byovd/byovd-modern-windows-11-threat-model.md) | Lenovo, eneio64, AsIO3, BlackSnufkin, GhostWolfLab |
 | BYOVD detection | [detection playbook](../detection-and-mitigation/byovd-detection-engineering-playbook.md) | G3tSyst3m, GhostWolfLab, BlackSnufkin |
@@ -23,6 +24,8 @@ Start from a concept, read the deep-dive hub, then choose one or two case studie
 | Kernel pool | [pool study map](../windows-heap/kernel-pool-exploitation-study-map.md) | Theori, vp777 |
 | Win32k | [win32k attack surface](../kernel-research/win32k-and-gui-kernel-attack-surface.md) | Unit42, SecWiki |
 | Information disclosure | [primitive framework](../kernel-research/primitive-reasoning-framework.md) | WindowsForum CVE-2026-21222 |
+| Network firewall drivers | [WinDbg workflow](../debugging/windbg-kernel-research-workflow.md), [driver-load telemetry](../detection-and-mitigation/driver-load-etw-and-code-integrity.md) | [MalwareTech ComoDoS](comodos-comodo-inspectsys-learning-sources.md), Microsoft WFP/NDIS docs |
+| June 2026 source queue | [source reading notes](source-reading-notes-2026-06-05.md), [source deep notes](source-deep-notes-2026-06-05.md), [core-jmp deep notes](core-jmp-deep-notes-2026-06-05.md) | pipe-intercept, core-jmp, Kernullist, Quarkslab IUM, post-patch-postmortem |
 | Shadow stack/CET | [mitigation deep dive](../mitigations/hvci-vbs-kdp-vtrp-hlat-deep-dive.md) | Synacktiv SSTIC 2025 |
 | Component filtering | [mitigation deep dive](../mitigations/hvci-vbs-kdp-vtrp-hlat-deep-dive.md) | big5-sec component filter |
 

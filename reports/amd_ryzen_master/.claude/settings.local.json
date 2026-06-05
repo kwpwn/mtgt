@@ -53,7 +53,23 @@
       "Read(//e/Dowloads/Nidhogg-2.0/**)",
       "Bash(sort -k9)",
       "WebFetch(domain:xacone.github.io)",
-      "WebFetch(domain:connormcgarr.github.io)"
+      "WebFetch(domain:connormcgarr.github.io)",
+      "Bash(tasklist *)",
+      "PowerShell($v = \\(Get-Item \"E:\\\\driver_research\\\\amd_ryzen_master\\\\AMDRyzenMasterDriver.sys\"\\).VersionInfo; $v.FileVersion; $v.ProductVersion; $v.CompanyName; $v.FileDescription; $v.ProductName)",
+      "mcp__plugin_ida-pro_idalib__idalib_health",
+      "mcp__plugin_ida-pro_idalib__idalib_open",
+      "mcp__plugin_ida-pro_idalib__survey_binary",
+      "mcp__plugin_ida-pro_idalib__decompile",
+      "mcp__plugin_ida-pro_idalib__xrefs_to",
+      "WebFetch(domain:www.amd.com)",
+      "WebFetch(domain:www.techspot.com)",
+      "WebFetch(domain:www.loldrivers.io)",
+      "WebFetch(domain:nvd.nist.gov)",
+      "WebFetch(domain:www.majorgeeks.com)",
+      "WebFetch(domain:www.free-codecs.com)",
+      "WebFetch(domain:docs.amd.com)",
+      "mcp__plugin_ida-pro_idalib__disasm",
+      "mcp__plugin_ida-pro_idalib__get_bytes"
     ]
   }
 }

