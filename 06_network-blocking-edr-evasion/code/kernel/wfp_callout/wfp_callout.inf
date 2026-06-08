@@ -1,0 +1,43 @@
+; wfp_callout.inf — INF for WFP callout kernel driver
+; Install: pnputil /add-driver wfp_callout.inf /install
+; Or:      sc create WfpCallout type= kernel start= demand binpath= "C:\path\wfp_callout.sys"
+;          sc start WfpCallout
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = NetService
+ClassGuid   = {4D36E974-E325-11CE-BFC1-08002BE10318}
+Provider    = %ManufacturerName%
+DriverVer   = 06/08/2026,1.0.0.0
+CatalogFile = wfp_callout.cat
+
+[DestinationDirs]
+DefaultDestDir = 12   ; \Windows\System32\drivers
+
+[Manufacturer]
+%ManufacturerName% = Standard,NTamd64
+
+[Standard.NTamd64]
+%WfpCallout.DeviceDesc% = WfpCallout_Device, root\WfpEdrCallout
+
+[WfpCallout_Device.NT]
+CopyFiles = WfpCallout_CopyFiles
+
+[WfpCallout_CopyFiles]
+wfp_callout.sys
+
+[WfpCallout_Device.NT.Services]
+AddService = WfpCallout,,WfpCallout_ServiceInstall
+
+[WfpCallout_ServiceInstall]
+DisplayName    = %WfpCallout.SVCDESC%
+ServiceType    = 1   ; SERVICE_KERNEL_DRIVER
+StartType      = 3   ; SERVICE_DEMAND_START
+ErrorControl   = 1   ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\wfp_callout.sys
+LoadOrderGroup = NDIS
+
+[Strings]
+ManufacturerName     = "EDR Research"
+WfpCallout.DeviceDesc = "WFP EDR Callout Driver"
+WfpCallout.SVCDESC   = "WFP EDR Callout Driver Service"

