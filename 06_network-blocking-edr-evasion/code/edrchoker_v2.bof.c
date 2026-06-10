@@ -11,6 +11,7 @@
  *   remove     — restore specific process(es)
  *   remove_all — restore all QoS policies
  *   list       — show active policies
+ *   check      — diagnose: Psched/NetQosSvc state + list active policies
  *
  * COMPILE AS C, NOT C++
  *   mingw64: x86_64-w64-mingw32-gcc -O2 -o edrchoker_v2.x64.o -c edrchoker_v2.bof.c -masm=intel
@@ -275,10 +276,6 @@ static IWbemServices* WmiConnect(IWbemLocator* loc, const wchar_t* ns) {
 
 /* ─── Diagnostic helper ──────────────────────────────────────────────────── */
 
-/*
- * Query Win32_Service State for a single service name via ROOT\CIMV2.
- * Prints one line: "  [svc] <name>  <State>"
- */
 /*
  * Check state of a name in both Win32_Service (user-mode) and
  * Win32_SystemDriver (kernel driver). Psched is a kernel driver,
