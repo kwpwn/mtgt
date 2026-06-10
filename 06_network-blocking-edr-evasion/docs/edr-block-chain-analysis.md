@@ -86,16 +86,38 @@ most common commercial EDRs.
   known IPs (no DNS)                                 traffic to loopback /
                                                      immediate RST
 
+  Existing open              sock_kill               NtDuplicateObject
+  TCP connections                                    (DUPLICATE_CLOSE_SOURCE)
+  (not yet terminated)                               closes AFD handles in
+                                                     target → OS sends RST
+
   Network throughput         edrchoker               QoS pacer.sys cap:
   (after connection)                                 8 bps — TLS handshake
                                                      takes ~6000 seconds
 
-  ETW kernel events          etw_tamper              ControlTraceW STOP:
-  (behavioral telemetry)                             session torn down,
-                                                     consumer gets NOTFOUND
+  ETW kernel events          etw_tamper stop         ControlTraceW STOP:
+  (behavioral telemetry,     etw_tamper starve       session torn down or
+   coarse-grained)                                   buffer-starved (stealth)
+
+  ETW per-process            etwpatch                WriteProcessMemory:
+  (EtwEventWrite calls                               patch EtwEventWrite with
+   within EDR process)                               xor eax,eax; ret
+                                                     (non-PPL only)
+
+  WFP network inspection     wfp_filter_purge        FwpmFilterDeleteById0 /
+  (DPI / SNI inspection)                             FwpmCalloutDeleteByKey0
+                                                     (user-mode FWPM API)
+
+  DLL load notifications     ldr_notify_purge        Unlink EDR callback from
+  (EDR hook installer)                               LdrpDllNotificationList
+                                                     (ntdll .data section)
+
+  .NET CLR profiler          clr_profiler_strip      SetEnvironmentVariableW
+  (managed code monitoring)                          clears COR_*/CORECLR_*
+                                                     before CLR starts
 
   WFP layer blocking         (separate BOF)          see 01_wfp_block.c
-  (deep packet filter)
+  (firewall injection)
   ─────────────────────────────────────────────────────────────────────
 ```
 
