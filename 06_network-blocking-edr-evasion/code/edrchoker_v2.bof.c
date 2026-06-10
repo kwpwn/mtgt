@@ -7,7 +7,7 @@
  * throttled without a watchdog.
  *
  * MODES
- *   add        — throttle listed processes (ActiveStore + PersistentStore)
+ *   add        — throttle listed processes (ActiveStore; provider maps to GPO:localhost)
  *   remove     — restore specific process(es)
  *   remove_all — restore all QoS policies
  *   list       — show active policies
@@ -160,8 +160,10 @@ static BOOL CreatePolicy(IWbemServices* svc, const wchar_t* proc) {
 }
 
 static void BuildRemoveWQL(wchar_t* out, int max, wchar_t* list) {
+    /* Filter by ThrottleRateAction = '8' to avoid touching non-edrchoker policies. */
     int p = WAppend(out, 0, max,
-        L"SELECT * FROM MSFT_NetQosPolicySettingData WHERE ");
+        L"SELECT * FROM MSFT_NetQosPolicySettingData"
+        L" WHERE ThrottleRateAction = '8' AND (");
     wchar_t* c = list; wchar_t* tok; BOOL first = TRUE;
     while ((tok = WNextTok(&c)) != NULL) {
         if (!first) p = WAppend(out, p, max, L" OR ");
@@ -170,6 +172,7 @@ static void BuildRemoveWQL(wchar_t* out, int max, wchar_t* list) {
         if (p < max - 1) out[p++] = L'\'';
         first = FALSE;
     }
+    if (p < max - 1) out[p++] = L')';
     out[p] = L'\0';
 }
 

