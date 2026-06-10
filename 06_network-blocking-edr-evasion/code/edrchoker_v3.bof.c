@@ -196,9 +196,10 @@ static int DeleteQosPolicies(const wchar_t* matchList) {
     for (int i = 0; i < nNames; i++) {
         wchar_t* sub = namesBuf + i * NAME_LEN;
 
-        /* Read "Application Name" for matching and output */
+        /* Read "Application Name" and optionally "Throttle Rate" */
         wchar_t appName[128];
         BOOL hasApp = FALSE;
+        BOOL isMine = TRUE;
         HKEY hSub = NULL;
         if (ADVAPI32$RegOpenKeyExW(hParent, sub, 0, KEY_QUERY_VALUE, &hSub) == ERROR_SUCCESS) {
             DWORD appLen = (DWORD)sizeof(appName);
@@ -206,6 +207,16 @@ static int DeleteQosPolicies(const wchar_t* matchList) {
             if (ADVAPI32$RegQueryValueExW(hSub, L"Application Name", NULL, &type,
                 (LPBYTE)appName, &appLen) == ERROR_SUCCESS && type == REG_SZ)
                 hasApp = TRUE;
+
+            /* For remove_all: only delete policies we created (Throttle Rate = "8") */
+            if (matchList == NULL) {
+                wchar_t thr[16];
+                DWORD thrLen = (DWORD)sizeof(thr);
+                DWORD thrType = 0;
+                isMine = (ADVAPI32$RegQueryValueExW(hSub, L"Throttle Rate", NULL, &thrType,
+                    (LPBYTE)thr, &thrLen) == ERROR_SUCCESS &&
+                    thrType == REG_SZ && thr[0] == L'8' && thr[1] == L'\0');
+            }
             ADVAPI32$RegCloseKey(hSub);
         }
 
@@ -214,6 +225,9 @@ static int DeleteQosPolicies(const wchar_t* matchList) {
             if (!hasApp || !InList(matchList, appName))
                 continue;
         }
+
+        /* For remove_all: skip policies not created by us */
+        if (matchList == NULL && !isMine) continue;
 
         if (ADVAPI32$RegDeleteKeyW(hParent, sub) == ERROR_SUCCESS) {
             if (hasApp) {
@@ -249,6 +263,7 @@ static void ListQosPolicies(void) {
 
         wchar_t appName[128];
         const wchar_t* sApp = L"?";
+        BOOL isMine = FALSE;
         HKEY hSub = NULL;
         if (ADVAPI32$RegOpenKeyExW(hParent, sub, 0, KEY_QUERY_VALUE, &hSub) == ERROR_SUCCESS) {
             DWORD appLen = (DWORD)sizeof(appName);
@@ -256,8 +271,20 @@ static void ListQosPolicies(void) {
             if (ADVAPI32$RegQueryValueExW(hSub, L"Application Name", NULL, &type,
                 (LPBYTE)appName, &appLen) == ERROR_SUCCESS && type == REG_SZ)
                 sApp = appName;
+
+            /* Only show policies we created: Throttle Rate = "8" */
+            wchar_t thr[16];
+            DWORD thrLen = (DWORD)sizeof(thr);
+            DWORD thrType = 0;
+            if (ADVAPI32$RegQueryValueExW(hSub, L"Throttle Rate", NULL, &thrType,
+                (LPBYTE)thr, &thrLen) == ERROR_SUCCESS &&
+                thrType == REG_SZ && thr[0] == L'8' && thr[1] == L'\0')
+                isMine = TRUE;
+
             ADVAPI32$RegCloseKey(hSub);
         }
+        if (!isMine) continue;
+
         BeaconPrintf(CALLBACK_OUTPUT,
             "  [qos] %S  name='%S'\n", sApp, sub);
         n++;

