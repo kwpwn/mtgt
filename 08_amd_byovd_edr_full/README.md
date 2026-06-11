@@ -73,9 +73,14 @@ Standalone C tools — each technique as a separate binary:
 |------|--------|----------|
 | `dkom_hide.c` | ✅ Done | Process hiding (ActiveProcessLinks unlink) |
 | `cr3_inject2.c` | ✅ Done | PML4 entry injection → zero-IOCTL LSASS read |
-| `lsass_dump.c` | ❌ TODO P1 | Direct LSASS PA dump (page table walk) |
-| `ssdt_hook.c` | ❌ TODO P2 | Shadow SSDT transient hook |
-| `pte_flip.c` | ❌ TODO P3 | PTE manipulation + SMEP bypass |
+| `lsass_dump.c` | ✅ Done P1 | Direct LSASS PA dump (page table walk + MiniDump) |
+| `ssdt_hook.c` | ✅ Done P2 | NT SSDT transient hook via CC region + ZwTestAlert |
+| `pte_flip.c` | ✅ Done P3 | PTE NX-bit flip via MmPteBase + CR0.WP bypass |
+| `handle_inject.c` | ✅ Done P3 | Handle table injection (Path A) + PPL bypass (Path B) |
+| `sam_hive.c` | ✅ Done P3 | SAM hive physical mod — enable built-in Administrator |
+| `irp_exec.c` | ✅ Done P3 | Ring-0 exec via IRP hook on null.sys → WriteFile trigger |
+| `altsyscall_hook.c` | ✅ Done P4 | AltSystemCallHandlers hook — syscall intercept (Win11) |
+| `kapc_inject.c` | ✅ Done P4 | KAPC injection into System worker thread |
 | `lpe_system.c` | ✅ Done | LPE via token theft |
 | `probe_devs.c` | ✅ Done | Device enumeration utility |
 | `rootkit_loader.c` | ✅ Done | Reflective driver loader |
