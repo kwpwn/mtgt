@@ -232,17 +232,33 @@ static uint64_t kva_to_pa(uint64_t va)
 static uint64_t g_sys_pa = 0, g_sys_va = 0;
 static int find_system(void)
 {
+    /* Robust scan: page stride + 16-byte inner + Flink/Blink + multi-offset name */
+    static const uint32_t name_offs[] = { 0x5A8, 0x5B8, 0x5B0 };
+    static uint8_t page[0x1000];
+    const int sub_max = 0x1000 - 0x458;
+
     for (int r = 0; r < g_nranges; r++) {
         uint64_t base = g_ranges[r].base, end = base + g_ranges[r].size;
-        for (uint64_t pa = base; pa + 0x900 < end; pa += 0x10) {
-            char nm[8]; if (!phys_read(pa+0x5A8, nm, 8)) continue;
-            if (memcmp(nm, "System\0\0", 8)) continue;
-            if (phys_read64(pa+0x440) != 4) continue;
-            uint64_t dtb = phys_read64(pa+0x028);
-            if (!dtb || (dtb & 0xFFF)) continue;
-            g_sys_pa  = pa;
-            g_kcr3    = dtb;
-            return 1;
+        for (uint64_t page_pa = base; page_pa + 0x1000 <= end; page_pa += 0x1000) {
+            if (!phys_read(page_pa, page, 0x1000)) continue;
+            for (int sub = 0; sub <= sub_max; sub += 0x10) {
+                uint64_t pid; memcpy(&pid, page + sub + 0x440, 8);
+                if (pid != 4) continue;
+                uint64_t dtb; memcpy(&dtb, page + sub + 0x028, 8);
+                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+                uint64_t flink; memcpy(&flink, page + sub + 0x448, 8);
+                uint64_t blink; memcpy(&blink, page + sub + 0x450, 8);
+                if ((flink >> 48) != 0xFFFF || (blink >> 48) != 0xFFFF) continue;
+                uint64_t eproc_pa = page_pa + (uint64_t)sub;
+                for (int ni = 0; ni < 3; ni++) {
+                    char nm[8] = {0};
+                    if (!phys_read(eproc_pa + name_offs[ni], nm, 8)) continue;
+                    if (memcmp(nm, "System\0\0", 7) != 0) continue;
+                    g_sys_pa = eproc_pa;
+                    g_kcr3   = dtb;
+                    return 1;
+                }
+            }
         }
     }
     return 0;

