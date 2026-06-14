@@ -297,78 +297,63 @@ static uint64_t va_to_pa(uint64_t va);
 /*
  * find_kernel_cr3_via_eprocess — last-resort CR3 search.
  *
- * Scans physical RAM for the System process EPROCESS structure by matching
- * UniqueProcessId==4 and ImageFileName=="System", then reads
- * Pcb.DirectoryTableBase.
- *
- * EPROCESS offsets (stable Win10/Win11):
- *   +0x028  Pcb.DirectoryTableBase
- *   +0x440  UniqueProcessId
- *   +0x5A8  ImageFileName[15]
- *
- * Skips ranges > 512MB (MMIO holes) to keep scan time < 15s.
- * Two-phase: read 4KB pages from usable ranges, scan 0x10-aligned offsets.
+ * Dual-layout scan covers Win11 24H2+ (pid=0x1D0, name=0x338) and
+ * Win10/pre-24H2 (pid=0x440, name=0x5A8/0x5B8).
+ * Each range is capped at 512 MB rather than skipped when large.
  */
 static uint64_t find_kernel_cr3_via_eprocess(void)
 {
-#define EP_DTB  0x028u
-#define EP_PID  0x440u
-#define EP_NAME 0x5A8u
-#define EP_STRIDE 0x10u
-    /* highest off so that off+EP_NAME+8 <= 0x1000 */
-#define EP_MAX_OFF (0x1000u - EP_NAME - 8u)
-
+    typedef struct { uint32_t pid; uint32_t name; } EL;
+    static const EL lyts[] = {
+        { 0x1D0, 0x338 }, /* Win11 24H2+ (build 26100+) */
+        { 0x440, 0x5A8 }, /* Win10 / Win11 pre-24H2     */
+        { 0x440, 0x5B8 }, /* Win10 variant              */
+    };
     static uint8_t pg[4096];
     printf("[*] Scanning EPROCESS for kernel CR3...\n");
 
     for (int ri = 0; ri < g_nranges; ri++) {
-        /* Skip MMIO-sized ranges (gaps in physical address space) */
-        if (g_ranges[ri].size > 0x20000000ULL) continue;
-        uint64_t end = g_ranges[ri].base + g_ranges[ri].size;
-        for (uint64_t pa = (g_ranges[ri].base+0xFFFULL)&~0xFFFULL;
-             pa + 0x1000 <= end; pa += 0x1000)
-        {
+        uint64_t base = (g_ranges[ri].base + 0xFFFULL) & ~0xFFFULL;
+        uint64_t end  = g_ranges[ri].base + g_ranges[ri].size;
+        /* Cap each range at 512 MB — avoid MMIO or huge-RAM scan runaway */
+        if (end > base + 0x20000000ULL) end = base + 0x20000000ULL;
+        for (uint64_t pa = base; pa + 0x1000 <= end; pa += 0x1000) {
             if (!phys_read(pa, pg, 0x1000)) continue;
-            for (uint32_t off = 0; off <= EP_MAX_OFF; off += EP_STRIDE) {
-                /* UniqueProcessId == 4 (System) */
-                if (*(uint64_t*)(pg + off + EP_PID) != 4ULL) continue;
-                /* ImageFileName starts with "Syste" */
-                if (memcmp(pg + off + EP_NAME, "Syste", 5) != 0) continue;
-                /* DirectoryTableBase: non-zero, page-aligned, in physical RAM */
-                uint64_t dtb = *(uint64_t*)(pg + off + EP_DTB);
-                if (!dtb || (dtb & 0xFFF) || !pa_in_range(dtb, 0x1000)) continue;
-                /* Heuristic: real kernel PML4 has several valid entries in upper
-                 * half (kernel VAs 256-511).  User-mode KPTI PT has almost none. */
-                uint32_t upper = 0;
-                for (int k = 256; k < 512; k++) {
-                    uint64_t e = 0;
-                    phys_read(dtb + k*8, &e, 8);
-                    if (e & 1) upper++;
+            for (uint32_t off = 0; off + 0x400 <= 0x1000; off += 0x10) {
+                for (int vi = 0; vi < 3; vi++) {
+                    const EL *L = &lyts[vi];
+                    if (off + L->pid + 8 > 0x1000) continue;
+                    if (off + L->name + 8 > 0x1000) continue;
+                    if (*(uint32_t*)(pg + off + L->pid) != 4u) continue;
+                    if (memcmp(pg + off + L->name, "Syste", 5) != 0) continue;
+                    uint64_t dtb = *(uint64_t*)(pg + off + 0x028);
+                    if (!dtb || (dtb & 0xFFF) || (dtb >> 40)) continue;
+                    if (!pa_in_range(dtb, 0x1000)) continue;
+                    /* Real kernel PML4 has upper-half entries */
+                    uint32_t upper = 0;
+                    for (int k = 256; k < 512; k++) {
+                        uint64_t e = 0; phys_read(dtb + k*8, &e, 8);
+                        if (e & 1) upper++;
+                    }
+                    if (upper < 4) continue;
+                    if (g_ntoskrnl_va && g_ntoskrnl_pa) {
+                        uint64_t saved = g_kernel_cr3;
+                        g_kernel_cr3 = dtb;
+                        uint64_t check = va_to_pa(g_ntoskrnl_va);
+                        g_kernel_cr3 = saved;
+                        if (check != g_ntoskrnl_pa) continue;
+                    }
+                    printf("[+] System EPROCESS: PA=0x%llX+0x%X  upper=%u\n",
+                           (unsigned long long)pa, off, upper);
+                    printf("[+] Kernel CR3 (EPROCESS): 0x%llX\n",
+                           (unsigned long long)dtb);
+                    return dtb;
                 }
-                if (upper < 4) continue;
-                /* If ntoskrnl_va is known, do a full walk verify */
-                if (g_ntoskrnl_va && g_ntoskrnl_pa) {
-                    uint64_t saved = g_kernel_cr3;
-                    g_kernel_cr3 = dtb;
-                    uint64_t check = va_to_pa(g_ntoskrnl_va);
-                    g_kernel_cr3 = saved;
-                    if (check != g_ntoskrnl_pa) continue;
-                }
-                printf("[+] System EPROCESS: PA=0x%llX+0x%X  upper_entries=%u\n",
-                       (unsigned long long)pa, off, upper);
-                printf("[+] Kernel CR3 (EPROCESS): 0x%llX\n",
-                       (unsigned long long)dtb);
-                return dtb;
             }
         }
     }
     printf("[!] EPROCESS scan: not found\n");
     return 0;
-#undef EP_DTB
-#undef EP_PID
-#undef EP_NAME
-#undef EP_STRIDE
-#undef EP_MAX_OFF
 }
 
 static uint64_t va_to_pa(uint64_t va)

@@ -306,12 +306,16 @@ static uint64_t kva_to_pa(uint64_t va)
 
 static int find_kernel_cr3(void)
 {
-    /* Scan for System EPROCESS with robust validation:
-     * - Outer stride: 4KB pages; inner stride: 16 bytes (pool alignment)
-     * - DTB: page-aligned and > 64KB
-     * - Flink/Blink: canonical kernel VAs (top 2 bytes = 0xFFFF)
-     * - ImageFileName: try 0x5A8 and 0x5B8 (Win11 24H2+) */
-    static const uint32_t name_offs[] = { 0x5A8, 0x5B8, 0x5B0 };
+    /* Scan for System EPROCESS — tries both Win10/pre-24H2 and Win11 24H2+ layouts.
+     * Outer stride: 4KB pages; inner stride: 16 bytes (pool alignment).
+     * DTB: page-aligned, > 64KB, bits 40+ zero (rejects kernel VA false-positives).
+     * Flink/Blink: canonical kernel VAs. */
+    static const struct {
+        uint32_t pid; uint32_t links; uint32_t name;
+    } layouts[] = {
+        { 0x1D0, 0x1D8, 0x338 }, /* Win11 24H2+ (build 26100+) */
+        { 0x440, 0x448, 0x5A8 }, /* Win10 / Win11 pre-24H2     */
+    };
     static uint8_t page[0x1000];
     const int sub_max = 0x1000 - 0x458;
 
@@ -320,18 +324,17 @@ static int find_kernel_cr3(void)
         for (uint64_t page_pa = base; page_pa + 0x1000 <= end; page_pa += 0x1000) {
             if (!phys_read(page_pa, page, 0x1000)) continue;
             for (int sub = 0; sub <= sub_max; sub += 0x10) {
-                uint64_t pid; memcpy(&pid, page + sub + 0x440, 8);
-                if (pid != 4) continue;
-                uint64_t dtb; memcpy(&dtb, page + sub + 0x028, 8);
-                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
-                uint64_t flink; memcpy(&flink, page + sub + 0x448, 8);
-                uint64_t blink; memcpy(&blink, page + sub + 0x450, 8);
-                if ((flink >> 48) != 0xFFFF || (blink >> 48) != 0xFFFF) continue;
-                /* Try multiple ImageFileName offsets */
-                uint64_t eproc_pa = page_pa + (uint64_t)sub;
-                for (int ni = 0; ni < 3; ni++) {
+                for (int vi = 0; vi < 2; vi++) {
+                    uint64_t pid; memcpy(&pid, page + sub + layouts[vi].pid, 8);
+                    if (pid != 4) continue;
+                    uint64_t dtb; memcpy(&dtb, page + sub + 0x028, 8);
+                    if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+                    uint64_t flink; memcpy(&flink, page + sub + layouts[vi].links, 8);
+                    uint64_t blink; memcpy(&blink, page + sub + layouts[vi].links + 8, 8);
+                    if ((flink >> 48) != 0xFFFF || (blink >> 48) != 0xFFFF) continue;
+                    uint64_t eproc_pa = page_pa + (uint64_t)sub;
                     char nm[8] = {0};
-                    if (!phys_read(eproc_pa + name_offs[ni], nm, 8)) continue;
+                    if (!phys_read(eproc_pa + layouts[vi].name, nm, 8)) continue;
                     if (memcmp(nm, "System\0\0", 7) != 0) continue;
                     g_kernel_cr3 = dtb;
                     return 1;

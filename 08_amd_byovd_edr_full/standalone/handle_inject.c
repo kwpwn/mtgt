@@ -165,23 +165,41 @@ typedef struct {
 static EpOff ep_offsets(DWORD build)
 {
     EpOff o;
-    o.dtb   = 0x028;
-    o.pid   = 0x440;
-    o.token = 0x4B8;
-    o.links = 0x448;
-    /* Win11 24H2 (build 26100+) shifted ImageFileName by 0x10 */
-    o.name  = (build >= 26100) ? 0x5B8 : 0x5A8;
-    /* ObjectTable and Protection vary by build */
-    if (build < 14393) {        /* 1507/1511 */
+    o.dtb = 0x028;
+    if (build >= 26100) {
+        /* Win11 24H2+ — EPROCESS completely reorganised */
+        o.pid        = 0x1D0;
+        o.token      = 0x248;
+        o.links      = 0x1D8;
+        o.name       = 0x338;
+        o.obj_table  = 0x300;
+        o.protection = 0x5FA;
+    } else if (build < 14393) {        /* Win10 1507/1511 */
+        o.pid        = 0x440;
+        o.token      = 0x4B8;
+        o.links      = 0x448;
+        o.name       = 0x450;
         o.obj_table  = 0x518;
         o.protection = 0x6D4;
-    } else if (build < 15063) { /* 1607 */
+    } else if (build < 15063) {        /* Win10 1607 */
+        o.pid        = 0x440;
+        o.token      = 0x4B8;
+        o.links      = 0x448;
+        o.name       = 0x438;
         o.obj_table  = 0x530;
         o.protection = 0x71C;
-    } else if (build < 17763) { /* 1703–1803 */
+    } else if (build < 17763) {        /* Win10 1703–1803 */
+        o.pid        = 0x440;
+        o.token      = 0x4B8;
+        o.links      = 0x448;
+        o.name       = 0x450;
         o.obj_table  = 0x570;
         o.protection = 0x6FC;
-    } else {                    /* 1809+ (RS5+) */
+    } else {                           /* Win10 1809 – Win11 23H2 (RS5+, pre-24H2) */
+        o.pid        = 0x440;
+        o.token      = 0x4B8;
+        o.links      = 0x448;
+        o.name       = 0x5A8;
         o.obj_table  = 0x570;
         o.protection = 0x87A;
     }
@@ -217,8 +235,8 @@ static uint64_t kva_to_pa(uint64_t cr3, uint64_t va)
  * and tries multiple ImageFileName offsets for Win11 24H2 compatibility. */
 static uint64_t find_eproc_pa(const EpOff *o, const char *name, DWORD pid)
 {
-    /* Name offsets to try — covers Win10 through Win11 24H2 */
-    static const int name_offsets[] = { 0x5A8, 0x5B8, 0x5B0, 0x5C0 };
+    /* Name offsets to try — covers Win10 through Win11 24H2+ */
+    static const int name_offsets[] = { 0x338, 0x5A8, 0x5B8, 0x5B0, 0x5C0 };
     const int N_NOFF = (int)(sizeof name_offsets / sizeof name_offsets[0]);
     static uint8_t page[0x1000];
     uint64_t progress = 0;
@@ -252,10 +270,10 @@ static uint64_t find_eproc_pa(const EpOff *o, const char *name, DWORD pid)
                 memcpy(&dtb, page + sub + o->dtb, 8);
                 if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
 
-                /* Flink/Blink must be canonical kernel VAs */
+                /* Flink/Blink must be canonical kernel VAs (use o->links from layout) */
                 uint64_t flink, blink;
-                memcpy(&flink, page + sub + 0x448, 8);
-                memcpy(&blink, page + sub + 0x450, 8);
+                memcpy(&flink, page + sub + o->links, 8);
+                memcpy(&blink, page + sub + o->links + 8, 8);
                 if ((flink >> 48) != 0xFFFF) continue;
                 if ((blink >> 48) != 0xFFFF) continue;
 

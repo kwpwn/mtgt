@@ -139,11 +139,19 @@ static void enable_backup_priv(void)
 }
 
 /* PID-first System EPROCESS scan → sets g_kernel_cr3 */
+/* Saved links offset of the matched EPROCESS layout — used by downstream list walk */
+static uint32_t g_ep_links_off = 0x448;
+static uint32_t g_ep_pid_off   = 0x440;
+
 static uint64_t find_system_eproc_pa(void)
 {
+    /* Try both Win11 24H2+ and Win10/pre-24H2 EPROCESS layouts */
+    static const struct { uint32_t pid; uint32_t links; uint32_t name; } layouts[] = {
+        { 0x1D0, 0x1D8, 0x338 }, /* Win11 24H2+ (build 26100+) */
+        { 0x440, 0x448, 0x5A8 }, /* Win10 / Win11 pre-24H2     */
+    };
     static uint8_t page[0x1000];
-    const int sub_max = 0x1000 - 0x458; /* last field: Blink @ +0x450+7 */
-    static const uint32_t name_cands[] = {0x5A8, 0x5B0, 0x5B8, 0x5C0, 0x5A0, 0x5C8};
+    const int sub_max = 0x1000 - 0x458; /* safe for both layouts */
 
     for (int ri = 0; ri < g_nranges; ri++) {
         uint64_t rbase = g_ranges[ri].base;
@@ -155,28 +163,31 @@ static uint64_t find_system_eproc_pa(void)
             if (!phys_read_raw(ppa, page, 0x1000)) continue;
 
             for (int sub = 0; sub <= sub_max; sub += 0x10) {
-                uint64_t pid = 0; memcpy(&pid, page + sub + 0x440, 8);
-                if (pid != 4) continue;
+                for (int vi = 0; vi < 2; vi++) {
+                    uint64_t pid = 0; memcpy(&pid, page + sub + layouts[vi].pid, 8);
+                    if (pid != 4) continue;
 
-                uint64_t dtb = 0; memcpy(&dtb, page + sub + 0x028, 8);
-                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+                    uint64_t dtb = 0; memcpy(&dtb, page + sub + 0x028, 8);
+                    if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
 
-                uint64_t flink = 0, blink = 0;
-                memcpy(&flink, page + sub + 0x448, 8);
-                memcpy(&blink, page + sub + 0x450, 8);
-                if ((flink >> 48) != 0xFFFF) continue;
-                if ((blink >> 48) != 0xFFFF) continue;
+                    uint64_t flink = 0, blink = 0;
+                    memcpy(&flink, page + sub + layouts[vi].links, 8);
+                    memcpy(&blink, page + sub + layouts[vi].links + 8, 8);
+                    if ((flink >> 48) != 0xFFFF) continue;
+                    if ((blink >> 48) != 0xFFFF) continue;
 
-                for (int k = 0; k < 6; k++) {
                     uint8_t nm[7] = {0};
-                    uint64_t nm_pa = ppa + sub + name_cands[k];
+                    uint64_t nm_pa = ppa + sub + layouts[vi].name;
                     if (!phys_read_raw(nm_pa, nm, 6)) continue;
                     if (memcmp(nm, "System", 6) != 0) continue;
 
-                    g_kernel_cr3 = dtb;
-                    printf("  [+] System EPROCESS PA=0x%010llX  CR3=0x%010llX\n",
+                    g_kernel_cr3   = dtb;
+                    g_ep_links_off = layouts[vi].links;
+                    g_ep_pid_off   = layouts[vi].pid;
+                    printf("  [+] System EPROCESS PA=0x%010llX  CR3=0x%010llX  layout=%s\n",
                            (unsigned long long)(ppa + sub),
-                           (unsigned long long)dtb);
+                           (unsigned long long)dtb,
+                           vi == 0 ? "Win11-24H2+" : "Win10/pre-24H2");
                     return ppa + sub;
                 }
             }

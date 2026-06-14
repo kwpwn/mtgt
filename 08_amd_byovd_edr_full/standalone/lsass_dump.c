@@ -221,18 +221,18 @@ typedef struct {
 } EpLayout;
 
 static const EpLayout g_ep_layouts[] = {
-    /* Win11 24H2 (build 26100+) — ImageFileName shifted to 0x5B8 */
-    { 0x5B8, 0x440, 0x448, 0x4B8, 0x5D0, "Win11-24H2 (build 26100+)" },
-    /* Win11 24H2 variant — 0x5B0 */
-    { 0x5B0, 0x440, 0x448, 0x4B8, 0x5C8, "Win11-24H2-variant (0x5B0)" },
-    /* Win10 1903 / 2004 / 20H2 / 21H1 / 21H2 / 22H2  +  Win11 21H2–23H2 */
-    { 0x5A8, 0x440, 0x448, 0x4B8, 0x5C0, "Win10-1903+ / Win11-23H2" },
+    /* Win11 24H2+ (build 26100+) — EPROCESS fully reorganised */
+    { 0x338, 0x1D0, 0x1D8, 0x248, 0x360, "Win11-24H2+ (build 26100+)" },
+    /* Win10 1903+ / Win11 21H2–23H2 (pre-24H2) */
+    { 0x5A8, 0x440, 0x448, 0x4B8, 0x5C0, "Win10-1903+ / Win11-23H2"   },
+    /* Win10 1903+ variant — ImageFileName at 0x5B8 (some builds) */
+    { 0x5B8, 0x440, 0x448, 0x4B8, 0x5D0, "Win10/Win11 name@0x5B8"     },
     /* Win10 1709 / 1803 / 1809 */
-    { 0x450, 0x2E8, 0x2F0, 0x358, 0x470, "Win10-1709/1803/1809" },
+    { 0x450, 0x2E8, 0x2F0, 0x358, 0x470, "Win10-1709/1803/1809"       },
     /* Win10 1607 */
-    { 0x438, 0x2E0, 0x2E8, 0x348, 0x458, "Win10-1607"          },
+    { 0x438, 0x2E0, 0x2E8, 0x348, 0x458, "Win10-1607"                 },
     /* Win10 1507 / 1511 */
-    { 0x430, 0x2E0, 0x2E8, 0x348, 0x450, "Win10-1507/1511"     },
+    { 0x430, 0x2E0, 0x2E8, 0x348, 0x450, "Win10-1507/1511"            },
     { 0, 0, 0, 0, 0, NULL }
 };
 

