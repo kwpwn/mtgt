@@ -1,0 +1,38 @@
+# dhcp_w.cna — wide-char variant
+# Alias: dhcp-off-w / dhcp-on-w / dhcp-check-w / dhcp-flush-w
+
+alias dhcp-off-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\dhcp_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 0);
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+alias dhcp-on-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\dhcp_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 1);
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+alias dhcp-check-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\dhcp_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 2);
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+alias dhcp-flush-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\dhcp_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 3);
+    beacon_inline_execute($1, $data, "go", $args);
+}

