@@ -146,4 +146,37 @@ void Module_ImpersonateHunter(void); /* Dangerous token privilege audit (Potato+
 void Module_COMAutoElevate(void);    /* COM auto-elevation surface (UAC bypass)    */
 void Module_SectionAudit(void);      /* Named section object ACL audit             */
 
+/* -----------------------------------------------------------------------
+ * New modules — 0-day research extensions
+ * --------------------------------------------------------------------- */
+void Module_WinMsgSurface(void);     /* WM_COPYDATA/WM_DDE cross-IL window message */
+void Module_AlwaysInstallElevated(void); /* AlwaysInstallElevated MSI policy       */
+void Module_AppInitDLL(void);        /* AppInit_DLLs injection surface             */
+void Module_UACBypassHKCU(void);     /* UAC bypass via HKCU class hijack          */
+void Module_LocalServiceScan(void);  /* Localhost privileged TCP service scan      */
+void Module_WERHandler(void);        /* WER/AeDebug JIT debugger + crash DLLs     */
+void Module_AppCompatSDB(void);      /* AppCompat shim database DLL injection      */
+void Module_ProcessDACL(void);       /* Process DACL audit (DUP_HANDLE/VM_WRITE)  */
+void Module_DcomHijack(void);        /* DCOM LocalServer32 EXE path hijacking      */
+void Module_ShellHandler(void);      /* Shell extension DLL → explorer High IL     */
+void Module_BitsSurface(void);       /* BITS service DLL/notification LPE          */
+void Module_TelemetrySurface(void);  /* DiagTrack perf counter DLL surface         */
+void Module_SecondaryLogon(void);    /* seclogon service SYSTEM token leakage      */
+void Module_FontProvider(void);      /* Font provider DLL + font cache surface     */
+void Module_HandleInherit(void);     /* Inheritable handle leakage from SYSTEM     */
+void Module_DotNetCLR(void);         /* COR_PROFILER DLL injection into .NET SYSTEM*/
+void Module_ComPlus(void);           /* COM+ server app DLL writability            */
+void Module_IFEOHijack(void);        /* IFEO debugger/VerifierDll injection T1546.012 */
+void Module_WinlogonPlugins(void);   /* Winlogon Notify/Userinit/Shell hijack T1547.004 */
+void Module_LSANotify(void);         /* LSA Notification Packages + lsass PPL audit */
+void Module_HiveNightmare(void);     /* CVE-2021-36934 SAM/SYSTEM hive readability  */
+void Module_TimeProvider(void);      /* W32Time provider DLL hijacking (novel)       */
+void Module_ActiveSetup(void);       /* Active Setup StubPath T1547.014              */
+void Module_CryptoProvider(void);    /* CryptoAPI CSP / SCHANNEL DLL hijacking       */
+void Module_PSHijack(void);          /* PowerShell profile + PSModulePath hijack     */
+void Module_EAPProvider(void);       /* RAS/VPN EAP method DLL hijacking (novel)     */
+void Module_VSSWriter(void);         /* VSS Writer COM server EXE hijacking (novel)  */
+void Module_UACPolicy(void);         /* UAC policy + Defender exclusion audit        */
+void Module_SYSVOLScripts(void);     /* Domain SYSVOL/GPO logon script writability   */
+
 #endif /* FERRUM_COMMON_H */

@@ -8,6 +8,10 @@
  *              [--PRINT] [--LSA] [--APPCERT] [--CREDPROV] [--NETPROV]
  *              [--AUTORUN] [--WMIPROV] [--ALPC] [--RPCSVC] [--DRIVERIOCTL]
  *              [--IMPERSONATE] [--COMELE] [--SECTIONS]
+ *              [--WMSG] [--MSIINSTALL] [--APPINITDLL] [--UACBYPASS] [--LOCALSVC]
+ *              [--WER] [--SDB] [--PROCDACL] [--DCOMHIJACK] [--SHELLEXT]
+ *              [--BITS] [--TELEMETRY] [--SECLOGON] [--FONTPROV]
+ *              [--HANDLES] [--DOTNETCLR] [--COMPLUS]
  *              [--ZERODAY] [--ALL] [--OUTPUT <file>] [--NO-COLOR]
  *
  * Compile: run build.bat from a Visual Studio Developer Command Prompt.
@@ -67,8 +71,26 @@ static void Usage(const wchar_t *prog) {
         L"    --IMPERSONATE  Dangerous token privilege audit (Potato/SeLoadDriver/SeTcb)\n"
         L"    --COMELE       COM auto-elevation surface (UAC bypass / logic-bug surface)\n"
         L"    --SECTIONS     Named section object ACL audit (shared-memory logic bugs)\n"
+        L"\n  Extended 0-day Modules (novel surfaces, no public tool covers):\n"
+        L"    --WMSG         WM_COPYDATA/WM_DDE cross-IL window message surface\n"
+        L"    --MSIINSTALL   AlwaysInstallElevated MSI policy (SYSTEM via MSI)\n"
+        L"    --APPINITDLL   AppInit_DLLs injection surface (loaded by every process)\n"
+        L"    --UACBYPASS    UAC bypass via HKCU class hijack (fodhelper/eventvwr/etc)\n"
+        L"    --LOCALSVC     Localhost privileged TCP service scan (gRPC/WebSocket/HTTP)\n"
+        L"    --WER          WER/AeDebug JIT debugger + crash handler DLL surface\n"
+        L"    --SDB          AppCompat shim database injection (Duqu 2.0 technique)\n"
+        L"    --PROCDACL     Process DACL audit (DUP_HANDLE/VM_WRITE on SYSTEM procs)\n"
+        L"    --DCOMHIJACK   DCOM LocalServer32 EXE path hijacking (RunAs=SYSTEM)\n"
+        L"    --SHELLEXT     Shell extension DLL writability (explorer.exe High IL)\n"
+        L"    --BITS         BITS service notification + plugin DLL surface\n"
+        L"    --TELEMETRY    DiagTrack perf counter DLL + telemetry scheduled tasks\n"
+        L"    --SECLOGON     Secondary Logon seclogon SYSTEM token leakage\n"
+        L"    --FONTPROV     Font provider DLL + font cache + per-user font surface\n"
+        L"    --HANDLES      Inheritable handle leakage from SYSTEM processes\n"
+        L"    --DOTNETCLR    COR_PROFILER DLL injection into .NET SYSTEM services\n"
+        L"    --COMPLUS      COM+ server app DLL writability (enterprise middleware)\n"
         L"    --ZERODAY      0-day research mode: enable all novel modules + guidance\n"
-        L"    --ALL          Run all 27 modules\n\n"
+        L"    --ALL          Run all 44 modules\n\n"
         L"  Options:\n"
         L"    --OUTPUT <file>  Write findings to file (in addition to stdout)\n"
         L"    --NO-COLOR       Disable ANSI colour output\n\n"
@@ -145,6 +167,36 @@ int wmain(int argc, wchar_t *argv[]) {
     BOOL doCOMElevate   = FALSE;
     BOOL doSections     = FALSE;
     BOOL doZeroDay      = FALSE;
+    /* New extended modules */
+    BOOL doWinMsg       = FALSE;
+    BOOL doMSIInstall   = FALSE;
+    BOOL doAppInitDLL   = FALSE;
+    BOOL doUACBypass    = FALSE;
+    BOOL doLocalSvc     = FALSE;
+    BOOL doWER          = FALSE;
+    BOOL doSDB          = FALSE;
+    BOOL doProcDACL     = FALSE;
+    BOOL doDCOMHijack   = FALSE;
+    BOOL doShellExt     = FALSE;
+    BOOL doBITS         = FALSE;
+    BOOL doTelemetry    = FALSE;
+    BOOL doSecLogon     = FALSE;
+    BOOL doFontProv     = FALSE;
+    BOOL doHandles      = FALSE;
+    BOOL doDotNetCLR    = FALSE;
+    BOOL doCOMPlus      = FALSE;
+    BOOL doIFEO         = FALSE;
+    BOOL doWinlogon     = FALSE;
+    BOOL doLSANotify    = FALSE;
+    BOOL doHiveNM       = FALSE;
+    BOOL doTimeProv     = FALSE;
+    BOOL doActiveSetup  = FALSE;
+    BOOL doCryptoProv   = FALSE;
+    BOOL doPSHijack     = FALSE;
+    BOOL doEAPProv      = FALSE;
+    BOOL doVSSWriter    = FALSE;
+    BOOL doUACPolicy    = FALSE;
+    BOOL doSYSVOL       = FALSE;
     wchar_t outFile[MAX_PATH] = {0};
 
     for (int i = 1; i < argc; i++) {
@@ -177,6 +229,35 @@ int wmain(int argc, wchar_t *argv[]) {
         else if (ArgIs(argv[i], L"--COMELE"))      doCOMElevate   = TRUE;
         else if (ArgIs(argv[i], L"--SECTIONS"))    doSections     = TRUE;
         else if (ArgIs(argv[i], L"--ZERODAY"))     doZeroDay      = TRUE;
+        else if (ArgIs(argv[i], L"--WMSG"))        doWinMsg       = TRUE;
+        else if (ArgIs(argv[i], L"--MSIINSTALL"))  doMSIInstall   = TRUE;
+        else if (ArgIs(argv[i], L"--APPINITDLL"))  doAppInitDLL   = TRUE;
+        else if (ArgIs(argv[i], L"--UACBYPASS"))   doUACBypass    = TRUE;
+        else if (ArgIs(argv[i], L"--LOCALSVC"))    doLocalSvc     = TRUE;
+        else if (ArgIs(argv[i], L"--WER"))         doWER          = TRUE;
+        else if (ArgIs(argv[i], L"--SDB"))         doSDB          = TRUE;
+        else if (ArgIs(argv[i], L"--PROCDACL"))    doProcDACL     = TRUE;
+        else if (ArgIs(argv[i], L"--DCOMHIJACK"))  doDCOMHijack   = TRUE;
+        else if (ArgIs(argv[i], L"--SHELLEXT"))    doShellExt     = TRUE;
+        else if (ArgIs(argv[i], L"--BITS"))        doBITS         = TRUE;
+        else if (ArgIs(argv[i], L"--TELEMETRY"))   doTelemetry    = TRUE;
+        else if (ArgIs(argv[i], L"--SECLOGON"))    doSecLogon     = TRUE;
+        else if (ArgIs(argv[i], L"--FONTPROV"))    doFontProv     = TRUE;
+        else if (ArgIs(argv[i], L"--HANDLES"))     doHandles      = TRUE;
+        else if (ArgIs(argv[i], L"--DOTNETCLR"))   doDotNetCLR    = TRUE;
+        else if (ArgIs(argv[i], L"--COMPLUS"))     doCOMPlus      = TRUE;
+        else if (ArgIs(argv[i], L"--IFEO"))        doIFEO         = TRUE;
+        else if (ArgIs(argv[i], L"--WINLOGON"))    doWinlogon     = TRUE;
+        else if (ArgIs(argv[i], L"--LSANOTIFY"))   doLSANotify    = TRUE;
+        else if (ArgIs(argv[i], L"--HIVENM"))      doHiveNM       = TRUE;
+        else if (ArgIs(argv[i], L"--TIMEPROV"))    doTimeProv     = TRUE;
+        else if (ArgIs(argv[i], L"--ACTIVESETUP")) doActiveSetup  = TRUE;
+        else if (ArgIs(argv[i], L"--CRYPTOPROV"))  doCryptoProv   = TRUE;
+        else if (ArgIs(argv[i], L"--PSHIJACK"))    doPSHijack     = TRUE;
+        else if (ArgIs(argv[i], L"--EAPPROV"))     doEAPProv      = TRUE;
+        else if (ArgIs(argv[i], L"--VSSWRITER"))   doVSSWriter    = TRUE;
+        else if (ArgIs(argv[i], L"--UACPOLICY"))   doUACPolicy    = TRUE;
+        else if (ArgIs(argv[i], L"--SYSVOL"))      doSYSVOL       = TRUE;
         else if (ArgIs(argv[i], L"--NO-COLOR"))    g_noColor      = TRUE;
         else if (ArgIs(argv[i], L"--OUTPUT") && i + 1 < argc) {
             wcsncpy(outFile, argv[++i], _countof(outFile) - 1);
@@ -196,7 +277,14 @@ int wmain(int argc, wchar_t *argv[]) {
         !doPrintSpl && !doLSAPkg && !doAppCert && !doCredProv &&
         !doNetProv && !doAutorun && !doWmiProv &&
         !doALPC && !doRPCSvc && !doDriverIOCTL &&
-        !doImpersonate && !doCOMElevate && !doSections)
+        !doImpersonate && !doCOMElevate && !doSections &&
+        !doWinMsg && !doMSIInstall && !doAppInitDLL && !doUACBypass && !doLocalSvc &&
+        !doWER && !doSDB && !doProcDACL && !doDCOMHijack && !doShellExt &&
+        !doBITS && !doTelemetry && !doSecLogon && !doFontProv &&
+        !doHandles && !doDotNetCLR && !doCOMPlus &&
+        !doIFEO && !doWinlogon && !doLSANotify && !doHiveNM && !doTimeProv &&
+        !doActiveSetup && !doCryptoProv && !doPSHijack && !doEAPProv &&
+        !doVSSWriter && !doUACPolicy && !doSYSVOL)
     {
         Banner();
         Usage(argv[0]);
@@ -209,7 +297,15 @@ int wmain(int argc, wchar_t *argv[]) {
         doPrintSpl = doLSAPkg = doAppCert = doCredProv =
         doNetProv = doAutorun = doWmiProv =
         doALPC = doRPCSvc = doDriverIOCTL =
-        doImpersonate = doCOMElevate = doSections = TRUE;
+        doImpersonate = doCOMElevate = doSections =
+        /* New extended modules */
+        doWinMsg = doMSIInstall = doAppInitDLL = doUACBypass = doLocalSvc =
+        doWER = doSDB = doProcDACL = doDCOMHijack = doShellExt =
+        doBITS = doTelemetry = doSecLogon = doFontProv =
+        doHandles = doDotNetCLR = doCOMPlus =
+        doIFEO = doWinlogon = doLSANotify = doHiveNM = doTimeProv =
+        doActiveSetup = doCryptoProv = doPSHijack = doEAPProv =
+        doVSSWriter = doUACPolicy = doSYSVOL = TRUE;
     }
 
     if (doAll) {
@@ -219,7 +315,15 @@ int wmain(int argc, wchar_t *argv[]) {
         doPrintSpl = doLSAPkg   = doAppCert = doCredProv =
         doNetProv  = doAutorun  = doWmiProv =
         doALPC     = doRPCSvc   = doDriverIOCTL =
-        doImpersonate = doCOMElevate = doSections = TRUE;
+        doImpersonate = doCOMElevate = doSections =
+        /* New extended modules */
+        doWinMsg = doMSIInstall = doAppInitDLL = doUACBypass = doLocalSvc =
+        doWER = doSDB = doProcDACL = doDCOMHijack = doShellExt =
+        doBITS = doTelemetry = doSecLogon = doFontProv =
+        doHandles = doDotNetCLR = doCOMPlus =
+        doIFEO = doWinlogon = doLSANotify = doHiveNM = doTimeProv =
+        doActiveSetup = doCryptoProv = doPSHijack = doEAPProv =
+        doVSSWriter = doUACPolicy = doSYSVOL = TRUE;
     }
 
     /* ---- Open output file if requested ---- */
@@ -303,6 +407,37 @@ int wmain(int argc, wchar_t *argv[]) {
     if (doImpersonate)  Module_ImpersonateHunter();
     if (doCOMElevate)   Module_COMAutoElevate();
     if (doSections)     Module_SectionAudit();
+    /* New extended modules */
+    if (doWinMsg)       Module_WinMsgSurface();
+    if (doMSIInstall)   Module_AlwaysInstallElevated();
+    if (doAppInitDLL)   Module_AppInitDLL();
+    if (doUACBypass)    Module_UACBypassHKCU();
+    if (doLocalSvc)     Module_LocalServiceScan();
+    if (doWER)          Module_WERHandler();
+    if (doSDB)          Module_AppCompatSDB();
+    if (doProcDACL)     Module_ProcessDACL();
+    if (doDCOMHijack)   Module_DcomHijack();
+    if (doShellExt)     Module_ShellHandler();
+    if (doBITS)         Module_BitsSurface();
+    if (doTelemetry)    Module_TelemetrySurface();
+    if (doSecLogon)     Module_SecondaryLogon();
+    if (doFontProv)     Module_FontProvider();
+    if (doHandles)      Module_HandleInherit();
+    if (doDotNetCLR)    Module_DotNetCLR();
+    if (doCOMPlus)      Module_ComPlus();
+    /* Wave 2 — extended novel modules */
+    if (doIFEO)         Module_IFEOHijack();
+    if (doWinlogon)     Module_WinlogonPlugins();
+    if (doLSANotify)    Module_LSANotify();
+    if (doHiveNM)       Module_HiveNightmare();
+    if (doTimeProv)     Module_TimeProvider();
+    if (doActiveSetup)  Module_ActiveSetup();
+    if (doCryptoProv)   Module_CryptoProvider();
+    if (doPSHijack)     Module_PSHijack();
+    if (doEAPProv)      Module_EAPProvider();
+    if (doVSSWriter)    Module_VSSWriter();
+    if (doUACPolicy)    Module_UACPolicy();
+    if (doSYSVOL)       Module_SYSVOLScripts();
 
     wprintf(L"\n");
     if (!g_noColor)
