@@ -197,6 +197,17 @@ int wmain(int argc, wchar_t *argv[]) {
     BOOL doVSSWriter    = FALSE;
     BOOL doUACPolicy    = FALSE;
     BOOL doSYSVOL       = FALSE;
+    /* Wave 3 — additional novel modules */
+    BOOL doSENSSubs     = FALSE;
+    BOOL doWinSearch    = FALSE;
+    BOOL doMMCodec      = FALSE;
+    BOOL doMSDTC        = FALSE;
+    BOOL doIISSurf      = FALSE;
+    BOOL doBioWBF       = FALSE;
+    BOOL doWinsockNSP   = FALSE;
+    BOOL doCOMTreatAs   = FALSE;
+    BOOL doMFTransform  = FALSE;
+    BOOL doLAPSCG       = FALSE;
     wchar_t outFile[MAX_PATH] = {0};
 
     for (int i = 1; i < argc; i++) {
@@ -258,6 +269,16 @@ int wmain(int argc, wchar_t *argv[]) {
         else if (ArgIs(argv[i], L"--VSSWRITER"))   doVSSWriter    = TRUE;
         else if (ArgIs(argv[i], L"--UACPOLICY"))   doUACPolicy    = TRUE;
         else if (ArgIs(argv[i], L"--SYSVOL"))      doSYSVOL       = TRUE;
+        else if (ArgIs(argv[i], L"--SENSSUBS"))    doSENSSubs     = TRUE;
+        else if (ArgIs(argv[i], L"--WINSEARCH"))   doWinSearch    = TRUE;
+        else if (ArgIs(argv[i], L"--MMCODEC"))     doMMCodec      = TRUE;
+        else if (ArgIs(argv[i], L"--MSDTC"))       doMSDTC        = TRUE;
+        else if (ArgIs(argv[i], L"--IIS"))         doIISSurf      = TRUE;
+        else if (ArgIs(argv[i], L"--BIOWBF"))      doBioWBF       = TRUE;
+        else if (ArgIs(argv[i], L"--WINSOCKNSP"))  doWinsockNSP   = TRUE;
+        else if (ArgIs(argv[i], L"--COMTREATAS"))  doCOMTreatAs   = TRUE;
+        else if (ArgIs(argv[i], L"--MFTRANSFORM")) doMFTransform  = TRUE;
+        else if (ArgIs(argv[i], L"--LAPSCG"))      doLAPSCG       = TRUE;
         else if (ArgIs(argv[i], L"--NO-COLOR"))    g_noColor      = TRUE;
         else if (ArgIs(argv[i], L"--OUTPUT") && i + 1 < argc) {
             wcsncpy(outFile, argv[++i], _countof(outFile) - 1);
@@ -284,7 +305,9 @@ int wmain(int argc, wchar_t *argv[]) {
         !doHandles && !doDotNetCLR && !doCOMPlus &&
         !doIFEO && !doWinlogon && !doLSANotify && !doHiveNM && !doTimeProv &&
         !doActiveSetup && !doCryptoProv && !doPSHijack && !doEAPProv &&
-        !doVSSWriter && !doUACPolicy && !doSYSVOL)
+        !doVSSWriter && !doUACPolicy && !doSYSVOL &&
+        !doSENSSubs && !doWinSearch && !doMMCodec && !doMSDTC && !doIISSurf &&
+        !doBioWBF && !doWinsockNSP && !doCOMTreatAs && !doMFTransform && !doLAPSCG)
     {
         Banner();
         Usage(argv[0]);
@@ -305,7 +328,9 @@ int wmain(int argc, wchar_t *argv[]) {
         doHandles = doDotNetCLR = doCOMPlus =
         doIFEO = doWinlogon = doLSANotify = doHiveNM = doTimeProv =
         doActiveSetup = doCryptoProv = doPSHijack = doEAPProv =
-        doVSSWriter = doUACPolicy = doSYSVOL = TRUE;
+        doVSSWriter = doUACPolicy = doSYSVOL =
+        doSENSSubs = doWinSearch = doMMCodec = doMSDTC = doIISSurf =
+        doBioWBF = doWinsockNSP = doCOMTreatAs = doMFTransform = doLAPSCG = TRUE;
     }
 
     if (doAll) {
@@ -323,7 +348,9 @@ int wmain(int argc, wchar_t *argv[]) {
         doHandles = doDotNetCLR = doCOMPlus =
         doIFEO = doWinlogon = doLSANotify = doHiveNM = doTimeProv =
         doActiveSetup = doCryptoProv = doPSHijack = doEAPProv =
-        doVSSWriter = doUACPolicy = doSYSVOL = TRUE;
+        doVSSWriter = doUACPolicy = doSYSVOL =
+        doSENSSubs = doWinSearch = doMMCodec = doMSDTC = doIISSurf =
+        doBioWBF = doWinsockNSP = doCOMTreatAs = doMFTransform = doLAPSCG = TRUE;
     }
 
     /* ---- Open output file if requested ---- */
@@ -438,6 +465,17 @@ int wmain(int argc, wchar_t *argv[]) {
     if (doVSSWriter)    Module_VSSWriter();
     if (doUACPolicy)    Module_UACPolicy();
     if (doSYSVOL)       Module_SYSVOLScripts();
+    /* Wave 3 — additional novel modules */
+    if (doSENSSubs)     Module_SENSSubscriptions();
+    if (doWinSearch)    Module_WinSearchIFilter();
+    if (doMMCodec)      Module_MultimediaCodec();
+    if (doMSDTC)        Module_MSDTCSurface();
+    if (doIISSurf)      Module_IISSurface();
+    if (doBioWBF)       Module_BiometricWBF();
+    if (doWinsockNSP)   Module_WinsockNSP();
+    if (doCOMTreatAs)   Module_COMTreatAs();
+    if (doMFTransform)  Module_MFTransform();
+    if (doLAPSCG)       Module_LAPSCredGuard();
 
     wprintf(L"\n");
     if (!g_noColor)

@@ -179,4 +179,18 @@ void Module_VSSWriter(void);         /* VSS Writer COM server EXE hijacking (nov
 void Module_UACPolicy(void);         /* UAC policy + Defender exclusion audit        */
 void Module_SYSVOLScripts(void);     /* Domain SYSVOL/GPO logon script writability   */
 
+/* -----------------------------------------------------------------------
+ * Wave 3 — extended novel + undiscovered surfaces (10 additional modules)
+ * --------------------------------------------------------------------- */
+void Module_SENSSubscriptions(void); /* NOVEL: SENS/COM+ event subscription DLL hijack (SYSTEM on logon/net) */
+void Module_WinSearchIFilter(void);  /* SearchIndexer.exe (SYSTEM) IFilter/Protocol Handler DLL hijack       */
+void Module_MultimediaCodec(void);   /* Drivers32 multimedia codec DLL hijacking + Media Foundation handlers */
+void Module_MSDTCSurface(void);      /* MSDTC XA transaction DLL hijacking (NetworkService → Potato → SYSTEM)*/
+void Module_IISSurface(void);        /* IIS native module/ISAPI DLL hijacking + applicationHost.config write */
+void Module_BiometricWBF(void);      /* NOVEL: WBF sensor/engine/storage adapter DLL hijacking (SYSTEM)     */
+void Module_WinsockNSP(void);        /* Winsock NSP provider DLL hijacking (loads into all socket processes)  */
+void Module_COMTreatAs(void);        /* COM TreatAs/AutoConvertTo CLSID redirect + Elevation Moniker audit   */
+void Module_MFTransform(void);       /* Media Foundation Transform DLL hijacking (FrameServer/Recall=SYSTEM) */
+void Module_LAPSCredGuard(void);     /* LAPS config + Credential Guard + VBS/HVCI + Secure Boot status       */
+
 #endif /* FERRUM_COMMON_H */

@@ -62,7 +62,17 @@ set SRC=src\main.c src\common.c ^
     src\modules\eap_provider.c ^
     src\modules\vss_writer.c ^
     src\modules\uac_policy.c ^
-    src\modules\sysvol_scripts.c
+    src\modules\sysvol_scripts.c ^
+    src\modules\sens_subscriptions.c ^
+    src\modules\winsearch_ifilter.c ^
+    src\modules\multimedia_codec.c ^
+    src\modules\msdtc_surface.c ^
+    src\modules\iis_surface.c ^
+    src\modules\biometric_wbf.c ^
+    src\modules\winsock_nsp.c ^
+    src\modules\com_treatas.c ^
+    src\modules\mf_transform.c ^
+    src\modules\laps_credguard.c
 
 set LIBS_MSVC=advapi32.lib psapi.lib kernel32.lib ntdll.lib rpcrt4.lib ole32.lib oleaut32.lib uuid.lib iphlpapi.lib ws2_32.lib user32.lib
 set LIBS_GCC=-ladvapi32 -lpsapi -lntdll -lrpcrt4 -lole32 -luuid -liphlpapi -lws2_32 -luser32
