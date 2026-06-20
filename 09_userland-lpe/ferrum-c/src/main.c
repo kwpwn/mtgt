@@ -208,6 +208,10 @@ int wmain(int argc, wchar_t *argv[]) {
     BOOL doCOMTreatAs   = FALSE;
     BOOL doMFTransform  = FALSE;
     BOOL doLAPSCG       = FALSE;
+    /* symboliclink-testing-tools modules */
+    BOOL doSymlinkPrim  = FALSE;
+    BOOL doOplockRace   = FALSE;
+    BOOL doSymlinkHunt  = FALSE;
     wchar_t outFile[MAX_PATH] = {0};
 
     for (int i = 1; i < argc; i++) {
@@ -279,6 +283,9 @@ int wmain(int argc, wchar_t *argv[]) {
         else if (ArgIs(argv[i], L"--COMTREATAS"))  doCOMTreatAs   = TRUE;
         else if (ArgIs(argv[i], L"--MFTRANSFORM")) doMFTransform  = TRUE;
         else if (ArgIs(argv[i], L"--LAPSCG"))      doLAPSCG       = TRUE;
+        else if (ArgIs(argv[i], L"--SYMLINKPRIM")) doSymlinkPrim  = TRUE;
+        else if (ArgIs(argv[i], L"--OPLOCKRACE"))  doOplockRace   = TRUE;
+        else if (ArgIs(argv[i], L"--SYMLINKCAN"))  doSymlinkHunt  = TRUE;
         else if (ArgIs(argv[i], L"--NO-COLOR"))    g_noColor      = TRUE;
         else if (ArgIs(argv[i], L"--OUTPUT") && i + 1 < argc) {
             wcsncpy(outFile, argv[++i], _countof(outFile) - 1);
@@ -307,7 +314,8 @@ int wmain(int argc, wchar_t *argv[]) {
         !doActiveSetup && !doCryptoProv && !doPSHijack && !doEAPProv &&
         !doVSSWriter && !doUACPolicy && !doSYSVOL &&
         !doSENSSubs && !doWinSearch && !doMMCodec && !doMSDTC && !doIISSurf &&
-        !doBioWBF && !doWinsockNSP && !doCOMTreatAs && !doMFTransform && !doLAPSCG)
+        !doBioWBF && !doWinsockNSP && !doCOMTreatAs && !doMFTransform && !doLAPSCG &&
+        !doSymlinkPrim && !doOplockRace && !doSymlinkHunt)
     {
         Banner();
         Usage(argv[0]);
@@ -330,7 +338,8 @@ int wmain(int argc, wchar_t *argv[]) {
         doActiveSetup = doCryptoProv = doPSHijack = doEAPProv =
         doVSSWriter = doUACPolicy = doSYSVOL =
         doSENSSubs = doWinSearch = doMMCodec = doMSDTC = doIISSurf =
-        doBioWBF = doWinsockNSP = doCOMTreatAs = doMFTransform = doLAPSCG = TRUE;
+        doBioWBF = doWinsockNSP = doCOMTreatAs = doMFTransform = doLAPSCG =
+        doSymlinkPrim = doOplockRace = doSymlinkHunt = TRUE;
     }
 
     if (doAll) {
@@ -350,7 +359,8 @@ int wmain(int argc, wchar_t *argv[]) {
         doActiveSetup = doCryptoProv = doPSHijack = doEAPProv =
         doVSSWriter = doUACPolicy = doSYSVOL =
         doSENSSubs = doWinSearch = doMMCodec = doMSDTC = doIISSurf =
-        doBioWBF = doWinsockNSP = doCOMTreatAs = doMFTransform = doLAPSCG = TRUE;
+        doBioWBF = doWinsockNSP = doCOMTreatAs = doMFTransform = doLAPSCG =
+        doSymlinkPrim = doOplockRace = doSymlinkHunt = TRUE;
     }
 
     /* ---- Open output file if requested ---- */
@@ -476,6 +486,10 @@ int wmain(int argc, wchar_t *argv[]) {
     if (doCOMTreatAs)   Module_COMTreatAs();
     if (doMFTransform)  Module_MFTransform();
     if (doLAPSCG)       Module_LAPSCredGuard();
+    /* symboliclink-testing-tools modules */
+    if (doSymlinkPrim)  Module_SymlinkPrimitives();
+    if (doOplockRace)   Module_OplockRace();
+    if (doSymlinkHunt)  Module_SymlinkHunt();
 
     wprintf(L"\n");
     if (!g_noColor)

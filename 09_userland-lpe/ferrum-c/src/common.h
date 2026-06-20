@@ -193,4 +193,12 @@ void Module_COMTreatAs(void);        /* COM TreatAs/AutoConvertTo CLSID redirect
 void Module_MFTransform(void);       /* Media Foundation Transform DLL hijacking (FrameServer/Recall=SYSTEM) */
 void Module_LAPSCredGuard(void);     /* LAPS config + Credential Guard + VBS/HVCI + Secure Boot status       */
 
+/* -----------------------------------------------------------------------
+ * symboliclink-testing-tools modules (James Forshaw / Project Zero)
+ * NT symlink primitives + oplock race + passive candidate hunting
+ * --------------------------------------------------------------------- */
+void Module_SymlinkPrimitives(void); /* NT symlink/junction/DosDevice/hardlink primitives + namespace audit */
+void Module_OplockRace(void);        /* BaitAndSwitch oplock break → junction+symlink swap → SYSTEM file   */
+void Module_SymlinkHunt(void);       /* Passive hunt: SYSTEM svc paths/pipes/registry for symlink attacks   */
+
 #endif /* FERRUM_COMMON_H */

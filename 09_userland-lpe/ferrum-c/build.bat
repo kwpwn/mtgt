@@ -72,7 +72,10 @@ set SRC=src\main.c src\common.c ^
     src\modules\winsock_nsp.c ^
     src\modules\com_treatas.c ^
     src\modules\mf_transform.c ^
-    src\modules\laps_credguard.c
+    src\modules\laps_credguard.c ^
+    src\modules\symlink_primitives.c ^
+    src\modules\oplock_race.c ^
+    src\modules\symlink_hunt.c
 
 set LIBS_MSVC=advapi32.lib psapi.lib kernel32.lib ntdll.lib rpcrt4.lib ole32.lib oleaut32.lib uuid.lib iphlpapi.lib ws2_32.lib user32.lib
 set LIBS_GCC=-ladvapi32 -lpsapi -lntdll -lrpcrt4 -lole32 -luuid -liphlpapi -lws2_32 -luser32
