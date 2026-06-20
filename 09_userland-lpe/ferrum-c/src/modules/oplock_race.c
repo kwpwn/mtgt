@@ -450,6 +450,18 @@ static void AuditOplockCandidates(DWORD *findings) {
     }
 }
 
+/* Thread that opens a file to trigger an oplock break (used by OplockSelfTest).
+ * Must be at file scope — nested functions are not valid C. */
+static DWORD WINAPI SelfTestTriggerThread(LPVOID param) {
+    LPCWSTR path = (LPCWSTR)param;
+    HANDLE h = CreateFileW(path,
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h != INVALID_HANDLE_VALUE) CloseHandle(h);
+    return 0;
+}
+
 /* -----------------------------------------------------------------------
  * Self-test: verify oplock mechanism works on this system
  * Uses a temp file that we open ourselves to trigger the break
@@ -487,49 +499,66 @@ static void OplockSelfTest(void) {
     if (oplockSupported) {
         PrintInfo(L"    [+] Batch oplock: SUPPORTED (ERROR_IO_PENDING as expected)\n");
 
-        /* Trigger break by opening from a second handle */
-        HANDLE hFile2 = CreateFileW(testFile,
-            GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        /* Trigger break from a SEPARATE THREAD to avoid deadlock.
+         * CreateFileW on a batch-oplocked file blocks until the oplock holder ACKs.
+         * Calling it on the same thread that holds the oplock → stuck waiting for self.
+         * Fix: trigger from thread, main waits for break, then ACKs by closing hFile. */
+        HANDLE hTrigger = CreateThread(NULL, 0, SelfTestTriggerThread,
+                                        (LPVOID)testFile, 0, NULL);
 
         DWORD waitRes = WaitForSingleObject(hEvent, 2000);
         if (waitRes == WAIT_OBJECT_0) {
             PrintInfo(L"    [+] Oplock break received successfully — race primitive WORKS\n");
         } else {
-            PrintInfo(L"    [-] Oplock break timeout — unexpected\n");
+            PrintInfo(L"    [-] Oplock break timeout (err=%lu)\n", GetLastError());
         }
-        if (hFile2 != INVALID_HANDLE_VALUE) CloseHandle(hFile2);
+
+        /* ACK: close oplock handle → kernel allows trigger thread's CreateFileW to proceed */
+        CloseHandle(hFile);
+        hFile = INVALID_HANDLE_VALUE;
+        if (hTrigger) { WaitForSingleObject(hTrigger, 1000); CloseHandle(hTrigger); }
     } else {
         PrintInfo(L"    [-] Batch oplock not supported (err=%lu)\n", GetLastError());
     }
 
-    /* Win7+ oplock test */
-    ResetEvent(hEvent);
-    memset(&ov, 0, sizeof(ov));
-    ov.hEvent = hEvent;
-
-    REQUEST_OPLOCK_INPUT_BUFFER inBuf = {0};
-    inBuf.StructureVersion    = REQUEST_OPLOCK_CURRENT_VERSION;
-    inBuf.StructureLength     = sizeof(inBuf);
-    inBuf.RequestedOplockLevel = OPLOCK_LEVEL_CACHE_READ | OPLOCK_LEVEL_CACHE_HANDLE;
-    inBuf.Flags = REQUEST_OPLOCK_INPUT_FLAG_REQUEST;
-
-    REQUEST_OPLOCK_OUTPUT_BUFFER outBuf = {0};
-    outBuf.StructureVersion = REQUEST_OPLOCK_CURRENT_VERSION;
-    outBuf.StructureLength  = sizeof(outBuf);
-
-    ok = DeviceIoControl(hFile, FSCTL_REQUEST_OPLOCK,
-                          &inBuf, sizeof(inBuf),
-                          &outBuf, sizeof(outBuf),
-                          &returned, &ov);
-    if (!ok && GetLastError() == ERROR_IO_PENDING) {
-        PrintInfo(L"    [+] Windows 7+ READ|HANDLE oplock: SUPPORTED\n");
-    } else {
-        PrintInfo(L"    [-] Windows 7+ oplock: not available (err=%lu) — use BATCH\n",
-                  GetLastError());
+    /* Win7+ oplock test — needs a fresh file handle (batch test may have closed hFile) */
+    if (hFile == INVALID_HANDLE_VALUE) {
+        hFile = CreateFileW(testFile,
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            NULL, CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
     }
 
-    CloseHandle(hFile);   /* close file first → cancels pending I/O → safe to close event */
+    if (hFile != INVALID_HANDLE_VALUE) {
+        ResetEvent(hEvent);
+        memset(&ov, 0, sizeof(ov));
+        ov.hEvent = hEvent;
+
+        REQUEST_OPLOCK_INPUT_BUFFER inBuf = {0};
+        inBuf.StructureVersion    = REQUEST_OPLOCK_CURRENT_VERSION;
+        inBuf.StructureLength     = sizeof(inBuf);
+        inBuf.RequestedOplockLevel = OPLOCK_LEVEL_CACHE_READ | OPLOCK_LEVEL_CACHE_HANDLE;
+        inBuf.Flags = REQUEST_OPLOCK_INPUT_FLAG_REQUEST;
+
+        REQUEST_OPLOCK_OUTPUT_BUFFER outBuf = {0};
+        outBuf.StructureVersion = REQUEST_OPLOCK_CURRENT_VERSION;
+        outBuf.StructureLength  = sizeof(outBuf);
+
+        ok = DeviceIoControl(hFile, FSCTL_REQUEST_OPLOCK,
+                              &inBuf, sizeof(inBuf),
+                              &outBuf, sizeof(outBuf),
+                              &returned, &ov);
+        if (!ok && GetLastError() == ERROR_IO_PENDING) {
+            PrintInfo(L"    [+] Windows 7+ READ|HANDLE oplock: SUPPORTED\n");
+        } else {
+            PrintInfo(L"    [-] Windows 7+ oplock: not available (err=%lu) — use BATCH\n",
+                      GetLastError());
+        }
+
+        CloseHandle(hFile); /* close file first → cancels pending I/O → safe to close event */
+    }
+
     CloseHandle(hEvent);
     DeleteFileW(testFile);
     PrintInfo(L"\n");
