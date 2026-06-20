@@ -178,6 +178,7 @@ static DWORD WINAPI OplockWorkerThread(LPVOID param) {
 
     ctx->breakReceived = TRUE;
     SetEvent(ctx->hBreakEvent);
+    free(ws); /* free the heap allocation made in OplockSetup */
     return 0;
 }
 
@@ -201,13 +202,19 @@ static BOOL OplockSetup(OPLOCK_CTX *ctx) {
 
     /* Overlapped event */
     ctx->ov.hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
-    if (!ctx->ov.hEvent) { CloseHandle(hFile); return FALSE; }
+    if (!ctx->ov.hEvent) {
+        CloseHandle(hFile);
+        ctx->hBaitFile = INVALID_HANDLE_VALUE;
+        return FALSE;
+    }
 
     /* Break event */
     ctx->hBreakEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
     if (!ctx->hBreakEvent) {
         CloseHandle(ctx->ov.hEvent);
+        ctx->ov.hEvent = NULL;
         CloseHandle(hFile);
+        ctx->hBaitFile = INVALID_HANDLE_VALUE;
         return FALSE;
     }
 
@@ -522,8 +529,8 @@ static void OplockSelfTest(void) {
                   GetLastError());
     }
 
+    CloseHandle(hFile);   /* close file first → cancels pending I/O → safe to close event */
     CloseHandle(hEvent);
-    CloseHandle(hFile);
     DeleteFileW(testFile);
     PrintInfo(L"\n");
 }

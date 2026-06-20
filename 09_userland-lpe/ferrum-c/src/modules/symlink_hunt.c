@@ -369,7 +369,7 @@ static void AuditSystemServiceSearchPaths(DWORD *findings) {
     wchar_t pathEnv[32768] = {0};
     GetEnvironmentVariableW(L"PATH", pathEnv, _countof(pathEnv));
 
-    wchar_t copy[32768];
+    wchar_t copy[32768] = {0};
     wcsncpy(copy, pathEnv, _countof(copy)-1);
     wchar_t *ctx = NULL;
     wchar_t *token = wcstok(copy, L";", &ctx);
