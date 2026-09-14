@@ -138,6 +138,7 @@ c7 44 24 28 f8 0f 00 00   MOV [rsp+28h], 0xFF8
 | orchestrator_sort.py | Chain 2 orchestrator (sort + kernel) |
 | orchestrator_dawn.py | Chain 3 orchestrator (V8 + Dawn escape) ★ |
 | orchestrator_chain_a.py | Chain A orchestrator (V8 + WCPT + kernel/Dawn) |
+| orchestrator_realworld.py | Full real-world chain (V8 + WCPT + Dawn) |
 | v8_sandbox_bypass.js | WCPT V8 sandbox bypass JavaScript |
 | cve_2026_5873_oob.js | CVE-2026-5873 Turboshaft Wasm OOB exploit |
 | dawn_escape.js | CVE-2026-5281 Dawn WebGPU UAF framework |
