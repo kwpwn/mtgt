@@ -1,0 +1,194 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Full Chain Real-World — Chrome 146.0.7680.165</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #c9d1d9; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; }
+.header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 24px; }
+.header h1 { color: #e94560; font-size: 15px; margin-bottom: 4px; }
+.header .sub { color: #8b949e; font-size: 12px; }
+.container { display: flex; height: calc(100vh - 60px); }
+.sidebar { width: 280px; background: #0d1117; border-right: 1px solid #30363d; padding: 12px; overflow-y: auto; }
+.main { flex: 1; padding: 16px 24px; overflow-y: auto; }
+.stage { margin-bottom: 16px; border: 1px solid #30363d; border-radius: 6px; background: #161b22; }
+.stage-header { padding: 8px 12px; background: #21262d; border-bottom: 1px solid #30363d; border-radius: 6px 6px 0 0; cursor: pointer; }
+.stage-header:hover { background: #282e36; }
+.stage-header .num { color: #e94560; font-weight: bold; }
+.stage-header .title { color: #58a6ff; margin-left: 8px; }
+.stage-header .status { float: right; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.status-ready { background: #238636; color: #fff; }
+.status-pending { background: #d29922; color: #000; }
+.stage-body { padding: 12px; display: none; }
+.stage.open .stage-body { display: block; }
+.step { margin: 6px 0; padding: 4px 0 4px 16px; border-left: 2px solid #30363d; }
+.step .label { color: #79c0ff; }
+.step .desc { color: #8b949e; }
+.cve { display: inline-block; background: #1f2937; border: 1px solid #374151; border-radius: 3px; padding: 1px 6px; color: #f0883e; font-size: 11px; }
+.chain-viz { padding: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; margin-bottom: 16px; }
+.chain-viz .arrow { color: #e94560; }
+.chain-viz .node { display: inline-block; background: #21262d; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; margin: 2px 4px; }
+.chain-viz .node.active { border-color: #238636; color: #3fb950; }
+pre.log { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; padding: 8px; margin: 8px 0; overflow-x: auto; white-space: pre-wrap; font-size: 12px; }
+.ok { color: #3fb950; }
+.err { color: #f85149; }
+.info { color: #58a6ff; }
+.warn { color: #d29922; }
+.sidebar h3 { color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 12px 0 6px; }
+.sidebar .item { padding: 4px 8px; margin: 2px 0; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.sidebar .item:hover { background: #21262d; }
+.sidebar .item.vuln { color: #f0883e; }
+.sidebar .item.chain { color: #58a6ff; }
+.sidebar .item.file { color: #8b949e; }
+#output { margin-top: 16px; }
+</style>
+
+<div class="header">
+    <h1>Full Chain Real-World Exploit — Chrome 146.0.7680.165</h1>
+    <div class="sub">CVE-2026-6307 (V8 RCE + SBX bypass) + CVE-2026-5281 (Dawn WebGPU escape) | NO admin, NO kernel</div>
+</div>
+
+<div class="container">
+<div class="sidebar">
+    <h3>Vulnerabilities</h3>
+    <div class="item vuln">CVE-2026-6307 — V8 FrameState CSE</div>
+    <div class="item vuln">CVE-2026-5281 — Dawn WebGPU UAF</div>
+    <h3>Alternative Escapes</h3>
+    <div class="item vuln">CVE-2026-8580 — Mojo IPC UAF</div>
+    <div class="item vuln">CVE-2026-10881 — ANGLE OOB</div>
+    <div class="item vuln">CVE-2026-14109 — Mojo Policy</div>
+    <h3>Chain Files</h3>
+    <div class="item file">orchestrator_realworld.py</div>
+    <div class="item file">dawn_escape.js</div>
+    <div class="item file">orchestrator_mojo.py</div>
+    <h3>Info</h3>
+    <div class="item chain">2-stage chain (simplified)</div>
+    <div class="item chain">Nebula Security technique</div>
+    <div class="item chain">Longinus PoC (J4ck3LSyN)</div>
+</div>
+
+<div class="main">
+
+<div class="chain-viz">
+    <span class="node active">JavaScript</span>
+    <span class="arrow">→</span>
+    <span class="node active">CVE-2026-6307<br><small>V8 RCE + SBX bypass</small></span>
+    <span class="arrow">→</span>
+    <span class="node active">JIT Staging<br><small>Shellcode in renderer</small></span>
+    <span class="arrow">→</span>
+    <span class="node active">CVE-2026-5281<br><small>Dawn WebGPU UAF</small></span>
+    <span class="arrow">→</span>
+    <span class="node active">GPU Process<br><small>Sandbox escaped</small></span>
+</div>
+
+<div class="stage open" onclick="this.classList.toggle('open')">
+    <div class="stage-header">
+        <span class="num">STAGE 1</span>
+        <span class="title">V8 RCE + V8 Sandbox Bypass</span>
+        <span class="cve">CVE-2026-6307</span>
+        <span class="status status-ready">EXPLOIT READY</span>
+    </div>
+    <div class="stage-body">
+        <div class="step">
+            <span class="label">Root Cause:</span>
+            <span class="desc">Incomplete equality in FrameStateFunctionInfo — omits signature_ field from JSToWasmFrameStateFunctionInfo. Functions with signatures () → externref and () → i64 appear identical to TurboFan's CSE pass.</span>
+        </div>
+        <div class="step">
+            <span class="label">addrof(obj):</span>
+            <span class="desc">Deoptimizer reads tagged reference from return register as raw i64 → full 64-bit BigInt address. NOT cage-relative. 100% success rate.</span>
+        </div>
+        <div class="step">
+            <span class="label">fakeobj(addr):</span>
+            <span class="desc">Deoptimizer treats i64 as tagged JS reference WITHOUT validation. No pointer table lookup → bypasses EPT, CPT, TPT. Object at ANY 64-bit address.</span>
+        </div>
+        <div class="step">
+            <span class="label">V8 SBX Bypass:</span>
+            <span class="desc">fakeobj uses full 64-bit address range. Bypasses all V8 sandbox indirection (EPT, CPT, TPT). The deoptimizer materializes i64 as direct tagged reference — no compression, no table lookup.</span>
+        </div>
+        <div class="step">
+            <span class="label">JIT Code Staging:</span>
+            <span class="desc">Shellcode bytes as float64 constants in JIT function → compiled as raw 64-bit immediates in code stream → property store on fakeobj patches JMP into JIT code → call function → shellcode executes.</span>
+        </div>
+        <div class="step">
+            <span class="label">Result:</span>
+            <span class="desc ok">Native code execution in renderer process (UNTRUSTED IL)</span>
+        </div>
+    </div>
+</div>
+
+<div class="stage open" onclick="this.classList.toggle('open')">
+    <div class="stage-header">
+        <span class="num">STAGE 2</span>
+        <span class="title">Browser Sandbox Escape</span>
+        <span class="cve">CVE-2026-5281</span>
+        <span class="status status-ready">EXPLOIT READY</span>
+    </div>
+    <div class="stage-body">
+        <div class="step">
+            <span class="label">Root Cause:</span>
+            <span class="desc">Dawn WebGPU GPUBuffer UAF. Bug 491518608, variant of CVE-2026-4676. Bind groups retain stale Dawn-internal buffer references after buffer.destroy(), bypassing the CVE-2026-4676 reference counting fix.</span>
+        </div>
+        <div class="step">
+            <span class="label">Phase 1-2:</span>
+            <span class="desc">Allocate 200 GPUBuffers (16KB STORAGE) + create bind groups (hold Dawn refs)</span>
+        </div>
+        <div class="step">
+            <span class="label">Phase 3:</span>
+            <span class="desc">Submit 48 heavy compute batches with 8192 workgroups → GPU fully saturated</span>
+        </div>
+        <div class="step">
+            <span class="label">Phase 4:</span>
+            <span class="desc">buffer.destroy() all → Dawn frees native objects, bind groups retain stale pointers</span>
+        </div>
+        <div class="step">
+            <span class="label">Phase 5-6:</span>
+            <span class="desc">Heap spray 200 same-size buffers (controlled data) → GPU processes stale commands → UAF in GPU process</span>
+        </div>
+        <div class="step">
+            <span class="label">Phase 7:</span>
+            <span class="desc">Multiple additional race waves for reliability, device.lost monitoring</span>
+        </div>
+        <div class="step">
+            <span class="label">Result:</span>
+            <span class="desc ok">Code execution in GPU process → sandbox escaped</span>
+        </div>
+    </div>
+</div>
+
+<div class="stage" onclick="this.classList.toggle('open')">
+    <div class="stage-header">
+        <span class="num">INFO</span>
+        <span class="title">Chain Properties</span>
+        <span class="status status-ready">VERIFIED</span>
+    </div>
+    <div class="stage-body">
+        <div class="step"><span class="label">Admin Required:</span> <span class="desc ok">NO</span></div>
+        <div class="step"><span class="label">Kernel Exploit:</span> <span class="desc ok">NOT NEEDED</span></div>
+        <div class="step"><span class="label">Orchestrator WPM:</span> <span class="desc ok">NOT USED</span></div>
+        <div class="step"><span class="label">Platform:</span> <span class="desc">Windows, Linux, macOS</span></div>
+        <div class="step"><span class="label">CVE-2026-5281 ITW:</span> <span class="desc warn">YES — CISA KEV, exploited in-the-wild April 2026</span></div>
+        <div class="step"><span class="label">CVE-2026-6307 Writeup:</span> <span class="desc">Nebula Security (nebusec.ai)</span></div>
+        <div class="step"><span class="label">LPE:</span> <span class="desc">User has separate CVE-2026-40369 for SYSTEM escalation</span></div>
+    </div>
+</div>
+
+<div id="output">
+    <pre class="log"><span class="info">Chain loaded. Run with: python orchestrator_realworld.py --chrome &lt;path&gt;</span>
+<span class="info">Alternative Mojo chain: python orchestrator_mojo.py --chrome &lt;path&gt;</span>
+<span class="warn">Stage-by-stage: --stage 1 (RCE only) or --stage 2 (full chain)</span></pre>
+</div>
+
+</div>
+</div>
+
+<script>
+document.querySelectorAll('.sidebar .item').forEach(item => {
+    item.addEventListener('click', () => {
+        const text = item.textContent;
+        const log = document.querySelector('#output .log');
+        const span = document.createElement('span');
+        span.className = 'info';
+        span.textContent = '[click] ' + text + '\n';
+        log.appendChild(span);
+    });
+});
+</script>

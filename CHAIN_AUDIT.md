@@ -101,14 +101,28 @@ Stage 2: CVE-2026-5281 (Dawn WebGPU UAF → Browser Sandbox Escape)
 ---
 
 ### ═══ CHAIN 2: CVE-2026-6307 + CVE-2026-8580 ═══
-**Rating: ★★★★☆ — Mojo IPC sandbox escape**
+**Rating: ★★★★☆ — Mojo IPC sandbox escape, NO GPU dependency**
 
 | Stage | CVE | Component | Role |
 |-------|-----|-----------|------|
-| RCE + V8 SBX | CVE-2026-6307 | V8 TurboFan | Full 64-bit R/W |
-| Chrome SBX escape | CVE-2026-8580 | Mojo IPC | UAF → browser process |
+| RCE + V8 SBX | CVE-2026-6307 | V8 TurboFan | Full 64-bit fakeobj (no EPT/CPT bypass needed) |
+| Chrome SBX escape | CVE-2026-8580 | Mojo IPC | UAF → browser process (MEDIUM IL) |
 
-CVSS 9.6 for the Mojo bug. Full sandbox escape from renderer to browser process.
+CVSS 9.6, Scope:Changed (confirms sandbox boundary crossing). Bug 496639647.
+Fixed in Chrome 148.0.7778.168 (May 12, 2026). Target 146 IS VULNERABLE.
+
+Root cause: Receiver/implementation lifetime mismatch in browser-side Mojo interface.
+When the C++ implementation object is freed but `mojo::Receiver<T>` remains bound,
+renderer sends messages that dispatch to freed memory in the browser process.
+Vtable hijack in browser process → full sandbox escape.
+
+**Advantages over Dawn chain:**
+- No GPU hardware dependency
+- More deterministic timing (no GPU race condition)
+- Lower detection profile (standard IPC, not WebGPU)
+- Escapes to BROWSER process (higher privilege than GPU process)
+
+**File**: orchestrator_mojo.py
 
 ---
 

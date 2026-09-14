@@ -69,7 +69,7 @@
 | CVE-2026-40369 | CmpLayerVersionCount | Kernel | Win11 | EXPLOIT WRITTEN |
 | CVE-2026-5281 | Dawn buffer UAF | GPU proc | <.178 | CODE WRITTEN |
 | CVE-2026-6310 | Dawn UAF | GPU proc | <147 | RESEARCH |
-| CVE-2026-8580 | Mojo IPC UAF | Browser | <148 | RESEARCH |
+| CVE-2026-8580 | Mojo IPC UAF | Browser | <148.0.7778.168 | CODE WRITTEN |
 | CVE-2026-8523 | Mojo IPC UAF #2 | Browser | <148 | RESEARCH |
 
 ### NOT viable
@@ -86,7 +86,8 @@
 3. JIT code staging + property store = native code exec from single bug
 4. CVE-2026-5281 Dawn UAF: real sandbox escape, target IS vulnerable (bug 491518608)
 5. CVE-2026-5281 bypasses CVE-2026-4676 fix via bind group stale references
-6. CVE-2026-8580 Mojo UAF: CVSS 9.6, fixed in Chrome 148 (alternative escape)
+6. CVE-2026-8580 Mojo UAF: CVSS 9.6, bug 496639647, Scope:Changed → browser process escape
+7. Mojo chain advantage: no GPU dependency, more deterministic than Dawn
 
 ## Files
 | File | Purpose |
@@ -97,6 +98,7 @@
 | orchestrator.py | Chain 1 (original, orchestrator-assisted) |
 | orchestrator_sort.py | Chain 2 (sort confusion) |
 | orchestrator_chain_a.py | Chain A (WCPT UAF, superseded) |
+| orchestrator_mojo.py | Mojo IPC chain: CVE-2026-6307 + CVE-2026-8580 |
 | orchestrator_dawn.py | Chain D (Dawn WebGPU, older version) |
 | exploit.html | Chain 1 reference |
 | exploit_sort.html | Chain 2 reference |
