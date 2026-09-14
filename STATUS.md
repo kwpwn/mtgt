@@ -57,6 +57,18 @@
 - **Status**: **CONFIRMED WORKING** — run xploit.html, both stages confirmed immediately
 - **File**: **xploit.html** (standalone, no orchestrator needed)
 
+## Pop Calc PoC: CVE-2026-6307 V8 RCE + WASM JT Shellcode
+**Automated end-to-end: launch Chrome -> V8 exploit -> shellcode -> calc.exe pops**
+- **Stage 1**: CVE-2026-6307 TurboFan FrameState CSE -> addrof/fakeobj -> cage R/W
+- **Stage 2**: Create WASM module (memory + w4 writer + target function)
+- **Stage 3**: Identify renderer PID, scan RWX pages, find target()'s Liftoff code entry
+- **Stage 4**: Overwrite Liftoff code with WinExec("calc.exe") shellcode (49 bytes)
+- **Stage 5**: Call target() from JS -> shellcode runs -> calc.exe pops, renderer alive
+- **Key**: shellcode uses `and rsp,-16` for safe stack alignment in WASM context
+- **Requires**: --no-sandbox (Python WPM for code write + WinExec needs unsandboxed renderer)
+- **Status**: **CONFIRMED WORKING** — calc.exe pops reliably, clean return (target()=0)
+- **File**: **orchestrator_popcalc.py**
+
 ## Chain E (older): CVE-2026-6307 + CVE-2026-5281 — Dawn UAF
 **Orchestrator-based, superseded by Longinus chain**
 - **Status**: Code written, NOT TESTED (Dawn WebGPU not available on target GPU)
@@ -114,6 +126,7 @@
 | File | Purpose |
 |------|---------|
 | **xploit.html** | **Longinus Chain (BEST): standalone V8 RCE + ANGLE sandbox escape** |
+| **orchestrator_popcalc.py** | **Pop Calc PoC: V8 RCE -> WASM JT shellcode -> WinExec (--no-sandbox)** |
 | orchestrator_escape.py | Chain E (older): CVE-2026-6307 + CVE-2026-5281 |
 | orchestrator_realworld.py | Real-World chain (earlier version): CVE-2026-6307 + CVE-2026-5281 |
 | **dawn_escape.js** | Dawn WebGPU UAF standalone trigger |
