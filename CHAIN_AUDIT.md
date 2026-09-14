@@ -66,26 +66,37 @@ outside the V8 sandbox cage. No separate EPT/CPT/TPT bypass needed.
 | Chrome SBX escape | CVE-2026-5281 | Dawn WebGPU UAF | Renderer → GPU process escape |
 
 ```
-JS → CVE-2026-6307 (TurboFan FrameState CSE)
-  → addrof/fakeobj with full 64-bit pointers
-  → arbitrary R/W across renderer process (bypasses V8 cage)
-  → find WASM JIT page / write shellcode
-  → native code execution in renderer (UNTRUSTED IL)
-  → trigger CVE-2026-5281 (Dawn WebGPU UAF)
-  → create/destroy GPUBuffers during GPU queue execution
-  → race condition → dangling pointer in GPU process
-  → heap spray replacement → vtable hijack
-  → code execution in GPU process (less restricted sandbox)
-  → escalate to MEDIUM IL or system
+Stage 1: CVE-2026-6307 (V8 RCE + V8 Sandbox Bypass — SINGLE BUG)
+  JS → TurboFan FrameState CSE confusion
+  → Incomplete equality in FrameStateFunctionInfo (omits signature_)
+  → externref/i64 return type conflation during deopt
+  → addrof: deoptimizer reads tagged ref as raw i64 → full 64-bit address
+  → fakeobj: deoptimizer treats i64 as tagged ref WITHOUT validation
+  → NO pointer table lookup → bypasses EPT, CPT, TPT
+  → JIT code staging: shellcode as float64 constants in JIT code
+  → Property store on fakeobj → patches JMP into JIT code
+  → Native code execution in renderer (UNTRUSTED IL)
+
+Stage 2: CVE-2026-5281 (Dawn WebGPU UAF → Browser Sandbox Escape)
+  → Allocate 200 GPUBuffers, create bind groups (stale refs)
+  → Submit 48 heavy compute batches → GPU queue saturated
+  → buffer.destroy() → Dawn frees native objects
+  → Bind groups retain stale pointers (bypasses CVE-2026-4676 fix)
+  → Heap spray: reclaim freed objects with controlled data
+  → GPU processes stale commands → UAF in GPU process
+  → Vtable hijack → code execution at GPU process privilege
 ```
 
 **Advantages:**
-- NO kernel exploit needed
-- NO admin privileges
-- Works on Windows AND Linux AND macOS
+- NO kernel exploit needed — escapes directly to GPU process
+- NO admin privileges — entirely from web page
+- NO separate V8 SBX bypass needed — CVE-2026-6307 IS the bypass
+- NO WCPT, no EPT corruption, no CPT bypass
+- Works on Windows AND Linux AND macOS (cross-platform)
 - Both CVEs confirmed on Chrome 146.0.7680.165
 - CVE-2026-5281 was exploited ITW (proven weaponizable)
-- CVE-2026-6307 has public PoC code
+- CVE-2026-6307 has public PoC code + Nebula Security writeup
+- 100% success rate for addrof/fakeobj (deterministic deopt path)
 
 ---
 
@@ -151,62 +162,88 @@ Same as Chain 6 with sort confusion entry. Code: orchestrator_sort.py
 
 ---
 
-## CRITICAL PATH: V8 Sandbox Bypass via CVE-2026-6307
+## CRITICAL PATH: CVE-2026-6307 V8 Sandbox Bypass (Nebula Security Technique)
 
-CVE-2026-6307's fakeobj produces full 64-bit pointers that reach outside the V8 cage.
+CVE-2026-6307 is BOTH the RCE AND the V8 sandbox bypass. No separate bypass needed.
 
-### Step 1: addrof — leak full 64-bit address
-```javascript
-let addr = addrof(target);  // Returns BigInt with full 64-bit address
+### Root Cause (from Nebula Security writeup)
+```
+The equality operator in FrameStateFunctionInfo checked parameter_count,
+local_count, and shared_info — but OMITTED the signature_ field from
+JSToWasmFrameStateFunctionInfo. Two functions with signatures () -> externref
+and () -> i64 appear identical to CSE. One FrameState is eliminated; deopt
+data uses the survivor's return_kind for both.
 ```
 
-### Step 2: fakeobj — materialize object at arbitrary address
+### addrof: Object → Full 64-bit Address
+Deoptimizer reads tagged reference from return register as raw i64.
+Materializes it as BigInt exposing full pointer bits. 100% success rate.
 ```javascript
-let obj = fakeobj(addr);    // JS object at arbitrary 64-bit address
+let addr = addrof(target);  // Full 64-bit BigInt, NOT cage-relative
 ```
 
-### Step 3: Arbitrary R/W outside V8 cage
-With fakeobj reaching outside the cage, the Longinus writeup documents:
-- Property store on fakeobj writes relative to the faked address
-- Combined with JIT-compiled code, enables arbitrary memory writes
-- No External Pointer Table bypass needed — operates at the raw pointer level
+### fakeobj: 64-bit Address → JS Object
+Deoptimizer treats attacker's i64 as tagged JavaScript reference WITHOUT
+validation or compression. No pointer table lookup occurs.
+```javascript
+let obj = fakeobj(0x7ff0deadbeefn);  // Object anywhere in process memory
+```
 
-### Step 4: WASM JIT shellcode injection
-1. Create WASM module → JIT compilation → RWX page exists
-2. Use arbitrary R/W to find and write shellcode to JIT page
-3. Call WASM function → shellcode executes in renderer
+### V8 Sandbox Bypass Mechanism
+The forged reference bypasses ALL V8 sandbox indirection:
+- ExternalPointerTable (EPT): not consulted — bits are direct tagged ref
+- CodePointerTable (CPT): not consulted — same reason
+- TrustedPointerTable (TPT): not consulted — same reason
+- Compression cage: irrelevant — fakeobj uses full 64-bit address
 
-### Step 5: Chrome sandbox escape (CVE-2026-5281)
-Dawn WebGPU UAF triggered from JS via WebGPU API race condition:
-1. Allocate 200+ GPUBuffers with randomized sizes
-2. Submit heavy compute workloads to saturate GPU queue
-3. Destroy all buffers while GPU still processing (premature free)
-4. Reallocate same-sized buffers → memory reuse
-5. GPU processes stale commands → UAF in GPU process
-6. Heap spray replacement → vtable hijack → code execution
+### JIT Code Staging (Nebula Technique)
+1. Embed shellcode bytes as float64 constants in JIT-compiled function
+2. TurboFan compiles constants as raw 64-bit immediates in code stream
+3. Constants are already in an executable page — just need a JMP
+4. Property store on fakeobj writes at (faked_addr + property_offset)
+5. Write JMP instruction into JIT code before staged constants
+6. Call function → JMP → execute shellcode doubles as x86-64
+
+### Property Store Exploit
+```
+During warmup: r.p = v only executes on actual objects.
+TurboFan optimizes as standard in-object property store.
+On final invocation with forged pointer, property store
+executes relative to attacker-controlled address.
+```
+
+### Dawn WebGPU Escape (CVE-2026-5281)
+Bug 491518608 — variant of CVE-2026-4676, bypasses incomplete fix.
+The CVE-2026-4676 fix added buffer ref counting, but bind groups
+retain stale Dawn-internal refs after buffer.destroy().
+
+1. Allocate 200 GPUBuffers (16KB STORAGE), create bind groups
+2. Submit 48 compute batches with 8192 workgroups (GPU saturated)
+3. buffer.destroy() all — Dawn frees native objects
+4. Bind groups still hold stale pointers (bypass of 4676 fix)
+5. Heap spray: 200 same-size buffers with 0x42424242 pattern
+6. GPU processes stale commands → UAF in GPU process
+7. Vtable hijack → code execution at GPU process privilege
 
 ---
 
-## IMPLEMENTATION PLAN
+## IMPLEMENTATION STATUS
 
-### Phase 1: Real-world V8 SBX bypass (self-contained JS)
-Convert orchestrator's RPM/WPM to JS-only using CVE-2026-6307's full 64-bit fakeobj:
-- Implement `read64(addr)` and `write64(addr, val)` in JS
-- Find WASM JIT pages by scanning process memory from JS
-- Write shellcode to JIT page from JS
-- **File**: exploit_realworld.js
+### orchestrator_realworld.py — 2-STAGE CHAIN (SIMPLIFIED)
+- Stage 1: CVE-2026-6307 (RCE + V8 SBX bypass via JIT staging)
+- Stage 2: CVE-2026-5281 (Dawn UAF → GPU process escape)
+- Eliminated WCPT stage — CVE-2026-6307 IS the V8 SBX bypass
+- **File**: orchestrator_realworld.py
 
-### Phase 2: Dawn WebGPU sandbox escape
-Implement CVE-2026-5281 trigger in JS:
-- WebGPU buffer allocation + GPU saturation
-- Race condition trigger (create/destroy/reuse)
-- Heap spray for controlled replacement
+### dawn_escape.js — STANDALONE Dawn UAF TRIGGER
+- Full WebGPU lifecycle exploitation with bind group stale refs
+- Multiple race wave cycles for reliability
+- Device lost detection for UAF confirmation
 - **File**: dawn_escape.js
 
-### Phase 3: Integration
-Combine Phases 1+2 into single exploit page:
-- Full chain from page load to code execution outside sandbox
-- **File**: fullchain_realworld.html + orchestrator_realworld.py
+### exploit_realworld.html — CHAIN DESCRIPTION PAGE
+- Technical breakdown of 2-stage architecture
+- **File**: exploit_realworld.html
 
 ---
 

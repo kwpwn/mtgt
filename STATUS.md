@@ -22,27 +22,27 @@
 - **File**: orchestrator_sort.py
 
 ## Chain A (NEW): CVE-2026-6307 + WCPT UAF + CVE-2026-40369
-**BEST CHAIN — TRUE real-world sandbox escape**
+**Orchestrator-assisted chain with WCPT V8 SBX bypass**
 - **Entry**: CVE-2026-6307 FrameState CSE in-cage arb R/W
 - **V8 SBX bypass**: WCPT UAF (issues 446113730/452605803)
-  - WasmTableObject dispatch_table handle corruption
-  - CanonicalSig confusion: ref to i64 reinterpretation
-  - PKU not enforced on Windows Chrome 146
 - **Sandbox escape**: CVE-2026-40369 kernel
-- **Status**: Code written, NEEDS TESTING
+- **Status**: Code written, SUPERSEDED by Real-World chain
 - **File**: orchestrator_chain_a.py
-- **Also**: --chain-b uses CVE-2026-5873 Turboshaft WASM OOB as RCE
 
-## Chain D (NEW): CVE-2026-6307 + CVE-2026-5281 (Dawn WebGPU)
-**NO KERNEL EXPLOIT NEEDED**
-- **Entry**: CVE-2026-6307 FrameState CSE V8 RCE
-- **Sandbox escape**: CVE-2026-5281 Dawn WebGPU buffer UAF
-  - buffer.destroy() after queue.submit() frees VRAM while GPU uses it
+## Real-World Chain (BEST): CVE-2026-6307 + CVE-2026-5281
+**2-STAGE — NO kernel, NO admin, NO WCPT, NO separate V8 SBX bypass**
+- **Stage 1**: CVE-2026-6307 = BOTH RCE AND V8 sandbox bypass
+  - Full 64-bit fakeobj bypasses EPT/CPT/TPT directly
+  - JIT code staging + property store → native code execution
+  - No WCPT/EPT corruption needed (Nebula Security technique)
+- **Stage 2**: CVE-2026-5281 Dawn WebGPU buffer UAF
+  - Bind groups retain stale refs (bypasses CVE-2026-4676 fix)
+  - buffer.destroy() race with GPU execution → UAF in GPU process
   - CVSS 8.8, CISA KEV, ITW 0-day
   - Fixed in 146.0.7680.178 (our .165 IS VULNERABLE)
-- **Advantage**: Works on any Windows, no kernel RVA deps
+- **Advantage**: Cross-platform, no kernel deps, simplified 2-stage chain
 - **Status**: Code written, NEEDS TESTING
-- **File**: orchestrator_dawn.py
+- **File**: orchestrator_realworld.py, dawn_escape.js
 
 ---
 
@@ -81,22 +81,28 @@
 
 ## Key Findings
 
-1. CVE-2026-6307 IS full V8 sandbox bypass on Windows (PKU not enforced)
-2. WCPT UAF provides clean V8 SBX bypass for Chrome 138-146
-3. CVE-2026-5281 Dawn UAF: real sandbox escape, target IS vulnerable
-4. CVE-2026-8580 Mojo UAF: CVSS 9.6, fixed in Chrome 148 (needs diff)
+1. CVE-2026-6307 IS BOTH RCE AND V8 sandbox bypass (full 64-bit fakeobj bypasses EPT/CPT/TPT)
+2. No separate V8 SBX bypass needed — WCPT technique SUPERSEDED
+3. JIT code staging + property store = native code exec from single bug
+4. CVE-2026-5281 Dawn UAF: real sandbox escape, target IS vulnerable (bug 491518608)
+5. CVE-2026-5281 bypasses CVE-2026-4676 fix via bind group stale references
+6. CVE-2026-8580 Mojo UAF: CVSS 9.6, fixed in Chrome 148 (alternative escape)
 
 ## Files
 | File | Purpose |
 |------|---------|
-| orchestrator.py | Chain 1 (original) |
+| **orchestrator_realworld.py** | **Real-World chain (BEST): CVE-2026-6307 + CVE-2026-5281** |
+| **dawn_escape.js** | **Dawn WebGPU UAF standalone trigger** |
+| **exploit_realworld.html** | **Real-World chain description** |
+| orchestrator.py | Chain 1 (original, orchestrator-assisted) |
 | orchestrator_sort.py | Chain 2 (sort confusion) |
-| orchestrator_chain_a.py | Chain A (TRUE escape, WCPT UAF) |
-| orchestrator_dawn.py | Chain D (Dawn WebGPU, no kernel) |
+| orchestrator_chain_a.py | Chain A (WCPT UAF, superseded) |
+| orchestrator_dawn.py | Chain D (Dawn WebGPU, older version) |
 | exploit.html | Chain 1 reference |
 | exploit_sort.html | Chain 2 reference |
 | exploit_chain_a.html | Chain A reference |
 | crbug-542403045-analysis.md | Sort confusion analysis |
+| CHAIN_AUDIT.md | Comprehensive vulnerability audit |
 | find_cmplayer.py | CmpLayerVersionCount RVA finder |
 | diag_win10.py | CVE-2026-40369 diagnostic |
 | WRITEUP.md | Technical writeup |
