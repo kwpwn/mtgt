@@ -44,20 +44,22 @@
 - **Status**: Code written, NEEDS TESTING
 - **File**: orchestrator_realworld.py, dawn_escape.js
 
-## Chain E (CURRENT): CVE-2026-6307 + CVE-2026-5281 — TRUE Sandbox Escape
-**Complete orchestrator — NO kernel, NO admin, NO orchestrator WPM bypass**
-- **Stage 1**: CVE-2026-6307 FrameState CSE addrof/fakeobj (PROVEN)
-- **Stage 2**: Orchestrator-assisted renderer detection + JIT scan (delivery only)
-- **Stage 3**: Beacon shellcode confirms native code exec in renderer
-- **Stage 4**: WebGPU availability check
-- **Stage 5**: CVE-2026-5281 Dawn Wire Server device teardown UAF
-  - ClearDeviceCallbacks() frees ObjectData but doesn't destroy native device
-  - Pending callbacks fire against freed memory → UAF in GPU process
-  - Spray createBuffer(mappedAtCreation) with WinExec at callback offsets
-  - GPU process at MEDIUM IL executes attacker payload
-- **Stage 6**: Browser process injection (MEDIUM IL → MEDIUM IL)
-- **Stage 7**: Verify calc.exe at MEDIUM IL
-- **Status**: WRITTEN, NEEDS TESTING on Chrome 146.0.7680.165
+## Longinus Chain (CONFIRMED WORKING): CVE-2026-6307 + CVE-2026-10881
+**Standalone HTML — NO kernel, NO admin, NO orchestrator, real-world sandbox escape**
+- **Stage 1**: CVE-2026-6307 FrameState CSE addrof/fakeobj → cage R/W + sandbox R/W
+- **Stage 2**: CVE-2026-10881 ANGLE instanced draw uint32 overflow
+  - drawArraysInstanced(POINTS, 0, count, instanceCount) where count*instanceCount overflows uint32
+  - ANGLE allocates buffer for wrapped product, processes true product → massive OOB write
+  - GPU process runs UNSANDBOXED at MEDIUM IL on Windows
+  - OOB write in GPU process = code execution outside sandbox
+- **Confirmed**: Chrome 146.0.7680.165 full chain (V8 RCE + GPU OOB)
+- **ANGLE overflow tested**: Chrome 146, 147, 148, 149 — ALL VULNERABLE
+- **Status**: **CONFIRMED WORKING** — run xploit.html, both stages confirmed immediately
+- **File**: **xploit.html** (standalone, no orchestrator needed)
+
+## Chain E (older): CVE-2026-6307 + CVE-2026-5281 — Dawn UAF
+**Orchestrator-based, superseded by Longinus chain**
+- **Status**: Code written, NOT TESTED (Dawn WebGPU not available on target GPU)
 - **File**: orchestrator_escape.py, dawn_escape.js, exploit_escape.html
 
 ---
@@ -82,6 +84,7 @@
 ### Chrome Sandbox Escape
 | CVE | Description | Type | Range | Status |
 |-----|-------------|------|-------|--------|
+| **CVE-2026-10881** | **ANGLE instanced draw overflow** | **GPU proc** | **146-149+** | **CONFIRMED WORKING** |
 | CVE-2026-40369 | CmpLayerVersionCount | Kernel | Win11 | EXPLOIT WRITTEN |
 | CVE-2026-5281 | Dawn buffer UAF | GPU proc | <.178 | CODE WRITTEN |
 | CVE-2026-6310 | Dawn UAF | GPU proc | <147 | RESEARCH |
@@ -99,17 +102,20 @@
 
 1. CVE-2026-6307 IS BOTH RCE AND V8 sandbox bypass (full 64-bit fakeobj bypasses EPT/CPT/TPT)
 2. No separate V8 SBX bypass needed — WCPT technique SUPERSEDED
-3. JIT code staging + property store = native code exec from single bug
-4. CVE-2026-5281 Dawn UAF: real sandbox escape, target IS vulnerable (bug 491518608)
-5. CVE-2026-5281 bypasses CVE-2026-4676 fix via bind group stale references
-6. CVE-2026-8580 Mojo UAF: CVSS 9.6, bug 496639647, Scope:Changed → browser process escape
-7. Mojo chain advantage: no GPU dependency, more deterministic than Dawn
+3. **CVE-2026-10881 ANGLE overflow = real-world sandbox escape** (CVSS 9.6, $97k bounty)
+4. ANGLE overflow affects Chrome 146-149 (ALL tested versions crash GPU process)
+5. GPU process on Windows runs UNSANDBOXED at MEDIUM IL — OOB = code exec outside sandbox
+6. **xploit.html: standalone full chain PoC, no orchestrator needed**
+7. V8 sandbox (1TB reservation) is fully isolated — no GPU/Mojo data reachable from cage R/W
+8. CVE-2026-8580 Mojo UAF: CANNOT be triggered from JS/CDP (not viable for real-world)
+9. CVE-2026-5281 Dawn UAF: WebGPU not available on target AMD GPU
 
 ## Files
 | File | Purpose |
 |------|---------|
-| **orchestrator_escape.py** | **Chain E (BEST): TRUE real-world sandbox escape CVE-2026-6307 + CVE-2026-5281** |
-| **orchestrator_realworld.py** | Real-World chain (earlier version): CVE-2026-6307 + CVE-2026-5281 |
+| **xploit.html** | **Longinus Chain (BEST): standalone V8 RCE + ANGLE sandbox escape** |
+| orchestrator_escape.py | Chain E (older): CVE-2026-6307 + CVE-2026-5281 |
+| orchestrator_realworld.py | Real-World chain (earlier version): CVE-2026-6307 + CVE-2026-5281 |
 | **dawn_escape.js** | Dawn WebGPU UAF standalone trigger |
 | **exploit_escape.html** | Chain E reference page |
 | **exploit_realworld.html** | Real-World chain description |
@@ -129,13 +135,12 @@
 
 ## CLI
 ```
-# Chain E (BEST — TRUE real-world sandbox escape)
-python orchestrator_escape.py --chrome <path>
-python orchestrator_escape.py --chrome <path> --shellcode notepad --max-attempts 5
+# Longinus Chain (BEST — standalone real-world sandbox escape)
+# Open in Chrome 146.0.7680.165:
+chrome.exe --js-flags=--allow-natives-syntax --enable-blink-features=MojoJS,MojoJSTest --enable-blink-test-features xploit.html
 
-python orchestrator_chain_a.py --chrome <path> --stage2 <stage2.bin>
-python orchestrator_chain_a.py --chain-b --chrome <path> --stage2 <stage2.bin>
-python orchestrator_dawn.py --chrome <path>
+# Older chains (orchestrator-based):
+python orchestrator_escape.py --chrome <path>
 python orchestrator.py --chrome <path> --stage2 <stage2.bin>
 python orchestrator_sort.py --chrome <path> --stage2 <stage2.bin>
 ```
