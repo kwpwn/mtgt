@@ -700,6 +700,9 @@ def main():
                     continue
 
             if val:
+                if str(val).startswith('ERROR:'):
+                    print(f"[-] Dawn JS error: {val}")
+                    continue
                 result = json.loads(val)
                 print(f"    Result: {result.get('note', '')}")
                 print(f"    Lost={result.get('deviceLost')}, "
