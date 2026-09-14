@@ -44,6 +44,22 @@
 - **Status**: Code written, NEEDS TESTING
 - **File**: orchestrator_realworld.py, dawn_escape.js
 
+## Chain E (CURRENT): CVE-2026-6307 + CVE-2026-5281 — TRUE Sandbox Escape
+**Complete orchestrator — NO kernel, NO admin, NO orchestrator WPM bypass**
+- **Stage 1**: CVE-2026-6307 FrameState CSE addrof/fakeobj (PROVEN)
+- **Stage 2**: Orchestrator-assisted renderer detection + JIT scan (delivery only)
+- **Stage 3**: Beacon shellcode confirms native code exec in renderer
+- **Stage 4**: WebGPU availability check
+- **Stage 5**: CVE-2026-5281 Dawn Wire Server device teardown UAF
+  - ClearDeviceCallbacks() frees ObjectData but doesn't destroy native device
+  - Pending callbacks fire against freed memory → UAF in GPU process
+  - Spray createBuffer(mappedAtCreation) with WinExec at callback offsets
+  - GPU process at MEDIUM IL executes attacker payload
+- **Stage 6**: Browser process injection (MEDIUM IL → MEDIUM IL)
+- **Stage 7**: Verify calc.exe at MEDIUM IL
+- **Status**: WRITTEN, NEEDS TESTING on Chrome 146.0.7680.165
+- **File**: orchestrator_escape.py, dawn_escape.js, exploit_escape.html
+
 ---
 
 ## Vulnerability Catalog (Chrome 146.0.7680.165)
@@ -92,9 +108,11 @@
 ## Files
 | File | Purpose |
 |------|---------|
-| **orchestrator_realworld.py** | **Real-World chain (BEST): CVE-2026-6307 + CVE-2026-5281** |
-| **dawn_escape.js** | **Dawn WebGPU UAF standalone trigger** |
-| **exploit_realworld.html** | **Real-World chain description** |
+| **orchestrator_escape.py** | **Chain E (BEST): TRUE real-world sandbox escape CVE-2026-6307 + CVE-2026-5281** |
+| **orchestrator_realworld.py** | Real-World chain (earlier version): CVE-2026-6307 + CVE-2026-5281 |
+| **dawn_escape.js** | Dawn WebGPU UAF standalone trigger |
+| **exploit_escape.html** | Chain E reference page |
+| **exploit_realworld.html** | Real-World chain description |
 | orchestrator.py | Chain 1 (original, orchestrator-assisted) |
 | orchestrator_sort.py | Chain 2 (sort confusion) |
 | orchestrator_chain_a.py | Chain A (WCPT UAF, superseded) |
@@ -111,6 +129,10 @@
 
 ## CLI
 ```
+# Chain E (BEST — TRUE real-world sandbox escape)
+python orchestrator_escape.py --chrome <path>
+python orchestrator_escape.py --chrome <path> --shellcode notepad --max-attempts 5
+
 python orchestrator_chain_a.py --chrome <path> --stage2 <stage2.bin>
 python orchestrator_chain_a.py --chain-b --chrome <path> --stage2 <stage2.bin>
 python orchestrator_dawn.py --chrome <path>
